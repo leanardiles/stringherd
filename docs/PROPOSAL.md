@@ -1,7 +1,7 @@
 # Stringherd: Project Proposal
 
 **Domain:** stringherd.dev
-**Status:** Planning (stack not yet decided)
+**Status:** Planning (stack decided, see section 7)
 **Last updated:** 2026-09-24
 
 > Open-source review server for DeepL Sync. Linguists review machine translations with screenshots showing where each string appears, then approved strings go back to your GitHub repo.
@@ -163,7 +163,7 @@ Static, read-only screenshots with the string highlighted.
 ## 6. Scope
 
 ### MVP (the spine, days 1-4)
-1. Demo app: Next.js + react-i18next, 3-4 screens including a form and a modal.
+1. Demo app: React + Vite + react-i18next, 3-4 screens including a form and a modal.
 2. `deepl sync` running in a GitHub Action.
 3. Minimal server implementing the 3 contract endpoints with API keys.
 4. Bare review list: source, MT, approve. Loop closed via `deepl sync pull`.
@@ -189,7 +189,27 @@ Demo: push English, German appears for review, approve, it lands in the repo.
 - Mobile app screenshot capture.
 - Connectors to Phrase, Smartling or other TMSs.
 
-## 7. Costs
+## 7. Stack
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Backend (Stringherd server) | Python + FastAPI + SQLAlchemy | Implements the TMS contract, workflows, TM, glossary, GitHub integration |
+| Database | PostgreSQL (Neon) | `pg_trgm` for TM fuzzy matching |
+| Review UI | React + Vite + TypeScript | Static build, no Node server in production |
+| Demo app | React + Vite + react-i18next | The app being localized, 3-4 screens |
+| Screenshot capture | Playwright (Node) | Runs in GitHub Actions next to the demo app |
+| MT and sync | `@deepl/cli` (`deepl sync`) | Installed as a local dev dependency, run with `npx` |
+| File storage | Cloudflare R2 | Screenshots |
+| Secrets | 1Password | `op run --env-file=.env.op` locally; GitHub repository secrets in CI |
+| Hosting | TBD | AWS Lambda (as in FitJournal) or a container on Fly/Render |
+
+Rationale: FastAPI is the strongest existing skill, Python is listed in the DeepL job description, and it is the fastest path to a demo. Go was considered and set aside to limit new learning. The DeepL signal comes from building on their contract and CLI, not from the backend language.
+
+Repo layout (planned): root `package.json` as tooling and JS workspace root; `server/` with its own `pyproject.toml`; `web/` for the review UI; `demo-app/` for the localized sample app.
+
+Node version: 24.15.0 or newer (required by DeepL CLI v2).
+
+## 8. Costs
 
 - **DeepL API:** current plans are Developer (free, 1M characters **one time, not monthly**) and Growth (about $26-30/month, ~1M/month plus overage). Old API Free/Pro plans are retired.
 - Demo estimate: 300 strings x 40 chars x 5 locales = ~60k characters for the first full sync; incremental syncs are tiny.
@@ -198,14 +218,14 @@ Demo: push English, German appears for review, approve, it lands in the repo.
 - **Hosting:** ~$0. GitHub Actions free for public repos, Postgres free tier (Neon/Supabase), Cloudflare R2 free up to 10 GB, app server free or ~$5/month.
 - **Domain:** stringherd.dev on Cloudflare Registrar.
 
-## 8. Name and branding
+## 9. Name and branding
 
 - **Stringherd** = string + shepherd: herds strings through the workflow.
 - Availability checked 2026-09-24: no existing product; GitHub org, npm, PyPI, crates.io free; no USPTO results. EU trademark (TMview) not yet checked.
 - Avoid "Deep" in the name (DeepL trademark, reads as an official product). Reference DeepL only descriptively: "a review server for DeepL Sync".
 - Repo topics: `localization`, `i18n`, `deepl`, `translation-management`, `github-actions`.
 
-## 9. Future project: i18n audit agent
+## 10. Future project: i18n audit agent
 
 Separate repo, same portfolio story: the audit gets a repo ready to localize, Stringherd localizes it.
 
@@ -215,14 +235,14 @@ Separate repo, same portfolio story: the audit gets a repo ready to localize, St
 - Baseline: LILT's i18n audit (public spec not found; source document needed).
 - Name TBD. "Polygoat" is taken (PolyGOAT language app, Polygoat Studio, and Polygot localization tool).
 
-## 10. Open questions
+## 11. Open questions
 
-- Stack (next step).
+- Hosting target (AWS Lambda vs container).
 - Developer plan feature availability (TM, custom instructions, style rules).
 - EU trademark check for "Stringherd".
 - Confirm contract behavior with a real `deepl sync push/pull` run.
 
-## 11. Sources
+## 12. Sources
 
 - [DeepL CLI](https://github.com/DeepL/deepl-cli)
 - [DeepL Sync docs](https://github.com/DeepL/deepl-cli/blob/main/docs/SYNC.md)

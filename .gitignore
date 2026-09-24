@@ -1,0 +1,65 @@
+# ---------- Secrets and environment ----------
+.env
+.env.*
+!.env.example
+!.env.op
+*.pem
+*.key
+
+# ---------- Node / TypeScript ----------
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+.vercel/
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+
+# ---------- Playwright / screenshot capture ----------
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.captures/
+
+# ---------- Local data ----------
+*.db
+*.sqlite
+*.sqlite3
+data/local/
+
+# ---------- Logs ----------
+logs/
+*.log
+
+# ---------- OS and editors ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.Zone.Identifier
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# ---------- Claude Code (local only) ----------
+.claude/settings.local.json

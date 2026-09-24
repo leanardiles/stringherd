@@ -1,0 +1,1 @@
+Read docs/PROPOSAL.md for project context before making changes, so every coding session starts with the full picture.
