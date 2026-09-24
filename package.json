@@ -1,0 +1,23 @@
+{
+  "name": "stringherd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source review server for DeepL Sync. Linguists review machine translations with screenshots showing where each string appears, then approved strings go back to your GitHub repo.",
+  "type": "commonjs",
+  "scripts": {
+    "deepl:usage": "op run --env-file=.env.op -- deepl usage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leanardiles/stringherd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leanardiles/stringherd/issues"
+  },
+  "homepage": "https://github.com/leanardiles/stringherd#readme",
+  "author": "Leandro Ardiles",
+  "license": "ISC",
+  "devDependencies": {
+    "@deepl/cli": "file:vendor/deepl-cli-2.0.0.tgz"
+  }
+}

@@ -1,0 +1,1 @@
+deepl-cli-2.0.0.tgz built from DeepL/deepl-cli@e6aa435

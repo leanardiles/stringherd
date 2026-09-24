@@ -1,0 +1,1 @@
+Open-source review server for DeepL Sync. Linguists review machine translations with screenshots showing where each string appears, then approved strings go back to your GitHub repo.
