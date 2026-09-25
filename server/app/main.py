@@ -7,12 +7,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.routers import tms
 
 app = FastAPI(
     title="Stringherd",
     version="0.1.0",
     description="Open-source review server for DeepL Sync.",
 )
+
+app.include_router(tms.router)
 
 
 @app.get("/health", tags=["meta"])
