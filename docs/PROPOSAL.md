@@ -194,7 +194,7 @@ Demo: push English, German appears for review, approve, it lands in the repo.
 | Layer | Choice | Notes |
 |---|---|---|
 | Backend (Stringherd server) | Python + FastAPI + SQLAlchemy | Implements the TMS contract, workflows, TM, glossary, GitHub integration |
-| Database | PostgreSQL (Neon) | `pg_trgm` for TM fuzzy matching |
+| Database | PostgreSQL (Supabase, free tier) | Session pooler connection (IPv4). `pg_trgm` for TM fuzzy matching. Free projects pause after 7 days of inactivity |
 | Review UI | React + Vite + TypeScript | Static build, no Node server in production |
 | Demo app | React + Vite + react-i18next | The app being localized, 3-4 screens |
 | Screenshot capture | Playwright (Node) | Runs in GitHub Actions next to the demo app |
@@ -215,7 +215,7 @@ Node version: 24.15.0 or newer (required by DeepL CLI v2).
 - Demo estimate: 300 strings x 40 chars x 5 locales = ~60k characters for the first full sync; incremental syncs are tiny.
 - Protect the allowance: `sync.max_characters`, `--dry-run`, no DeepL calls in server tests, Action limited to source-file changes on `main`, start with 2-3 locales.
 - **To verify on day one:** whether the Developer plan includes translation memory, custom instructions and style rules. If not, one month of Growth covers the demo.
-- **Hosting:** ~$0. GitHub Actions free for public repos, Postgres free tier (Neon/Supabase), Cloudflare R2 free up to 10 GB, app server free or ~$5/month.
+- **Hosting:** ~$0. GitHub Actions free for public repos, Postgres free tier (Supabase), Cloudflare R2 free up to 10 GB, app server free or ~$5/month.
 - **Domain:** stringherd.dev on Cloudflare Registrar.
 
 ## 9. Name and branding
