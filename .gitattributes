@@ -1,0 +1,7 @@
+# Store all text files with LF line endings, regardless of OS
+* text=auto eol=lf
+
+# Binary files: never touch
+*.tgz binary
+*.png binary
+*.jpg binary
