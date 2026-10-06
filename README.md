@@ -36,8 +36,9 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 |---|---|
 | ✅ Done | DeepL Sync TMS contract: push, export and project status endpoints |
 | ✅ Done | API-key authentication (`ApiKey` and `Bearer`, as sent by DeepL Sync) |
-| ✅ Done | Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; changed strings go back to review |
+| ✅ Done | Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; only a genuinely new machine translation goes back to review, so a reviewer's edit is never overwritten by a re-push |
 | ✅ Done | Export of approved translations only |
+| ✅ Done | Source upload: one request per catalog, change detection, approvals reset when the source changes |
 | 🚧 Next | Review interface: source, machine translation, edit, approve |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
@@ -57,7 +58,13 @@ Stringherd implements the [DeepL Sync TMS contract](https://github.com/DeepL/dee
 | `GET` | `/api/projects/{projectId}/keys/export?format=json&locale=fr` | Approved translations as a flat `{"key": "value"}` object |
 | `GET` | `/api/projects/{projectId}` | Key count and review progress per locale |
 
-Plus `GET /health` (server and database status) and interactive docs at `/docs`.
+Plus one **Stringherd extension**, because the contract never sends the source text:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `PUT` | `/api/projects/{projectId}/source` | Upload a full snapshot of source strings for one catalog file. Stringherd reports what was created, updated, unchanged or removed, and sends approved translations back to review when their source changed |
+
+And `GET /health` (server and database status), with interactive docs at `/docs`.
 
 ## Using it with a project
 
@@ -76,6 +83,8 @@ Then, with the same `TMS_API_KEY` set for both Stringherd and the CLI:
 deepl config set tms.allowedServers localhost   # one-time: approve the destination
 deepl sync --flag-for-review                    # machine-translate
 deepl sync push                                 # send translations to Stringherd for review
+node path/to/stringherd/scripts/upload-source.mjs \
+  --project my-app --file locales/en/common.json # send the source strings
 deepl sync pull                                 # bring approved translations back
 ```
 

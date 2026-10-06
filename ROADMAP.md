@@ -12,6 +12,9 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - **API-key authentication** accepting both forms DeepL Sync sends (`ApiKey` and `Bearer`)
 - **Idempotent, concurrency-safe push**: re-pushing unchanged strings keeps their approval; changed strings go back to review; parallel pushes to a new project are handled atomically
 - **Export of approved translations only**
+- **Reviewer edits are protected**: a push only reopens a translation when DeepL delivers something new (because the source changed), the same rule CAT tools follow when a source file is updated
+- **Source upload**: one request carries all source strings of a catalog (with file and commit); detects new, changed and removed keys and sends approved translations back to review when their source changes
+- **Upload script** for JSON catalogs (`scripts/upload-source.mjs`)
 - Database schema and migrations (PostgreSQL, Alembic), health check, test suite
 - Verified end to end against the real DeepL CLI (push, re-push, pull, auth errors)
 - Optional `source_file` on each key, recording which catalog file a string comes from
@@ -20,8 +23,6 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 The goal: a complete loop on a real app, from machine translation to reviewed strings back in the repository.
 
-- **Source upload endpoint**: one request carries all source strings (with commit and file), since DeepL Sync push does not send the source text. Detects new, changed and removed keys.
-- **Upload script** to send the source strings from a project
 - **Review screen**: source and machine translation side by side, edit, approve, bulk approve, filter by status
 - **End-to-end demo** on a real app (FitJournal): English source, French machine translation, review in Stringherd, approved French pulled back into the repository
 

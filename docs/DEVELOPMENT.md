@@ -125,6 +125,20 @@ Port **8100** avoids clashing with apps that use 8000 (such as the FitJournal ba
 - `http://127.0.0.1:8100/health`: should return `{"status":"ok","database":"ok"}`
 - `http://127.0.0.1:8100/docs`: interactive API docs
 
+### Uploading source strings
+
+DeepL Sync push sends translations but never the source text, so the source strings are uploaded separately with `scripts/upload-source.mjs`. Run it from the root of the project being localized:
+
+```bash
+op run --env-file=.env.l10n.op -- node C:/Users/leand/Documents/Apps/stringherd/scripts/upload-source.mjs \
+  --project fitjournal \
+  --file web-react/src/i18n/locales/en/common.json
+```
+
+Options: `--server` (default `http://localhost:8100`), `--locale` (default `en`), `--commit` (default: the current git commit), `--dry-run`.
+
+It sends **every** source string each time; the server compares with what it has. The summary shows `created` (new keys), `filled` (keys that existed without source text, e.g. after a translation push), `updated` (source changed), `unchanged`, approvals sent back to review, and keys no longer in the file (reported, never deleted). For now it reads JSON catalogs only.
+
 ### Supabase notes
 
 - Use the **Session pooler** connection string (port 5432, IPv4). The direct connection is IPv6-only on the free plan.
@@ -283,9 +297,11 @@ stringherd/
 ├── docs/
 │   └── DEVELOPMENT.md    this file
 ├── server/               Python + FastAPI backend (own pyproject.toml)
-│   ├── app/              TMS contract endpoints, auth, models, settings
+│   ├── app/              endpoints (routers/), storage logic (services/), auth, models, settings
 │   ├── migrations/       Alembic database migrations
 │   └── tests/            pytest suite (in-memory SQLite, no network)
+├── scripts/
+│   └── upload-source.mjs source string upload (Node, no dependencies)
 ├── vendor/
 │   ├── deepl-cli-2.0.0.tgz
 │   └── README.md         provenance of the vendored CLI
