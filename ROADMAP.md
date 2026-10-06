@@ -18,18 +18,21 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Database schema and migrations (PostgreSQL, Alembic), health check, test suite
 - Verified end to end against the real DeepL CLI (push, re-push, pull, auth errors)
 - Optional `source_file` on each key, recording which catalog file a string comes from
+- **Reviewer accounts**: admin and reviewer roles, email and password sign-in (Argon2 hashes, server-side sessions in a secure cookie), assignments per project and language, a `create-admin` command, no self-signup
+- **Review API**: list strings with source and DeepL's original, edit, approve, withdraw approval, bulk approve; each approval records who made it
 
 ## 🚧 Now: MVP
 
 The goal: a complete loop on a real app, from machine translation to reviewed strings back in the repository.
 
-- **Review screen**: source and machine translation side by side, edit, approve, bulk approve, filter by status
+- **Review screen** (the API is done): source and machine translation side by side, edit, approve, bulk approve, filter by status. Design starts with a brainstorming session
 - **End-to-end demo** on a real app (FitJournal): English source, French machine translation, review in Stringherd, approved French pulled back into the repository
 
 ## 📋 Next
 
 - **Automation**: a GitHub Action runs `deepl sync` and the uploads on every push to the source files (least-privilege permissions); a Cloudflare Tunnel lets GitHub reach a locally running Stringherd
-- **Reviewer accounts** and an audit log of who changed and approved what
+- **Audit log**: full history of who changed and approved what (today only the latest approver is kept)
+- **Account hardening**: sign-in rate limiting, password reset by email, invitations, CSRF tokens once the UI is served from another origin
 - **Workflows per locale and path**: MT only, MT + review, MT + review + sign-off, configured as ordered rules
 - **Source change handling**: show old and new source next to the previous translation; send changed strings back to review; option to carry over translations when only punctuation or typos changed
 - **Quality checks**: broken placeholders, length expansion warnings, strings identical to the source

@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the approved versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. The review interface is next.
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place; the review interface is next.
 
 ---
 
@@ -39,6 +39,8 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; only a genuinely new machine translation goes back to review, so a reviewer's edit is never overwritten by a re-push |
 | ✅ Done | Export of approved translations only |
 | ✅ Done | Source upload: one request per catalog, change detection, approvals reset when the source changes |
+| ✅ Done | Reviewer accounts: admins and reviewers, sign-in with a secure session cookie, reviewers assigned per project and language |
+| ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
 | 🚧 Next | Review interface: source, machine translation, edit, approve |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
@@ -63,6 +65,22 @@ Plus one **Stringherd extension**, because the contract never sends the source t
 | Method | Path | Purpose |
 |---|---|---|
 | `PUT` | `/api/projects/{projectId}/source` | Upload a full snapshot of source strings for one catalog file. Stringherd reports what was created, updated, unchanged or removed, and sends approved translations back to review when their source changed |
+
+### Review API (for people)
+
+People sign in with email and password and get a session cookie (`HttpOnly`, `SameSite=Lax`). The TMS key is for machines only and does not open these endpoints.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/auth/login` | Sign in. Body: `{"email": "...", "password": "..."}` |
+| `POST` | `/api/auth/logout` | Sign out (ends the session on the server) |
+| `GET` | `/api/auth/me` | The signed-in user, with their assignments |
+| `GET` | `/api/review/projects` | Projects and languages the user may review, with progress |
+| `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, DeepL's original, status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
+| `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}` |
+| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}` |
+
+Admins manage people under `/api/admin/users` (create, update, deactivate, assign project and language). Reviewers only see and change the languages they are assigned to; admins can review any language.
 
 And `GET /health` (server and database status), with interactive docs at `/docs`.
 

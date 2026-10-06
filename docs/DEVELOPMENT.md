@@ -60,6 +60,7 @@ All items live in a 1Password vault named `Stringherd`:
 | `DeepL API` (API Credential) | `credential` | `DEEPL_API_KEY` | DeepL CLI |
 | `Stringherd Supabase` | `url` | `DATABASE_URL` | Server (Supabase Session pooler URI) |
 | `Stringherd TMS` (API Credential) | `credential` | `TMS_API_KEY` | Server (checks requests) and DeepL CLI (sends it) |
+| `Stringherd Admin` (Login) | `password` | (none) | Your own sign-in to Stringherd; read once by `create-admin` |
 
 ### Setup
 
@@ -124,6 +125,42 @@ op run --env-file=../.env.op -- uvicorn app.main:app --port 8100 --reload
 Port **8100** avoids clashing with apps that use 8000 (such as the FitJournal backend). Then open:
 - `http://127.0.0.1:8100/health`: should return `{"status":"ok","database":"ok"}`
 - `http://127.0.0.1:8100/docs`: interactive API docs
+
+### Users and sign-in
+
+Machines (DeepL Sync, the upload script) use the TMS key. People sign in with email and password. There is no self-signup: the first admin is created from the command line, and admins create everyone else.
+
+Create the first admin, reading the password straight from 1Password so it never appears in your shell history:
+
+```bash
+op read "op://Stringherd/Stringherd Admin/password" | \
+  op run --env-file=../.env.op -- python -m app.cli create-admin --email you@example.com --name "Your Name"
+```
+
+Without the pipe, the command asks for the password twice. Passwords need at least 12 characters. To change a password later (this also signs that user out everywhere):
+
+```bash
+op read "op://Stringherd/Stringherd Admin/password" | \
+  op run --env-file=../.env.op -- python -m app.cli set-password --email you@example.com
+```
+
+Then, in `/docs`: call `POST /api/auth/login`. The browser keeps the session cookie, so the other endpoints work from the same page. Create reviewers with `POST /api/admin/users` and give them a language with `POST /api/admin/users/{id}/assignments`.
+
+| Role | Can do |
+|---|---|
+| `admin` | Manage users and assignments; review any project and language |
+| `reviewer` | Review only the project and language pairs assigned to them |
+
+Whether admins may review is decided in one place, `can_review` in `app/permissions.py`.
+
+Settings (environment variables, optional):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SESSION_DAYS` | `7` | How long a sign-in lasts |
+| `COOKIE_SECURE` | `false` | Set to `true` when Stringherd is served over HTTPS, so the browser only sends the cookie over HTTPS |
+
+Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash.
 
 ### Uploading source strings
 
@@ -297,7 +334,7 @@ stringherd/
 ├── docs/
 │   └── DEVELOPMENT.md    this file
 ├── server/               Python + FastAPI backend (own pyproject.toml)
-│   ├── app/              endpoints (routers/), storage logic (services/), auth, models, settings
+│   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, CLI, models, settings
 │   ├── migrations/       Alembic database migrations
 │   └── tests/            pytest suite (in-memory SQLite, no network)
 ├── scripts/
@@ -330,4 +367,5 @@ Planned: `web/`, the review UI (React + Vite + TypeScript). The demo target is a
 | `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
 | `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
 | pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |
+| `401 Not signed in.` in `/docs` | No session cookie, or it expired | Call `POST /api/auth/login` first, on the same host you use for `/docs` (`127.0.0.1` and `localhost` keep separate cookies) |
 | `op run`: `exec: "deepl": executable file not found` | `deepl` defined as a shell function; `op` only finds real executables | Use `npx deepl` inside this repo, or add `stringherd/node_modules/.bin` to `PATH` to call `deepl` from another project |
