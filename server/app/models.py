@@ -63,7 +63,12 @@ class Translation(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     key_id: Mapped[int] = mapped_column(ForeignKey("translation_keys.id", ondelete="CASCADE"))
     locale: Mapped[str] = mapped_column(String(35))
+    # Current text: DeepL's machine translation, or a reviewer's edit of it.
     value: Mapped[str] = mapped_column(Text)
+    # The last value DeepL Sync delivered (push). A push only reopens a translation when it
+    # differs from this, i.e. when DeepL produced something new because the source changed,
+    # so a reviewer's edit is never overwritten by a re-push of the old machine translation.
+    pushed_value: Mapped[str | None] = mapped_column(Text)
     status: Mapped[TranslationStatus] = mapped_column(
         Enum(
             TranslationStatus,

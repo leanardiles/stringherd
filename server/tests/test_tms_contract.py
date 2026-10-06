@@ -152,3 +152,90 @@ def test_project_status_counts_per_locale(client, db_session_factory):
 
 def test_project_status_unknown_project_is_404(client):
     assert client.get("/api/projects/nope", headers=AUTH).status_code == 404
+
+# ---------- Reviewer edits vs. re-pushes ----------
+
+def review_edit(session_factory, key_path, locale, new_value):
+    """Stand-in for the review screen: a reviewer edits and approves a translation."""
+    with session_factory() as session:
+        for translation in session.scalars(select(Translation)):
+            if translation.key.key_path == key_path and translation.locale == locale:
+                translation.value = new_value
+                translation.status = TranslationStatus.APPROVED
+        session.commit()
+
+
+def test_first_push_records_pushed_value(client, db_session_factory):
+    push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+    with db_session_factory() as session:
+        translation = session.scalar(select(Translation))
+        assert translation.pushed_value == "{{count}} définit"
+
+
+def test_reviewer_edit_survives_repush_of_old_machine_translation(client, db_session_factory):
+    push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+    review_edit(db_session_factory, "dashboard.sets_other", "fr", "{{count}} séries")
+
+    # The repo file still holds DeepL's original text until the next pull, so a push re-sends it.
+    response = push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+
+    assert response.json()["changed"] is False
+    assert response.json()["status"] == "approved"
+    export = client.get(f"{BASE}/keys/export", params={"locale": "fr"}, headers=AUTH).json()
+    assert export == {"dashboard.sets_other": "{{count}} séries"}
+
+
+def test_new_machine_translation_after_edit_reopens(client, db_session_factory):
+    push(client, "home.title", "fr", "Accueil")
+    review_edit(db_session_factory, "home.title", "fr", "Page d'accueil")
+
+    # DeepL delivers something new (the source changed): the reviewer's edit is stale.
+    response = push(client, "home.title", "fr", "Démarrer")
+
+    assert response.json()["changed"] is True
+    assert response.json()["status"] == "machine_translated"
+    with db_session_factory() as session:
+        translation = session.scalar(select(Translation))
+        assert translation.value == "Démarrer"
+        assert translation.pushed_value == "Démarrer"
+
+
+def test_row_without_pushed_value_falls_back_to_value(client, db_session_factory):
+    push(client, "home.title", "fr", "Accueil")
+    with db_session_factory() as session:
+        translation = session.scalar(select(Translation))
+        translation.pushed_value = None  # as for rows created before pushed_value existed
+        translation.status = TranslationStatus.APPROVED
+        session.commit()
+
+    response = push(client, "home.title", "fr", "Accueil")
+
+    assert response.json()["changed"] is False
+    assert response.json()["status"] == "approved"
+    with db_session_factory() as session:
+        assert session.scalar(select(Translation)).pushed_value == "Accueil"
+
+
+def test_reviewed_value_coming_back_after_pull_keeps_approval(client, db_session_factory):
+    push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+    review_edit(db_session_factory, "dashboard.sets_other", "fr", "{{count}} séries")
+
+    # After `deepl sync pull` the file holds the reviewer's text, so the next push sends it.
+    response = push(client, "dashboard.sets_other", "fr", "{{count}} séries")
+
+    assert response.json()["changed"] is False
+    assert response.json()["status"] == "approved"
+    # And re-sending it again stays stable.
+    assert push(client, "dashboard.sets_other", "fr", "{{count}} séries").json()["status"] == "approved"
+
+
+def test_stale_repush_after_pull_keeps_approval(client, db_session_factory):
+    push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+    review_edit(db_session_factory, "dashboard.sets_other", "fr", "{{count}} séries")
+    push(client, "dashboard.sets_other", "fr", "{{count}} séries")  # after pull
+
+    # Someone pushes from an older checkout whose file still has DeepL's original text.
+    response = push(client, "dashboard.sets_other", "fr", "{{count}} définit")
+
+    assert response.json()["changed"] is False
+    assert response.json()["status"] == "approved"

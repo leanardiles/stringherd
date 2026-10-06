@@ -50,9 +50,13 @@ def push_translation(
 ) -> PushResult:
     """Store a machine translation pushed by `deepl sync push`.
 
-    DeepL Sync re-sends every translated key on each push, so this is idempotent:
-    an unchanged value keeps its status (including `approved`); a changed value
-    goes back to `machine_translated` for review.
+    DeepL Sync re-sends every translated key on each push. The incoming value is compared
+    with the last value DeepL delivered (`pushed_value`), not with the current value:
+    - same as the current value (e.g. a reviewer's edit coming back after pull) or as the
+      last delivery (the old machine translation re-sent before pull): nothing new; the
+      current value and its status are kept;
+    - anything else: DeepL produced a new translation (the source changed), so the value is
+      replaced and goes back to `machine_translated` for review.
     """
     if "/" in key_path:
         raise HTTPException(
@@ -89,6 +93,7 @@ def push_translation(
             key_id=key_id,
             locale=body.locale,
             value=body.value,
+            pushed_value=body.value,
             status=TranslationStatus.MACHINE_TRANSLATED.value,
         )
         .on_conflict_do_nothing(index_elements=["key_id", "locale"])
@@ -98,11 +103,17 @@ def push_translation(
 
     changed = True
     if inserted_id is None:
-        # The translation already existed.
-        if translation.value == body.value:
+        # The translation already existed. Rows from before pushed_value existed fall back to value.
+        last_delivery = translation.pushed_value if translation.pushed_value is not None else translation.value
+        if body.value in (translation.value, last_delivery):
+            # Either the current text coming back (e.g. a reviewer's edit after pull) or a
+            # re-push of DeepL's previous delivery: nothing new, keep value and status.
             changed = False
+            if translation.pushed_value is None:
+                translation.pushed_value = body.value
         else:
             translation.value = body.value
+            translation.pushed_value = body.value
             translation.status = TranslationStatus.MACHINE_TRANSLATED
             translation.approved_at = None
 
@@ -148,4 +159,4 @@ def project_status(project_slug: ProjectSlug, db: DbSession) -> ProjectStatus:
     locales: dict[str, LocaleCounts] = {}
     for locale, row_status, count in rows:
         setattr(locales.setdefault(locale, LocaleCounts()), TranslationStatus(row_status).value, count)
-    return ProjectStatus(project_id=project.slug, keys=key_count or 0, locales=locales)
+    return ProjectStatus(project_id=project.slug, keys=key_count or 0, locales=locales)
