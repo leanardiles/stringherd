@@ -19,6 +19,8 @@ class Project(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True)
+    # Locale of the source strings (e.g. "en"), set by the first source upload.
+    source_locale: Mapped[str | None] = mapped_column(String(35))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     keys: Mapped[list["TranslationKey"]] = relationship(back_populates="project", cascade="all, delete-orphan")
@@ -41,6 +43,8 @@ class TranslationKey(Base):
     # no notion of files. Used for reviewer context, links to the source and detecting
     # the same key arriving from two different files.
     source_file: Mapped[str | None] = mapped_column(String(500))
+    # Commit the current source_text was uploaded from, when the uploader provides it.
+    source_commit: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     project: Mapped[Project] = relationship(back_populates="keys")
@@ -74,4 +78,4 @@ class Translation(Base):
     )
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    key: Mapped[TranslationKey] = relationship(back_populates="translations")
+    key: Mapped[TranslationKey] = relationship(back_populates="translations")
