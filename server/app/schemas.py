@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # Same limit DeepL Sync enforces when pulling, so an oversized value fails at push time
 # with a clear message instead of breaking a later pull.
@@ -87,3 +89,105 @@ class SourceUploadResult(BaseModel):
     unchanged: int
     approvals_reset: int
     removed: list[str]
+
+
+# ---------- People: sign-in, users, assignments ----------
+
+ROLE_PATTERN = r"^(admin|reviewer)$"
+MIN_PASSWORD_LENGTH = 12
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=1024)
+
+
+class AssignmentOut(BaseModel):
+    project_id: str
+    locale: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    name: str
+    role: str
+    is_active: bool
+    assignments: list[AssignmentOut]
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=200)
+    role: str = Field(default="reviewer", pattern=ROLE_PATTERN)
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=1024, description="Temporary password")
+
+
+class UserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    role: str | None = Field(default=None, pattern=ROLE_PATTERN)
+    is_active: bool | None = None
+    password: str | None = Field(default=None, min_length=MIN_PASSWORD_LENGTH, max_length=1024)
+
+
+class AssignmentIn(BaseModel):
+    project_id: str = Field(pattern=r"^[A-Za-z0-9._-]{1,100}$", examples=["fitjournal"])
+    locale: str = Field(pattern=LOCALE_PATTERN, max_length=35, examples=["fr"])
+
+
+# ---------- Review ----------
+
+class ReviewLocale(BaseModel):
+    locale: str
+    total: int
+    machine_translated: int
+    approved: int
+
+
+class ReviewProject(BaseModel):
+    project_id: str
+    source_locale: str | None
+    locales: list[ReviewLocale]
+
+
+class ReviewString(BaseModel):
+    key: str
+    source_text: str | None
+    source_file: str | None
+    value: str
+    machine_translation: str | None  # what DeepL last delivered (pushed_value)
+    status: str
+    updated_at: datetime | None
+    approved_at: datetime | None
+    approved_by: str | None  # name of the approver
+
+
+class ReviewStringPage(BaseModel):
+    project_id: str
+    locale: str
+    total: int
+    items: list[ReviewString]
+
+
+class ReviewEdit(BaseModel):
+    """Edit and/or approve one translation. Editing without approving leaves it unapproved."""
+
+    value: str | None = None
+    approved: bool | None = None
+
+    @field_validator("value")
+    @classmethod
+    def check_size(cls, value: str | None) -> str | None:
+        if value is not None and len(value.encode("utf-8")) > MAX_VALUE_BYTES:
+            raise ValueError(f"Value exceeds {MAX_VALUE_BYTES // 1024} KiB.")
+        return value
+
+
+class BulkApprove(BaseModel):
+    keys: list[str] = Field(min_length=1, max_length=MAX_SOURCE_KEYS)
+
+
+class BulkApproveResult(BaseModel):
+    approved: int
+    already_approved: int
+    not_found: list[str]

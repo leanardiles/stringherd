@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     database_url: str
     tms_api_key: str | None = None
 
+    # Browser sessions for people (reviewers and admins). Machines use tms_api_key instead.
+    session_days: int = 7
+    # Send the session cookie only over HTTPS. Keep False for http://localhost; set
+    # COOKIE_SECURE=true when Stringherd is served over HTTPS (e.g. through the tunnel).
+    cookie_secure: bool = False
+
     @field_validator("database_url")
     @classmethod
     def use_psycopg_driver(cls, value: str) -> str:

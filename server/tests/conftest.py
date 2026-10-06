@@ -42,3 +42,55 @@ def client(db_session_factory):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+# ---------- People ----------
+
+PASSWORD = "correct horse battery"
+
+
+@pytest.fixture
+def make_user(db_session_factory):
+    """Create a user directly in the database; returns its id."""
+    from app.models import User, UserRole
+    from app.security import hash_password
+
+    def _make(email, role="reviewer", name=None, password=PASSWORD, active=True):
+        with db_session_factory() as session:
+            user = User(
+                email=email,
+                name=name or email.split("@")[0].title(),
+                role=UserRole(role),
+                password_hash=hash_password(password),
+                is_active=active,
+            )
+            session.add(user)
+            session.commit()
+            return user.id
+
+    return _make
+
+
+@pytest.fixture
+def new_client(db_session_factory):
+    """A separate browser (own cookie jar) per call, sharing the test database."""
+
+    def override_get_db():
+        with db_session_factory() as session:
+            yield session
+
+    clients = []
+
+    def _new():
+        app.dependency_overrides[get_db] = override_get_db
+        c = TestClient(app)
+        clients.append(c)
+        return c
+
+    yield _new
+    for c in clients:
+        c.close()
+    app.dependency_overrides.clear()
+
+
+def login(client, email, password=PASSWORD):
+    return client.post("/api/auth/login", json={"email": email, "password": password})

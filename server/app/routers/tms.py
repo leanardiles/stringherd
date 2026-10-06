@@ -159,4 +159,4 @@ def project_status(project_slug: ProjectSlug, db: DbSession) -> ProjectStatus:
     locales: dict[str, LocaleCounts] = {}
     for locale, row_status, count in rows:
         setattr(locales.setdefault(locale, LocaleCounts()), TranslationStatus(row_status).value, count)
-    return ProjectStatus(project_id=project.slug, keys=key_count or 0, locales=locales)
+    return ProjectStatus(project_id=project.slug, keys=key_count or 0, locales=locales)

@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.routers import source, tms
+from app.routers import admin, auth, review, source, tms
 
 app = FastAPI(
     title="Stringherd",
@@ -17,6 +17,9 @@ app = FastAPI(
 
 app.include_router(tms.router)
 app.include_router(source.router)
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(review.router)
 
 
 @app.get("/health", tags=["meta"])
@@ -29,4 +32,4 @@ def health(db: Annotated[Session, Depends(get_db)]):
             status_code=503,
             content={"status": "degraded", "database": "unreachable"},
         )
-    return {"status": "ok", "database": "ok"}
+    return {"status": "ok", "database": "ok"}

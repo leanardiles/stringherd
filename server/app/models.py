@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -82,5 +82,66 @@ class Translation(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Who approved the current value. Kept (as NULL) if that user is deleted.
+    approved_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
-    key: Mapped[TranslationKey] = relationship(back_populates="translations")
+    key: Mapped[TranslationKey] = relationship(back_populates="translations")
+    approved_by: Mapped["User | None"] = relationship()
+
+
+class UserRole(StrEnum):
+    ADMIN = "admin"
+    REVIEWER = "reviewer"
+
+
+class User(Base):
+    """A person who signs in to the review screen. Machines (CI, DeepL Sync) use the TMS key instead."""
+
+    __tablename__ = "users"
+    __table_args__ = (CheckConstraint("role IN ('admin', 'reviewer')", name="ck_users_role"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lowercase
+    name: Mapped[str] = mapped_column(String(200))
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, native_enum=False, length=16, values_callable=lambda e: [m.value for m in e])
+    )
+    password_hash: Mapped[str] = mapped_column(String(255))  # Argon2; never the password itself
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    assignments: Mapped[list["ReviewerAssignment"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class ReviewerAssignment(Base):
+    """Which project and language a user reviews, e.g. (Leandro, fitjournal, fr)."""
+
+    __tablename__ = "reviewer_assignments"
+    __table_args__ = (UniqueConstraint("user_id", "project_id", "locale"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    locale: Mapped[str] = mapped_column(String(35))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped[User] = relationship(back_populates="assignments")
+    project: Mapped[Project] = relationship()
+
+
+class UserSession(Base):
+    """A signed-in browser. The cookie holds a random token; only its SHA-256 hash is stored,
+    so a leaked database cannot be used to hijack sessions."""
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped[User] = relationship()
