@@ -35,6 +35,12 @@ class TranslationKey(Base):
     key_path: Mapped[str] = mapped_column(String(500))
     # DeepL Sync push does not send source text; filled by a later extension endpoint.
     source_text: Mapped[str | None] = mapped_column(Text)
+    # Repo-relative path of the catalog the source string came from, e.g.
+    # "web-react/src/i18n/locales/en/common.json". Informational only: not part of the
+    # key's identity (keys stay unique per project), because the DeepL Sync contract has
+    # no notion of files. Used for reviewer context, links to the source and detecting
+    # the same key arriving from two different files.
+    source_file: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     project: Mapped[Project] = relationship(back_populates="keys")
