@@ -1,6 +1,6 @@
 # Development Setup
 
-How to set up Stringherd locally, and why the tooling is set up the way it is. For product context, read [PROPOSAL.md](PROPOSAL.md).
+How to set up Stringherd locally, and why the tooling is set up the way it is. For what Stringherd is and how it works, see the [README](../README.md).
 
 ---
 
@@ -10,7 +10,7 @@ How to set up Stringherd locally, and why the tooling is set up the way it is. F
 |---|---|---|
 | Node.js | 24.15.0 or newer | Required by DeepL CLI v2 (uses the built-in `node:sqlite` module) |
 | npm | 9 or newer | Ships with Node |
-| Python | 3.12 or newer | Backend (FastAPI), once `server/` exists |
+| Python | 3.12 or newer (3.13 recommended) | Backend (FastAPI) in `server/` |
 | 1Password CLI (`op`) | Latest | Injects secrets at runtime; no secrets on disk |
 | Git | Any recent version | |
 
@@ -51,6 +51,16 @@ At runtime, `op run` resolves each reference and passes the real value to a sing
 op run --env-file=.env.op -- <command>
 ```
 
+### Items
+
+All items live in a 1Password vault named `Stringherd`:
+
+| Item (type) | Field | Env var | Used by |
+|---|---|---|---|
+| `DeepL API` (API Credential) | `credential` | `DEEPL_API_KEY` | DeepL CLI |
+| `Stringherd Supabase` | `url` | `DATABASE_URL` | Server (Supabase Session pooler URI) |
+| `Stringherd TMS` (API Credential) | `credential` | `TMS_API_KEY` | Server (checks requests) and DeepL CLI (sends it) |
+
 ### Setup
 
 1. Create a 1Password vault named `Stringherd`.
@@ -67,6 +77,58 @@ op run --env-file=.env.op -- <command>
 - Do not use `deepl init` or `deepl auth set-key`. They store the key in a local config file.
 - `.env` and `.env.*` are gitignored. Exceptions: `.env.example` (placeholders) and `.env.op` (references).
 - CI uses GitHub repository secrets, not 1Password.
+
+---
+
+## Backend server
+
+The server lives in `server/` and has its own virtual environment. Run these from `server/`.
+
+### Setup
+
+```bash
+cd server
+py -3.13 -m venv .venv            # Windows; on Linux/macOS: python3.13 -m venv .venv
+source .venv/Scripts/activate     # Windows Git Bash; on Linux/macOS: .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Tests
+
+```bash
+pytest
+```
+
+Tests never touch Supabase or DeepL: each test gets a fresh in-memory SQLite database (`tests/conftest.py`).
+
+### Database migrations (Alembic)
+
+```bash
+op run --env-file=../.env.op -- alembic upgrade head      # apply migrations
+op run --env-file=../.env.op -- alembic current           # show the applied revision
+```
+
+After changing `app/models.py`, generate a migration, **read it before applying**, then upgrade:
+
+```bash
+op run --env-file=../.env.op -- alembic revision --autogenerate -m 'describe the change'
+op run --env-file=../.env.op -- alembic upgrade head
+```
+
+### Running the server
+
+```bash
+op run --env-file=../.env.op -- uvicorn app.main:app --port 8100 --reload
+```
+
+Port **8100** avoids clashing with apps that use 8000 (such as the FitJournal backend). Then open:
+- `http://127.0.0.1:8100/health`: should return `{"status":"ok","database":"ok"}`
+- `http://127.0.0.1:8100/docs`: interactive API docs
+
+### Supabase notes
+
+- Use the **Session pooler** connection string (port 5432, IPv4). The direct connection is IPv6-only on the free plan.
+- Free projects **pause after 7 days of inactivity**. If `/health` reports the database as unreachable, open the Supabase dashboard and click **Resume project**.
 
 ---
 
@@ -216,31 +278,27 @@ The free Developer plan gives **1 million characters in total, one time** (not m
 
 ## Repository layout
 
-Current:
-
 ```
 stringherd/
 ├── docs/
-│   ├── PROPOSAL.md       product context and design decisions
 │   └── DEVELOPMENT.md    this file
+├── server/               Python + FastAPI backend (own pyproject.toml)
+│   ├── app/              TMS contract endpoints, auth, models, settings
+│   ├── migrations/       Alembic database migrations
+│   └── tests/            pytest suite (in-memory SQLite, no network)
 ├── vendor/
 │   ├── deepl-cli-2.0.0.tgz
 │   └── README.md         provenance of the vendored CLI
 ├── .env.op               1Password secret references (committed)
+├── .gitattributes        LF line endings for all text files
 ├── .gitignore
-├── CLAUDE.md             points coding sessions to PROPOSAL.md
+├── CLAUDE.md             instructions for coding sessions
 ├── package.json          JS tooling root
 ├── package-lock.json
 └── README.md
 ```
 
-Planned (see PROPOSAL.md, section 7):
-
-```
-server/      Python + FastAPI backend (own pyproject.toml)
-web/         React + Vite + TypeScript review UI
-demo-app/    React + Vite + react-i18next sample app being localized
-```
+Planned: `web/`, the review UI (React + Vite + TypeScript). The demo target is a separate repository (FitJournal), localized through DeepL Sync.
 
 ---
 
@@ -253,3 +311,7 @@ demo-app/    React + Vite + react-i18next sample app being localized
 | `op` cannot resolve a reference | Vault, item or field name mismatch, or 1Password locked | Compare `.env.op` with 1Password; run `op read "op://..."` |
 | `rm` or `chmod` not recognized during build | npm runs scripts in `cmd.exe` on Windows | Use `npx tsc` instead of `npm run build` |
 | Git says another git process is running | Stale `.git/index.lock` | Make sure no git process is running, then delete `.git/index.lock` |
+| `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
+| `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
+| pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |
+| `op run`: `exec: "deepl": executable file not found` | `deepl` defined as a shell function; `op` only finds real executables | Use `npx deepl` inside this repo, or add `stringherd/node_modules/.bin` to `PATH` to call `deepl` from another project |
