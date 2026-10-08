@@ -195,7 +195,7 @@ npm install
 npm run dev
 ```
 
-Then open `http://localhost:5173`. The backend server must be running on port 8100 (see above). Vite forwards every `/api` request to it, so the browser sees one address and the sign-in cookie works without any cross-origin setup. To use another server address: `STRINGHERD_SERVER=http://127.0.0.1:9000 npm run dev`.
+Then open `http://localhost:5180`. The backend server must be running on port 8100 (see above). Vite forwards every `/api` request to it, so the browser sees one address and the sign-in cookie works without any cross-origin setup. To use another server address: `STRINGHERD_SERVER=http://127.0.0.1:9000 npm run dev`.
 
 ### Commands
 

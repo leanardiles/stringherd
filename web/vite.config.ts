@@ -9,7 +9,10 @@ const server = process.env.STRINGHERD_SERVER ?? 'http://127.0.0.1:8100'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    // 5180, not Vite's default 5173: FitJournal's web app uses 5173 and its backend
+    // only accepts that origin. strictPort fails loudly instead of drifting to 5181.
+    port: 5180,
+    strictPort: true,
     proxy: {
       '/api': server,
       '/health': server,
