@@ -1,0 +1,38 @@
+.editor :global(.cm-editor) {
+  min-block-size: 36px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius);
+  background: var(--color-field);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+}
+
+.editor :global(.cm-editor.cm-focused) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+  border-color: var(--color-focus);
+}
+
+.editor :global(.cm-content) {
+  padding: 7px var(--space-3);
+  font-family: var(--font-ui);
+  line-height: 1.45;
+  caret-color: var(--color-text);
+}
+
+.editor :global(.cm-line) {
+  padding: 0;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0 4px;
+  margin-inline: 1px;
+  border-radius: 4px;
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  user-select: none;
+}

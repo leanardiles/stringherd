@@ -3,7 +3,6 @@ import { AppShell } from './components/AppShell'
 import { RequireAuth } from './components/RequireAuth'
 import { LoginPage } from './pages/LoginPage'
 import { ProjectsPage } from './pages/ProjectsPage'
-import { ReviewPage } from './pages/ReviewPage'
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
@@ -14,7 +13,11 @@ export const routes: RouteObject[] = [
         element: <AppShell />,
         children: [
           { path: '/', element: <ProjectsPage /> },
-          { path: '/review/:projectId/:locale', element: <ReviewPage /> },
+          {
+            path: '/review/:projectId/:locale',
+            // Loaded on demand: the editor (CodeMirror) is only needed on this screen.
+            lazy: async () => ({ Component: (await import('./pages/ReviewPage')).ReviewPage }),
+          },
         ],
       },
     ],

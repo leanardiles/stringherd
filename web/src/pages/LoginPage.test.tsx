@@ -21,6 +21,10 @@ describe('sign-in', () => {
         return { status: 200, body: ADMIN }
       }
       if (url === '/api/auth/me') return signedIn ? { status: 200, body: ADMIN } : { status: 401 }
+      if (url === '/api/review/projects') return { status: 200, body: [] }
+      if (url.startsWith('/api/review/projects/fitjournal/locales/fr/strings')) {
+        return { status: 200, body: { project_id: 'fitjournal', locale: 'fr', total: 0, items: [] } }
+      }
       return { status: 404 }
     })
 
@@ -28,7 +32,7 @@ describe('sign-in', () => {
     await userEvent.type(screen.getByLabelText('Password'), 'secret-password')
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
-    expect(await screen.findByText('The review screen is the next step of the build.')).toBeInTheDocument()
+    expect(await screen.findByText('This language has no strings yet.')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/review/fitjournal/fr')
   })
 

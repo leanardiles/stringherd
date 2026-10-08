@@ -4,6 +4,9 @@ import type { components } from './schema'
 export type User = components['schemas']['UserOut']
 export type ReviewProject = components['schemas']['ReviewProject']
 export type ReviewLocale = components['schemas']['ReviewLocale']
+export type ReviewString = components['schemas']['ReviewString']
+export type ReviewStringPage = components['schemas']['ReviewStringPage']
+export type ReviewEdit = components['schemas']['ReviewEdit']
 
 /** An API call that failed. status 0 means the server could not be reached. */
 export class ApiError extends Error {

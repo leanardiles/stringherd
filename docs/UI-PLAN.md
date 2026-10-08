@@ -1,6 +1,6 @@
 # Review UI Plan
 
-Working plan for Stringherd's review interface. Updated as we brainstorm; nothing here is built yet. Once a section is implemented, it moves into the README and this file keeps only what is still open.
+Working plan for Stringherd's review interface. Updated as we brainstorm; see Build status for what exists. Once a section is implemented, it moves into the README and this file keeps only what is still open.
 
 References studied: Phrase TMS (CAT web editor), Phrase Strings (software strings editor) and Lokalise (key editor). Notes in [Reference notes](#reference-notes).
 
@@ -10,8 +10,8 @@ References studied: Phrase TMS (CAT web editor), Phrase Strings (software string
 
 | # | Decision | Why |
 |---|---|---|
-| 1 | **Expanding rows**: compact one-line rows; the active string opens in place into a card with everything about it; approving closes it and opens the next | Card focus (Lokalise, Phrase Strings) without losing grid density and the neighbouring strings |
-| 2 | **Side panel for the screenshot** of the active string (and other visual context); text help lives in the open card | Images need width; text help belongs next to the target being edited |
+| 1 | **Two views of the same strings, toggled in the toolbar.** *Single key* (default): three panes, key list, the open string, context. *List*: rows of key, source and target, the open string expands in place, context on the right | Single key gives focus (Phrase Strings, Lokalise); List keeps neighbouring translations in sight for consistency checks |
+| 2 | **Left, middle, right by purpose.** Left: where am I (key list with source preview and symbols). Middle: what do I act on (source above target, suggestions and TM to insert, QA messages, actions). Right: what helps me decide (screenshot, glossary, other languages, key details) | One rule decides where every future module goes |
 | 3 | **Screenshot in the panel shows the whole screen**, with zoom in down to the string, and a pop-up for full size | Whole screen gives orientation; zoom gives detail; pop-up for landscape web screens |
 | 4 | **Phrase keyboard shortcuts** wherever an equivalent action exists | Industry standard; reviewers already know them |
 | 5 | **Character count and limit next to each string** (`18 / 25`) | Software and marketing text often has length limits; both MT and review must respect them |
@@ -19,86 +19,84 @@ References studied: Phrase TMS (CAT web editor), Phrase Strings (software string
 | 7 | **Build only modules that have data behind them**; others appear when their feature exists | Empty panels look unfinished |
 | 8 | **Character limits are always hard**: an over-limit string cannot be approved | Limits exist because the space is fixed |
 | 9 | **Placeholders count as 1 character** (their guaranteed minimum); markup tags count as 0 | A hard limit must only block strings that will certainly overflow |
-| 10 | **Other languages as reference**: the open card shows approved translations of the same string in languages the reviewer picks | Seeing how French or Italian solved a string helps the Spanish reviewer |
+| 10 | **Other languages as reference**: approved translations of the same string in languages the reviewer picks, in the right panel | Seeing how French or Italian solved a string helps the Spanish reviewer |
 | 11 | **Subdued farm palette**: warm off-white and hay neutrals; colour only for status, progress and the main action | Familiar layout and colour meanings, with its own identity; quiet enough for long sessions |
 | 12 | **Inter for the UI, a monospace font for keys and placeholders** | Highly readable at small sizes; monospace makes `{{count}}`, odd spacing and key names easy to spot |
 | 13 | **Compact rows** (about 15 strings visible on a laptop screen), comfortable spacing inside the open card | Throughput like Phrase TMS; the card gets room where the work happens |
 | 14 | **React, Vite and TypeScript**, with TanStack Query, React Router, Radix UI primitives and CSS Modules over CSS variables (full list in Frontend stack) | Mainstream, well-documented stack; palette maps directly onto CSS variables |
 | 15 | **CodeMirror 6 for the target field, behind our own `TargetEditor` component** | Plain text with protected placeholders and custom keys; the boundary keeps a later switch to a few hundred lines |
 | 16 | **Stringherd's own UI is translatable from day one** with react-i18next (i18next JSON with `_one` / `_other` plurals), `Intl` for numbers and dates, CSS logical properties, and a pseudo-locale for testing | A localization tool must be localizable; Stringherd can review its own translations as a second demo |
+| 17 | **Status symbols at the end of each row**, two fixed slots: QA (red triangle error, amber triangle warning) then status (green circled tick approved, pencil edited, empty circle machine translation). Shapes differ, so meaning never depends on colour; each has a tooltip and a screen-reader label | Phrase-like and scannable; to be reviewed in use and amended |
 
 ---
 
 ## Layout
 
+### Single key view (default)
 ```
-┌ Stringherd │ FitJournal › French (fr) │ ▓▓▓▓░░ 112/240 approved │ / search │ user ▾ ┐
-├──────────────────── string list (~65%) ─────────────────┬─── side panel (~35%) ────┤
-│ 12 Home              Accueil               7/12   ✓     │                          │
-│┌ 13 ───────────────────────────────────────────────┐    │  screenshot              │
-││ dashboard.sets_other · common.json      14/20  MT │    │  (whole screen,          │
-││ EN  {{count}} sets                                │    │   string outlined)       │
-││ FR  [{{count}} séries▌                      ]     │    │  [+] [−] [fit] [⤢]       │
-││ Suggestions  1 DeepL   {{count}} définit          │    │                          │
-││              2 TM 92%  {{count}} séries           │    │  thumbnails when the     │
-││ Other languages  ES {{count}} series (approved)   │    │  string is on several    │
-││                  IT {{count}} serie  (approved)   │    │  screens                 │
-││ Context  Counter under each workout card          │    │                          │
-││ QA ✓                  Ctrl+Enter approve & next   │    │                          │
-│└───────────────────────────────────────────────────┘    │                          │
-│ 14 Sign in           Se connecter        12/10   MT ⚠   │                          │
-│ 15 Log workout       Enregistrer…        21/–    MT     │                          │
-├─────────────────────────────────────────────────────────┴──────────────────────────┤
-│ 240 strings · 128 to review · 3 over limit · ☐ selected: [Approve] · Ctrl+/ help     │
+┌ Stringherd │ fitjournal › French (fr) ───────────────────────────────────── user ▾ ┐
+│ [Single key | List]  [All 240 | To review 128 | Approved 112]  [search]   ▓▓▓░ 47% │
+├─────────────────────┬──────────────────────────────────────┬───────────────────────┤
+│ key list (300px)    │ open string                          │ context (300px)       │
+│ dashboard.title  ✓  │ 13 calendar.generated_one  66 chars  │ Screenshot            │
+│  Dashboard          │ EN · source                          │ Glossary (later)      │
+│ dashboard.sets ⚠ ○  │ FR · translation  [editor]           │ Other languages       │
+│  {{count}} sets     │ Quality checks                       │ Details: key, file,   │
+│ ▌login.button   ✎   │ Suggestions: 1 DeepL, 2 TM (later)   │ last change, approver │
+│  Sign in            │ Changes from DeepL (diff)            │                       │
+│                     │ [Approve and next  Ctrl+Enter]       │                       │
+├─────────────────────┴──────────────────────────────────────┴───────────────────────┤
+│ 240 strings · 128 to review · 112 approved          Ctrl+Enter approve and next … │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
+- Left: key name and one muted line of source text (linguists find strings by text, developers by key), then the QA and status symbols. The active row is highlighted; symbols follow unsaved typing.
+- `Ctrl+Enter` approves: the row gets the green tick and the next key opens. After the last key, the view stays on it.
+- A filter or search that leaves the open string out opens the first string of the new list.
+- Each pane scrolls on its own. Below 1100px wide the context panel is hidden.
 
-### Top bar
-Project and language (breadcrumb, switchable), progress bar, search (`/`), filters, user menu (sign out; for admins: users and assignments).
+### List view
+Rows `# | key | source | target | chars | status`; the open string expands in place into a card with the same content as the middle pane; the context panel stays on the right. `Esc` on an unchanged card closes it.
 
-### Collapsed row
-| Column | Content |
-|---|---|
-| Checkbox | Selection for bulk actions (action bar at the bottom) |
-| `#` | Row number (for `Ctrl+G`) |
-| Source | English text, read-only; placeholders shown as locked chips |
-| Target | Current translation; placeholders as chips |
-| Chars | `current / max`, or `current / –` when no limit is set. Neutral below 90% of the limit, amber from 90%, red over the limit |
-| Status | `MT` untouched DeepL output · `✎` edited, not approved · `✓` approved · `⚠` QA problem |
+### Shared
+- Same toolbar, filters, search, shortcuts and editor in both views. The view, filter, search and open string live in the URL; the chosen view is remembered per browser.
+- Strings whose status changes while a filter is on stay visible until the filter or search changes.
 
-### Open card (the active string)
+### Middle pane / card sections
 Sections appear only when they have content, in this order:
 
 | Section | Content | Phase |
 |---|---|---|
-| Header | Key, file, character counter, status, who approved and when | MVP |
-| Source and target | Source read-only; target editable, placeholders as chips; diff against DeepL's original on demand | MVP |
-| Suggestions | Numbered for `Ctrl+1…9`: DeepL's original first; TM matches with match % and source diff later | MVP (DeepL), Next (TM) |
-| Other languages | Approved translations of the same string in reference languages the reviewer picks (see below) | MVP if other languages exist in the project |
-| Context | Description of where and how the string is used: written by a person now; AI-generated help later | Next |
-| QA | Problems for this string | MVP |
-| Glossary | Terms found in the source and their approved translations | Later |
-| History | Previous values, who changed them, restore | Later |
+| Header | Number, key, file, character counter, status | MVP |
+| Source | Read-only, placeholders as chips | MVP |
+| Target | Editor, placeholders as locked chips | MVP |
+| Quality checks | Messages explaining the QA symbol | MVP (basic checks done) |
+| Suggestions | Numbered for `Ctrl+1…9`: DeepL's original first; TM matches with match % later | MVP (DeepL), Next (TM) |
+| Changes from DeepL | Word diff between DeepL's text and the current one | MVP |
+| Actions | Approve and next, withdraw approval, discard changes; who approved | MVP |
+
+### Right panel sections
+| Section | Content | Phase |
+|---|---|---|
+| Screenshot | Whole screen with the string outlined; empty state until capture exists | Later (empty state now) |
+| Glossary | Terms found in the source and their approved translations; terms also underlined in the source | Later |
+| Other languages | Approved translations of the same key in reference languages the reviewer picks (see below) | When other languages exist |
+| Details | Key, file, last change, approver and date | MVP |
 
 ### Other languages (reference translations)
 - Shows how other languages solved the same string, read-only.
 - The reviewer picks reference languages once (e.g. a Spanish reviewer picks French, Portuguese and Italian); the choice is remembered per user. Default: all available.
 - Approved translations only by default; a toggle shows unapproved ones, clearly marked as not reviewed.
-- Labelled with the language name and code (`FR French`, `ES-AR Spanish (Argentina)`), not flags: flags stand for countries, and one language spans many (Spanish, Portuguese, English) while some countries have several.
+- Labelled with the language name and code (`FR French`, `ES-AR Spanish (Argentina)`), not flags: flags stand for countries, and one language spans many while some countries have several.
 - Copy button on each; no direct insert, since another language is a reference, not a suggestion.
 - Read access: any signed-in reviewer of the project can see approved translations of other languages; editing stays limited to assignments.
 - Backend: the review API returns approved values of the same key in other locales of the project.
 
-### Side panel: screenshot viewer
+### Screenshot viewer
 - Default: the whole screen fits the panel, with the current string outlined.
 - `+` / `−`: zoom in and out, centred on the string. Fully zoomed in shows just the string and a margin around it.
 - **Fit to string** and **Fit to screen** buttons.
 - **Full size** (`⤢`): opens a pop-up over the editor with the screenshot at full size; `Esc` closes it.
 - Several screenshots per string: thumbnails under the viewer.
-- No screenshot yet: a clear empty state ("No screenshot for this string yet"), not a broken image.
-
-### Later: focus view
-A toggle that shows one card filling the screen, for long strings or careful work (Phrase Strings calls it single key view).
 
 ---
 
@@ -123,8 +121,8 @@ Phrase bindings from the [Phrase CAT editor documentation](https://support.phras
 | `F9` | QA check | Run QA on the visible strings | MVP |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo | Undo / redo | MVP |
 | `Ctrl+Shift+Space` | Insert non-breaking space | Insert non-breaking space (French: before `! ? : ;`) | MVP |
-| `Ctrl+Alt+←` / `Ctrl+Alt+→` | Switch active panel | Move focus between the string list and the side panel | MVP |
-| `Alt+N` | Context note | Jump to the Context section of the open card | MVP |
+| `Ctrl+Alt+←` / `Ctrl+Alt+→` | Switch active panel | Move focus between the panes | MVP |
+| `Alt+N` | Context note | Jump to the context panel | MVP |
 | `Ctrl+H` | Find and replace | Find and replace in targets | Next |
 | `Ctrl+K` / `Ctrl+Shift+K` | Search TM/TB / exact | Search TM and glossary / exact | Next |
 | `Ctrl+M` / `Ctrl+Shift+M` | Open comments / new comment | Same (needs comments) | Later |
@@ -135,7 +133,7 @@ Phrase bindings from the [Phrase CAT editor documentation](https://support.phras
 |---|---|---|
 | `↑` / `↓` at the first / last line of the editor | Previous / next string | MVP |
 | `Alt+↑` / `Alt+↓` | Previous / next string that still needs review | MVP |
-| `Esc` | Discard unsaved edit; close pop-up | MVP |
+| `Esc` | Discard unsaved edit; close pop-up; in List view, close an unchanged card | MVP |
 | `+` / `-` / `0` (panel focused) | Zoom in / out / fit to screen | When screenshots exist |
 | `F` (panel focused) | Open screenshot at full size | When screenshots exist |
 | `Ctrl+/` | Show all shortcuts | MVP |
@@ -223,6 +221,24 @@ Not decided yet. B as the source of truth with A to fill gaps is one candidate; 
 
 ---
 
+## Build status
+
+| Step | Status |
+|---|---|
+| 1. Scaffold, sign-in, account menu | Done |
+| 2. Project and language overview with progress | Done |
+| 3. Review screen: Single key and List views, edit, approve and next, withdraw, autosave on leave, DeepL suggestion and diff, filters, search, placeholder chips, character counter, status symbols, basic QA (placeholders, empty, same as source, outer spaces) | Done |
+| 4. Remaining MVP shortcuts, bulk approve, non-printable characters, French spacing check | Next |
+| 5. Backend additions: other languages in the review API, character limits | Planned |
+
+Behaviour decided while building step 3:
+- `Ctrl+Enter` approves and opens the next string in the visible list (Phrase's default: next segment).
+- Leaving a string with unsaved changes saves them, unapproved, as CAT tools do; `Esc` discards changes.
+- QA errors block approval in the browser; the server-side check comes with character limits (step 5).
+- All strings of a language are loaded once and filtered in the browser; filters, search, view and the open string live in the URL.
+
+---
+
 ## Phases
 | Phase | Scope |
 |---|---|
@@ -305,6 +321,5 @@ Not for us: Figma previews and in-context editing (screenshots instead), jobs, k
 
 ## Open questions
 - Character limits: where they are set (A, B or C).
-- Does `Ctrl+Enter` go to the next string, or to the next string that still needs review? (Phrase setting: next segment.)
 - Bulk approve: by checkbox selection, by filter ("approve all visible"), or both? (Phrase Strings: checkboxes plus a bottom action bar.)
 - Mark as minor change: worth having, and who may use it?

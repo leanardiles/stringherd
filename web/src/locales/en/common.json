@@ -40,8 +40,91 @@
     "emptyAdmin": "No projects yet. Run deepl sync push to send translations to Stringherd."
   },
   "review": {
-    "comingNext": "The review screen is the next step of the build.",
-    "backToProjects": "Back to your projects"
+    "filterLabel": "Show",
+    "filter": {
+      "all": "All",
+      "review": "To review",
+      "approved": "Approved"
+    },
+    "searchLabel": "Search strings",
+    "searchPlaceholder": "Search source, translation or key",
+    "columns": {
+      "number": "#",
+      "source": "Source",
+      "target": "Translation",
+      "chars": "Chars",
+      "status": "Status",
+      "key": "Key"
+    },
+    "status": {
+      "approved": "Approved",
+      "edited": "Edited",
+      "mt": "MT"
+    },
+    "statusHint": {
+      "approved": "Approved",
+      "edited": "Edited, not approved yet",
+      "mt": "Machine translation, not reviewed yet"
+    },
+    "chars_one": "{{count, number}} character",
+    "chars_other": "{{count, number}} characters",
+    "approvedBy": "Approved by {{name}}",
+    "suggestions": "Suggestions",
+    "deepl": "DeepL",
+    "insertSuggestion": "Insert suggestion {{number}} (Ctrl+{{number}})",
+    "changesFromDeepl": "Changes from DeepL",
+    "approveNext": "Approve and next",
+    "withdraw": "Withdraw approval",
+    "discard": "Discard changes",
+    "cardLabel": "String {{number}}: {{key}}",
+    "editorLabel": "Translation in {{language}}",
+    "emptyFiltered": "No strings match these filters.",
+    "emptyToReview": "Every string is approved.",
+    "emptyNone": "This language has no strings yet.",
+    "saveFailed": "Couldn't save {{key}}. The change was undone; try again.",
+    "notAssigned": "You aren't assigned to review this language.",
+    "summary": "{{total, number}} strings · {{toReview, number}} to review · {{approved, number}} approved",
+    "hints": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard or close",
+    "backToProjects": "Back to your projects",
+    "view": {
+      "label": "View",
+      "single": "Single key",
+      "list": "List",
+      "visibleLabel": "View:"
+    },
+    "keyList": "Strings",
+    "statusIcon": {
+      "approved": "Approved",
+      "edited": "Edited, not approved yet",
+      "mt": "Machine translation, not reviewed yet"
+    },
+    "qaIcon": {
+      "error": "QA error: fix before approving",
+      "warning": "QA warning"
+    },
+    "qa": {
+      "title": "Quality checks",
+      "empty": "The translation is empty.",
+      "placeholdersMissing": "Missing placeholders: {{items}}",
+      "placeholdersExtra": "Placeholders not in the source: {{items}}",
+      "sameAsSource": "Same as the source text. Fine for names and codes; otherwise translate it.",
+      "outerSpaces": "Spaces at the start or end differ from the source.",
+      "blocked": "Fix the errors before approving."
+    },
+    "sourceLabel": "{{code}} · source",
+    "targetLabel": "{{code}} · translation",
+    "context": {
+      "screenshot": "Screenshot",
+      "noScreenshot": "No screenshot for this string yet.",
+      "details": "Details",
+      "key": "Key",
+      "file": "File",
+      "updated": "Last change",
+      "approved": "Approved",
+      "approvedByOn": "{{name}}, {{date}}"
+    },
+    "selectString": "Choose a string from the list.",
+    "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard"
   },
   "errors": {
     "loadFailed": "Couldn't load this page.",

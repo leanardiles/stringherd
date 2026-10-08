@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the approved versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place. The review interface is being built: sign-in and the project overview work; the review screen is next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, and basic QA checks; bulk approve and more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
 
 ---
 
@@ -41,7 +41,7 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Source upload: one request per catalog, change detection, approvals reset when the source changes |
 | ✅ Done | Reviewer accounts: admins and reviewers, sign-in with a secure session cookie, reviewers assigned per project and language |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
-| 🚧 In progress | Review interface: sign-in and project overview done; review screen with source, machine translation, edit and approve next |
+| 🚧 In progress | Review interface: sign-in, project overview and review screen done (single key and list views, DeepL suggestion with diff, approve and next, status symbols, placeholder QA checks, keyboard shortcuts); bulk approve next |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
 | 📋 Planned | Regional variants stored as deltas (e.g. `es-AR` holds only what differs from `es`) |
@@ -121,7 +121,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 |---|---|
 | Backend | Python, FastAPI, SQLAlchemy, Alembic |
 | Database | PostgreSQL (Supabase) |
-| Review UI | React, Vite, TypeScript, TanStack Query, react-i18next (CodeMirror 6 for the editor, next) |
+| Review UI | React, Vite, TypeScript, TanStack Query, react-i18next, CodeMirror 6 |
 | Machine translation and sync | DeepL CLI (`deepl sync`) |
 | Secrets | 1Password CLI (`op run`) |
 

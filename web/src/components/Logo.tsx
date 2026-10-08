@@ -1,9 +1,18 @@
-import styles from './Logo.module.css'
+import { PRODUCT_NAME } from '../lib/product'
 
-export function Logo({ size = 24 }: { size?: number }) {
+// The Stringherd logo files live in web/public. The lockup (mark and name) has a
+// 596 x 130 viewBox; the mark alone is square.
+const LOCKUP_RATIO = 596 / 130
+
+/** Mark and product name, for light backgrounds. The name is in the image, so alt text carries it. */
+export function LogoLockup({ height = 26 }: { height?: number }) {
   return (
-    <span className={styles.mark} style={{ inlineSize: size, blockSize: size, fontSize: size * 0.6 }} aria-hidden="true">
-      S
-    </span>
+    <img
+      src="/stringherd-lockup.svg"
+      alt={PRODUCT_NAME}
+      height={height}
+      width={Math.round(height * LOCKUP_RATIO)}
+      style={{ display: 'block' }}
+    />
   )
 }

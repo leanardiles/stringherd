@@ -1,10 +1,177 @@
+/* The review screen fills the window below the top bar; panes scroll on their own. */
 .page {
+  --key-list-width: 300px;
+  display: flex;
+  flex-direction: column;
+  block-size: calc(100vh - var(--top-bar-height));
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  border-block-end: 1px solid var(--color-divider);
+  background: var(--color-page);
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segment {
+  padding: 4px var(--space-3);
+  border: 0;
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.segment + .segment {
+  border-inline-start: 1px solid var(--color-field-border);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-neutral-bg);
+  font-weight: var(--font-weight-medium);
+}
+
+.count {
+  margin-inline-start: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+/* Ends exactly where the key list ends, so search sits above the list it filters. */
+.search {
+  flex: 0 0 calc(var(--key-list-width) - var(--space-4));
+  height: 32px;
+}
+
+.labelled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.groupLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 160px;
+  margin-inline-start: auto;
+  font-size: var(--font-size-sm);
+}
+
+/* Single key view: list | editor | context */
+.panes {
+  flex: 1;
+  min-block-size: 0;
+  display: grid;
+  grid-template-columns: var(--key-list-width) minmax(0, 1fr) 300px;
+}
+
+.middle {
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6);
+}
+
+.paneEmpty {
+  border-inline-end: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+/* List view: rows | context */
+.listLayout {
+  flex: 1;
+  min-block-size: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.listScroll {
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.head {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  min-block-size: 30px;
+  border-block-end: 1px solid var(--color-divider);
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  border-block-start: 1px solid var(--color-divider);
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.hints {
+  margin-inline-start: auto;
+}
+
+.banner {
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+.notice {
   max-inline-size: 920px;
   margin-inline: auto;
   padding: var(--space-6) var(--space-5);
 }
 
-.title {
-  margin-block-end: var(--space-3);
-  font-size: var(--font-size-xl);
+.notice p {
+  margin-block: 0 var(--space-3);
+}
+
+/* Narrow windows: the context panel moves out of the way. */
+@media (max-width: 1100px) {
+  .page {
+    --key-list-width: 260px;
+  }
+
+  .panes {
+    grid-template-columns: var(--key-list-width) minmax(0, 1fr);
+  }
+
+  .listLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panes > aside,
+  .listLayout > aside {
+    display: none;
+  }
 }

@@ -1,0 +1,17 @@
+.diff {
+  white-space: pre-wrap;
+}
+
+.removed {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  text-decoration: line-through;
+  border-radius: 3px;
+}
+
+.added {
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  text-decoration: none;
+  border-radius: 3px;
+}

@@ -1,0 +1,28 @@
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 18px;
+  block-size: 18px;
+  flex-shrink: 0;
+}
+
+.approved {
+  color: var(--color-success-text);
+}
+
+.edited {
+  color: var(--color-neutral-text);
+}
+
+.mt {
+  color: var(--color-field-border);
+}
+
+.error {
+  color: var(--color-danger-text);
+}
+
+.warning {
+  color: var(--color-warning-text);
+}

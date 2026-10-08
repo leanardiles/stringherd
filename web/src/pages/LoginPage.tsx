@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import { useLogin, useMe } from '../api/queries'
-import { Logo } from '../components/Logo'
+import { LogoLockup } from '../components/Logo'
 import ui from '../components/ui.module.css'
 import styles from './LoginPage.module.css'
 
@@ -36,7 +36,7 @@ export function LoginPage() {
     <div className={styles.page}>
       <main className={styles.card}>
         <div className={styles.header}>
-          <Logo size={36} />
+          <LogoLockup height={40} />
           <h1 className={styles.title}>{t('login.title')}</h1>
           <p className={ui.muted}>{t('login.subtitle')}</p>
         </div>
