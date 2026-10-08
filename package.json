@@ -2,7 +2,7 @@
   "name": "stringherd",
   "version": "0.1.0",
   "private": true,
-  "description": "Open-source review server for DeepL Sync. Linguists review machine translations with screenshots showing where each string appears, then approved strings go back to your GitHub repo.",
+  "description": "Translation review server for software projects. DeepL translates your app's text; Stringherd lets people review and approve those translations before they go back into your codebase.",
   "type": "commonjs",
   "scripts": {
     "deepl:usage": "op run --env-file=.env.op -- deepl usage"

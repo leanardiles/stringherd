@@ -1,0 +1,50 @@
+{
+  "app": {
+    "loading": "Loading…"
+  },
+  "nav": {
+    "breadcrumb": "Breadcrumb"
+  },
+  "login": {
+    "title": "Sign in to Stringherd",
+    "subtitle": "Review machine translations before they ship.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "errors": {
+      "invalid": "Incorrect email or password.",
+      "network": "Can't reach the Stringherd server. Check that it's running.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "user": {
+    "menu": "Account menu for {{name}}",
+    "signOut": "Sign out",
+    "role": {
+      "admin": "Admin",
+      "reviewer": "Reviewer"
+    }
+  },
+  "projects": {
+    "title": "Your projects",
+    "source": "Source: {{language}}",
+    "approved": "{{approved, number}} of {{total, number}} approved",
+    "toReview_one": "{{count, number}} string to review",
+    "toReview_other": "{{count, number}} strings to review",
+    "allApproved": "All approved",
+    "review": "Review",
+    "reviewLanguage": "Review {{language}}",
+    "progress": "{{percent}} approved",
+    "emptyReviewer": "No languages assigned to you yet. Ask an admin to assign you a project and language.",
+    "emptyAdmin": "No projects yet. Run deepl sync push to send translations to Stringherd."
+  },
+  "review": {
+    "comingNext": "The review screen is the next step of the build.",
+    "backToProjects": "Back to your projects"
+  },
+  "errors": {
+    "loadFailed": "Couldn't load this page.",
+    "retry": "Try again"
+  }
+}

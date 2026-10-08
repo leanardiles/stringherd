@@ -1,0 +1,11 @@
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22%;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  flex-shrink: 0;
+}

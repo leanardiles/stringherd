@@ -1,0 +1,55 @@
+/*
+ * Design tokens: the farm palette from docs/UI-PLAN.md (decision 11).
+ * Components use these variables only, never hex values, so dark mode
+ * later is a matter of redefining this block.
+ * Contrast pairs are checked in contrast.test.ts.
+ */
+:root {
+  --color-page: #f6f2e9;
+  --color-surface: #fffdf8;
+  --color-surface-raised: #fbf9f4;
+  --color-field: #ffffff;
+  --color-divider: #e4dccb;
+  --color-field-border: #9c907a;
+
+  --color-text: #2e2a24;
+  --color-text-secondary: #6f675b;
+  --color-brand: #5c4330;
+
+  --color-primary: #6e4e33;
+  --color-primary-hover: #5c4330;
+  --color-on-primary: #ffffff;
+  --color-focus: #7a5638;
+
+  --color-success-text: #3f6330;
+  --color-success-bg: #e5eeda;
+  --color-success-bar: #557a3e;
+  --color-warning-text: #7e5a14;
+  --color-warning-bg: #f6eacb;
+  --color-danger-text: #8c3428;
+  --color-danger-bg: #f4e0da;
+  --color-danger-inline: #9a3a2e;
+  --color-neutral-text: #5e564a;
+  --color-neutral-bg: #ede6d8;
+
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius: 6px;
+  --radius-lg: 10px;
+  --row-height: 32px;
+  --top-bar-height: 48px;
+}
