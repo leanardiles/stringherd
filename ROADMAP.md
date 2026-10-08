@@ -37,7 +37,7 @@ The goal: a complete loop on a real app, from machine translation to reviewed st
 - **Source change handling**: show old and new source next to the previous translation; send changed strings back to review; option to carry over translations when only punctuation or typos changed
 - **Quality checks**: broken placeholders, length expansion warnings, strings identical to the source
 - **Existing translations policy** when onboarding a project, per locale: adopt as approved, adopt for review, or retranslate
-- **Screenshots** showing where each string appears:
+- **Screenshots** showing where each string appears (design: [docs/SCREENSHOTS-PLAN.md](docs/SCREENSHOTS-PLAN.md)):
   - automated capture with Playwright and a React (i18next) adapter that tags rendered strings with their keys
   - manual upload and tagging for screens a crawler cannot reach
   - context status per key (captured, manual, stale, missing, not visual) and a coverage dashboard
