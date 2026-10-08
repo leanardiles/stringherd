@@ -183,6 +183,45 @@ It sends **every** source string each time; the server compares with what it has
 
 ---
 
+## Review UI
+
+The review interface lives in `web/` (React, Vite, TypeScript). Design decisions are in [UI-PLAN.md](UI-PLAN.md). Run these from `web/`.
+
+### Setup and running
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173`. The backend server must be running on port 8100 (see above). Vite forwards every `/api` request to it, so the browser sees one address and the sign-in cookie works without any cross-origin setup. To use another server address: `STRINGHERD_SERVER=http://127.0.0.1:9000 npm run dev`.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server with instant reload |
+| `npm test` | Unit and component tests (Vitest); no server needed, API calls are faked |
+| `npm run typecheck` | TypeScript check |
+| `npm run lint` | Linting (oxlint) |
+| `npm run build` | Production build into `web/dist/` |
+| `npm run api:types` | Regenerates `src/api/schema.d.ts` from the running server's OpenAPI schema |
+
+Run `npm run api:types` after changing an endpoint or schema in the backend, with the server running. A field the UI uses that changed or disappeared then shows up as a type error.
+
+### Translating the interface
+
+All interface text lives in `src/locales/en/common.json` and is used through `t('…')`; nothing visible is hard-coded. Plurals use i18next keys with `_one` / `_other`. Numbers, dates and language names come from `Intl`. Product names (Stringherd) stay out of the catalog.
+
+To check for hard-coded text and layouts that break with longer languages, open the UI with `?lang=pseudo` (development only): every translated text appears accented and about 35% longer, like `[Ŕéṽîéŵ ~~~]`. Anything still in plain English is not going through the catalog.
+
+### Colours
+
+The palette is defined once in `src/styles/tokens.css`; components use the variables, never hex values. `src/styles/contrast.test.ts` checks every text and control colour pair against WCAG 2.1 AA, so a colour change that hurts readability fails the tests.
+
+---
+
 ## DeepL CLI
 
 ### What it is and why we need it
@@ -332,11 +371,14 @@ The free Developer plan gives **1 million characters in total, one time** (not m
 ```
 stringherd/
 ├── docs/
-│   └── DEVELOPMENT.md    this file
+│   ├── DEVELOPMENT.md    this file
+│   └── UI-PLAN.md        review UI design decisions
 ├── server/               Python + FastAPI backend (own pyproject.toml)
 │   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, CLI, models, settings
 │   ├── migrations/       Alembic database migrations
 │   └── tests/            pytest suite (in-memory SQLite, no network)
+├── web/                  review UI: React + Vite + TypeScript (own package.json)
+│   └── src/              api/ (client, generated types), components/, pages/, locales/, styles/
 ├── scripts/
 │   └── upload-source.mjs source string upload (Node, no dependencies)
 ├── vendor/
@@ -351,7 +393,7 @@ stringherd/
 └── README.md
 ```
 
-Planned: `web/`, the review UI (React + Vite + TypeScript). The demo target is a separate repository (FitJournal), localized through DeepL Sync.
+The demo target is a separate repository (FitJournal), localized through DeepL Sync.
 
 ---
 

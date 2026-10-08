@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the approved versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place; the review interface is next.
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place. The review interface is being built: sign-in and the project overview work; the review screen is next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
 
 ---
 
@@ -41,7 +41,7 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Source upload: one request per catalog, change detection, approvals reset when the source changes |
 | ✅ Done | Reviewer accounts: admins and reviewers, sign-in with a secure session cookie, reviewers assigned per project and language |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
-| 🚧 Next | Review interface: source, machine translation, edit, approve |
+| 🚧 In progress | Review interface: sign-in and project overview done; review screen with source, machine translation, edit and approve next |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
 | 📋 Planned | Regional variants stored as deltas (e.g. `es-AR` holds only what differs from `es`) |
@@ -121,7 +121,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 |---|---|
 | Backend | Python, FastAPI, SQLAlchemy, Alembic |
 | Database | PostgreSQL (Supabase) |
-| Review UI (planned) | React, Vite, TypeScript |
+| Review UI | React, Vite, TypeScript, TanStack Query, react-i18next (CodeMirror 6 for the editor, next) |
 | Machine translation and sync | DeepL CLI (`deepl sync`) |
 | Secrets | 1Password CLI (`op run`) |
 
@@ -132,9 +132,8 @@ See **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** for setup, running the server
 Quick check that everything works:
 
 ```bash
-cd server
-pip install -e ".[dev]"
-pytest
+cd server && pip install -e ".[dev]" && pytest     # backend
+cd web && npm install && npm test                  # review UI
 ```
 
 ---

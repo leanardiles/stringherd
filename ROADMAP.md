@@ -56,6 +56,7 @@ The goal: a complete loop on a real app, from machine translation to reviewed st
 
 - **XLIFF 2.0 export and import**, so linguists can work in their CAT tools (Trados, memoQ) and QA tools: placeholders as protected `<ph>` tags, segment states mapped to workflow steps, key and context carried as notes
 - **TMX import and export** for translation memory, with references to the original context
+- **ICU MessageFormat support**: placeholders and plural branches shown as protected chips in the editor, a check that the syntax is still valid, and a preview of each plural form
 - **Source upload for every format DeepL Sync supports** (YAML, PO, Android XML, iOS, ARB, XLIFF and more), not only JSON
 - **Screenshot adapters** for more frameworks (Vue, Angular)
 
