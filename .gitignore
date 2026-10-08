@@ -66,3 +66,6 @@ Desktop.ini
 
 # ---------- Private local documents ----------
 docs/PROPOSAL.md
+
+# Personal dev launcher (machine-specific paths)
+/stringherd-dev.sh
