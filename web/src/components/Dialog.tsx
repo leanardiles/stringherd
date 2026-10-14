@@ -1,7 +1,7 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import ui from '../ui.module.css'
+import ui from './ui.module.css'
 import styles from './Dialog.module.css'
 
 type DialogProps = {

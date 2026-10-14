@@ -9,7 +9,10 @@ from app.db import Base
 
 class TranslationStatus(StrEnum):
     MACHINE_TRANSLATED = "machine_translated"
+    # Approved by a reviewer during the current session; still editable, not pullable yet.
     APPROVED = "approved"
+    # Sent to the repository with Deliver: pullable, and locked until an admin reopens it.
+    DELIVERED = "delivered"
 
 
 class Project(Base):
@@ -110,7 +113,7 @@ class Translation(Base):
     __tablename__ = "translations"
     __table_args__ = (
         UniqueConstraint("key_id", "locale"),
-        CheckConstraint("status IN ('machine_translated', 'approved')", name="ck_translations_status"),
+        CheckConstraint("status IN ('machine_translated', 'approved', 'delivered')", name="ck_translations_status"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -137,9 +140,33 @@ class Translation(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Who approved the current value. Kept (as NULL) if that user is deleted.
     approved_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # The text sent to the repository by the last Deliver: what `deepl sync pull` exports.
+    # Kept apart from `value` so a string reopened by an admin keeps exporting what the code
+    # already has until it is delivered again. Cleared when the source changes or DeepL
+    # sends a new translation, since it then translates an outdated source.
+    delivered_value: Mapped[str | None] = mapped_column(Text)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivered_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     key: Mapped[TranslationKey] = relationship(back_populates="translations")
-    approved_by: Mapped["User | None"] = relationship()
+    approved_by: Mapped["User | None"] = relationship(foreign_keys=[approved_by_id])
+    delivered_by: Mapped["User | None"] = relationship(foreign_keys=[delivered_by_id])
+
+
+class Delivery(Base):
+    """One click on Deliver: which language, who, when, and how many strings it sent."""
+
+    __tablename__ = "deliveries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    locale: Mapped[str] = mapped_column(String(35))
+    delivered_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    delivered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    strings: Mapped[int]  # strings delivered by this click
+    not_approved: Mapped[int]  # strings of the language left out because they were not approved
+
+    delivered_by: Mapped["User | None"] = relationship()
 
 
 class UserRole(StrEnum):

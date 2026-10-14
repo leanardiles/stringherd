@@ -22,6 +22,7 @@ from app.schemas import (
     PushResult,
     PushTranslation,
 )
+from app.services.delivery import is_known_text, reset_for_new_text
 from app.services.projects import ensure_locale
 
 # Every endpoint takes a MachineProject: the key must belong to the project in the address.
@@ -45,12 +46,12 @@ def push_translation(
     """Store a machine translation pushed by `deepl sync push`.
 
     DeepL Sync re-sends every translated key on each push. The incoming value is compared
-    with the last value DeepL delivered (`pushed_value`), not with the current value:
-    - same as the current value (e.g. a reviewer's edit coming back after pull) or as the
-      last delivery (the old machine translation re-sent before pull): nothing new; the
-      current value and its status are kept;
+    with what Stringherd already has:
+    - the current value, the last machine translation (`pushed_value`) or the delivered
+      text (what the repository holds after a pull): nothing new; the current value and
+      its status are kept, so a re-push never undoes review work;
     - anything else: DeepL produced a new translation (the source changed), so the value is
-      replaced and goes back to `machine_translated` for review.
+      replaced and goes back to `machine_translated` for review, with nothing delivered.
     """
     if "/" in key_path:
         raise HTTPException(
@@ -97,19 +98,15 @@ def push_translation(
 
     changed = True
     if inserted_id is None:
-        # The translation already existed. Rows from before pushed_value existed fall back to value.
-        last_delivery = translation.pushed_value if translation.pushed_value is not None else translation.value
-        if body.value in (translation.value, last_delivery):
-            # Either the current text coming back (e.g. a reviewer's edit after pull) or a
-            # re-push of DeepL's previous delivery: nothing new, keep value and status.
+        # The translation already existed.
+        if is_known_text(translation, body.value):
             changed = False
-            if translation.pushed_value is None:
+            if translation.pushed_value is None:  # rows from before pushed_value existed
                 translation.pushed_value = body.value
         else:
             translation.value = body.value
             translation.pushed_value = body.value
-            translation.status = TranslationStatus.MACHINE_TRANSLATED
-            translation.approved_at = None
+            reset_for_new_text(translation)
 
     db.commit()
     return PushResult(key=key_path, locale=body.locale, status=TranslationStatus(translation.status).value, changed=changed)
@@ -122,16 +119,21 @@ def export_translations(
     locale: Annotated[str, Query(pattern=LOCALE_PATTERN, max_length=35)],
     format: Annotated[str, Query()] = "json",
 ) -> dict[str, str]:
-    """Return approved translations for one locale as a flat `{key: value}` object, for `deepl sync pull`."""
+    """Delivered translations for one locale as a flat `{key: value}` object, for `deepl sync pull`.
+
+    Only text a reviewer has delivered is exported. Approved strings wait for Deliver, and
+    a delivered string reopened by an admin keeps exporting its delivered text until it is
+    delivered again. Keys left out keep their current text in the repository.
+    """
     if format != "json":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only format=json is supported.")
     rows = db.execute(
-        select(TranslationKey.key_path, Translation.value)
+        select(TranslationKey.key_path, Translation.delivered_value)
         .join(Translation, Translation.key_id == TranslationKey.id)
         .where(
             TranslationKey.project_id == project.id,
             Translation.locale == locale,
-            Translation.status == TranslationStatus.APPROVED,
+            Translation.delivered_value.is_not(None),
         )
         .order_by(TranslationKey.key_path)
     ).all()

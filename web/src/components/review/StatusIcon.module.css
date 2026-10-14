@@ -7,7 +7,8 @@
   flex-shrink: 0;
 }
 
-.approved {
+.approved,
+.delivered {
   color: var(--color-success-text);
 }
 

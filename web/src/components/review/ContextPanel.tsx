@@ -39,10 +39,29 @@ export function ContextPanel({ item }: { item: ReviewString | null }) {
                 <dd>{formatDate(item.updated_at)}</dd>
               </>
             )}
-            {item.status === 'approved' && item.approved_by && (
+            {item.status !== 'machine_translated' && item.approved_by && (
               <>
                 <dt>{t('review.context.approved')}</dt>
                 <dd>{t('review.context.approvedByOn', { name: item.approved_by, date: formatDate(item.approved_at) ?? '' })}</dd>
+              </>
+            )}
+            {item.delivered_at && (
+              <>
+                <dt>{t('review.context.delivered')}</dt>
+                <dd>
+                  {item.delivered_by
+                    ? t('review.context.approvedByOn', { name: item.delivered_by, date: formatDate(item.delivered_at) ?? '' })
+                    : formatDate(item.delivered_at)}
+                </dd>
+              </>
+            )}
+            {item.status !== 'delivered' && item.delivered_value !== null && (
+              <>
+                <dt>{t('review.context.inCode')}</dt>
+                <dd>
+                  <span className={styles.wrap}>{item.delivered_value}</span>
+                  <span className={styles.hint}>{t('review.context.inCodeHint')}</span>
+                </dd>
               </>
             )}
           </dl>

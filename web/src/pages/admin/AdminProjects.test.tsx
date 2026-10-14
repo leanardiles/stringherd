@@ -12,8 +12,8 @@ const SHOP = {
   target_locales: ['es', 'fr'],
   strings: 2,
   locales: [
-    { locale: 'es', total: 0, approved: 0, reviewers: [] },
-    { locale: 'fr', total: 2, approved: 1, reviewers: [{ id: 2, name: 'René Reviewer' }] },
+    { locale: 'es', total: 0, approved: 0, delivered: 0, last_delivered_at: null, reviewers: [] },
+    { locale: 'fr', total: 2, approved: 0, delivered: 1, last_delivered_at: '2026-10-14T10:00:00Z', reviewers: [{ id: 2, name: 'René Reviewer' }] },
   ],
   active_keys: 1,
   created_at: '2026-10-14T10:00:00Z',

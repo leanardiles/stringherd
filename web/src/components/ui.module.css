@@ -158,6 +158,12 @@ select.input {
   color: var(--color-success-text);
 }
 
+.pillDelivered {
+  composes: pill;
+  background: var(--color-success-bar);
+  color: var(--color-on-primary);
+}
+
 .pillWarning {
   composes: pill;
   background: var(--color-warning-bg);

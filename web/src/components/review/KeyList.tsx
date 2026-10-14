@@ -12,10 +12,12 @@ interface Props {
   /** The open string's current text, including unsaved typing, so its symbols update live. */
   activeValue: string
   onOpen: (key: string) => void
+  /** Shown under the list, e.g. "3 delivered strings also match". */
+  footer?: React.ReactNode
 }
 
 /** Single key view, left pane: key name, a muted line of source text, and the QA and status symbols. */
-export function KeyList({ items, activeKey, activeValue, onOpen }: Props) {
+export function KeyList({ items, activeKey, activeValue, onOpen, footer }: Props) {
   const { t } = useTranslation()
   const activeRef = useRef<HTMLButtonElement>(null)
 
@@ -50,6 +52,7 @@ export function KeyList({ items, activeKey, activeValue, onOpen }: Props) {
           )
         })}
       </ul>
+      {footer}
     </nav>
   )
 }

@@ -52,3 +52,10 @@
 .wrap {
   word-break: break-all;
 }
+
+.hint {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}

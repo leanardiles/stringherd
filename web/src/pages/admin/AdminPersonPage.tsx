@@ -13,7 +13,7 @@ import {
   useUpdateUser,
 } from '../../api/queries'
 import { CopyField } from '../../components/admin/CopyBlock'
-import { ConfirmDialog, Dialog } from '../../components/admin/Dialog'
+import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { UserStatus } from '../../components/admin/UserStatus'
 import { LoadError, Loading, NotFound } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'

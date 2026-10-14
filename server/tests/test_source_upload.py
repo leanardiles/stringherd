@@ -22,10 +22,12 @@ def push(client, key, locale, value):
     return client.put(f"{BASE}/keys/{key}", json={"locale": locale, "value": value}, headers=AUTH)
 
 
-def approve_all(session_factory):
+def deliver_all(session_factory):
+    """Stand-in for review and Deliver: every translation approved and delivered as it is."""
     with session_factory() as session:
         for translation in session.scalars(select(Translation)):
-            translation.status = TranslationStatus.APPROVED
+            translation.status = TranslationStatus.DELIVERED
+            translation.delivered_value = translation.value
         session.commit()
 
 
@@ -79,7 +81,7 @@ def test_upload_after_translation_push_fills_source(client, db_session_factory):
 
 def test_filling_source_does_not_reset_approvals(client, db_session_factory):
     push(client, "home.title", "fr", "Accueil")
-    approve_all(db_session_factory)
+    deliver_all(db_session_factory)
 
     body = upload(client, {"home.title": "Home"}).json()
 
@@ -91,13 +93,14 @@ def test_changed_source_sends_approved_translations_back_to_review(client, db_se
     upload(client, {"home.title": "Home", "home.subtitle": "Welcome"})
     push(client, "home.title", "fr", "Accueil")
     push(client, "home.subtitle", "fr", "Bienvenue")
-    approve_all(db_session_factory)
+    deliver_all(db_session_factory)
 
     body = upload(client, {"home.title": "Start page", "home.subtitle": "Welcome"}, commit="def5678").json()
 
     assert body["updated"] == 1 and body["unchanged"] == 1 and body["approvals_reset"] == 1
     assert get_key(db_session_factory, "home.title").source_commit == "def5678"
-    # The changed key is no longer exported; the untouched one still is.
+    # The changed key is no longer exported (its delivered text translates the old source);
+    # the untouched one still is.
     export = client.get(f"{BASE}/keys/export", params={"locale": "fr"}, headers=AUTH).json()
     assert export == {"home.subtitle": "Bienvenue"}
 

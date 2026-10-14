@@ -13,7 +13,7 @@ import {
   useUpdateProject,
 } from '../../api/queries'
 import { CodeBlock, CopyField } from '../../components/admin/CopyBlock'
-import { ConfirmDialog, Dialog } from '../../components/admin/Dialog'
+import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { ProgressBar } from '../../components/ProgressBar'
 import { LoadError, Loading, NotFound } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'
@@ -149,7 +149,7 @@ function LanguagesSection({ project }: { project: ProjectAdminDetail }) {
 function LanguageRow({ locale, onRemove }: { locale: ProjectLocaleAdmin; onRemove: () => void }) {
   const { t } = useTranslation()
   const language = languageLabel(locale.locale)
-  const percent = formatPercent(locale.total > 0 ? locale.approved / locale.total : 0)
+  const percent = formatPercent(locale.total > 0 ? locale.delivered / locale.total : 0)
   return (
     <tr>
       <th scope="row" className={styles.rowHeader}>
@@ -158,9 +158,17 @@ function LanguageRow({ locale, onRemove }: { locale: ProjectLocaleAdmin; onRemov
       <td>
         {locale.total > 0 ? (
           <div className={styles.progressCell}>
-            <ProgressBar value={locale.approved} max={locale.total} label={t('projects.progress', { percent })} />
+            <ProgressBar value={locale.delivered} max={locale.total} label={t('projects.progress', { percent })} />
             <span className={ui.muted}>
-              {t('admin.project.languages.approved', { approved: locale.approved, total: locale.total })}
+              {t('admin.project.languages.approved', { delivered: locale.delivered, total: locale.total })}
+            </span>
+            {locale.approved > 0 && (
+              <span className={ui.muted}>{t('admin.project.languages.toDeliver', { count: locale.approved })}</span>
+            )}
+            <span className={ui.muted}>
+              {locale.last_delivered_at
+                ? t('admin.project.languages.lastDelivered', { date: formatDate(locale.last_delivered_at) })
+                : t('admin.project.languages.neverDelivered')}
             </span>
           </div>
         ) : (

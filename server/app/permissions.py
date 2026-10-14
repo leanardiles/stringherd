@@ -48,6 +48,17 @@ def reviewable_locales(db: Session, user: User, project: Project) -> set[str] | 
     )
 
 
+def can_deliver(db: Session, user: User, project: Project, locale: str) -> bool:
+    """Make a language's approved strings pullable. Anyone who reviews it, for now; an admin
+    sign-off step (workflows) would change only this function."""
+    return can_review(db, user, project, locale)
+
+
+def can_reopen(user: User, project: Project) -> bool:
+    """Unlock a delivered string so it can be corrected."""
+    return is_admin(user)
+
+
 def can_manage_project(user: User, project: Project) -> bool:
     """Create projects, change their languages, issue and revoke keys."""
     return is_admin(user)

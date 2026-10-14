@@ -56,3 +56,8 @@
   gap: var(--space-2);
   margin-block-start: var(--space-5);
 }
+
+.body > p,
+.description > p {
+  margin: 0;
+}

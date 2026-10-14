@@ -5,28 +5,30 @@ import { useMe, useReviewProjects } from '../api/queries'
 import { ProgressBar } from '../components/ProgressBar'
 import { LoadError, Loading } from '../components/StatusMessage'
 import ui from '../components/ui.module.css'
+import { formatDate } from '../lib/format'
 import { formatPercent, languageLabel } from '../lib/languages'
 import styles from './ProjectsPage.module.css'
 
 function LocaleRow({ projectId, locale }: { projectId: string; locale: ReviewLocale }) {
   const { t } = useTranslation()
   const language = languageLabel(locale.locale)
-  const toReview = locale.total - locale.approved
-  const percent = formatPercent(locale.total > 0 ? locale.approved / locale.total : 0)
+  const toReview = locale.machine_translated
+  const percent = formatPercent(locale.total > 0 ? locale.delivered / locale.total : 0)
 
   return (
     <li className={styles.locale}>
       <span className={styles.language}>{language}</span>
       <div className={styles.progress}>
-        <ProgressBar value={locale.approved} max={locale.total} label={t('projects.progress', { percent })} />
+        <ProgressBar value={locale.delivered} max={locale.total} label={t('projects.progress', { percent })} />
         <span className={`${ui.muted} tabular`}>
-          {t('projects.approved', { approved: locale.approved, total: locale.total })}
+          {t('projects.approved', { delivered: locale.delivered, total: locale.total })}
+          {locale.last_delivered_at && ` · ${t('projects.lastDelivered', { date: formatDate(locale.last_delivered_at) })}`}
         </span>
       </div>
       <span className={styles.remaining}>
-        {toReview > 0 ? (
-          <span className="tabular">{t('projects.toReview', { count: toReview })}</span>
-        ) : (
+        {toReview > 0 && <span className="tabular">{t('projects.toReview', { count: toReview })}</span>}
+        {locale.approved > 0 && <span className={ui.pillWarning}>{t('projects.toDeliver', { count: locale.approved })}</span>}
+        {toReview === 0 && locale.approved === 0 && locale.total > 0 && (
           <span className={ui.pillSuccess}>{t('projects.allApproved')}</span>
         )}
       </span>

@@ -17,12 +17,12 @@ export interface paths {
          * @description Store a machine translation pushed by `deepl sync push`.
          *
          *     DeepL Sync re-sends every translated key on each push. The incoming value is compared
-         *     with the last value DeepL delivered (`pushed_value`), not with the current value:
-         *     - same as the current value (e.g. a reviewer's edit coming back after pull) or as the
-         *       last delivery (the old machine translation re-sent before pull): nothing new; the
-         *       current value and its status are kept;
+         *     with what Stringherd already has:
+         *     - the current value, the last machine translation (`pushed_value`) or the delivered
+         *       text (what the repository holds after a pull): nothing new; the current value and
+         *       its status are kept, so a re-push never undoes review work;
          *     - anything else: DeepL produced a new translation (the source changed), so the value is
-         *       replaced and goes back to `machine_translated` for review.
+         *       replaced and goes back to `machine_translated` for review, with nothing delivered.
          */
         put: operations["push_translation_api_projects__projectId__keys__keyPath__put"];
         post?: never;
@@ -41,7 +41,11 @@ export interface paths {
         };
         /**
          * Export Translations
-         * @description Return approved translations for one locale as a flat `{key: value}` object, for `deepl sync pull`.
+         * @description Delivered translations for one locale as a flat `{key: value}` object, for `deepl sync pull`.
+         *
+         *     Only text a reviewer has delivered is exported. Approved strings wait for Deliver, and
+         *     a delivered string reopened by an admin keeps exporting its delivered text until it is
+         *     delivered again. Keys left out keep their current text in the repository.
          */
         get: operations["export_translations_api_projects__projectId__keys_export_get"];
         put?: never;
@@ -518,8 +522,54 @@ export interface paths {
          *     - value only: saves the edit and leaves it unapproved (like an unconfirmed segment)
          *     - approved=true: approves the current (or newly edited) value and records who approved it
          *     - approved=false: withdraws an approval
+         *
+         *     Delivered strings are locked (409) until an admin reopens them.
          */
         patch: operations["edit_string_api_review_projects__projectId__locales__locale__strings__keyPath__patch"];
+        trace?: never;
+    };
+    "/api/review/projects/{projectId}/locales/{locale}/deliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deliver Language
+         * @description Deliver the approved strings of one language: `deepl sync pull` returns them from now on.
+         *
+         *     Delivered strings leave the reviewer's working list and are locked. Strings that are
+         *     not approved yet keep their current text in the repository.
+         */
+        post: operations["deliver_language_api_review_projects__projectId__locales__locale__deliver_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen String
+         * @description Unlock a delivered string so it can be corrected (admins). It shows as approved again;
+         *     pull keeps exporting the delivered text until the next Deliver.
+         */
+        post: operations["reopen_string_api_review_projects__projectId__locales__locale__strings__keyPath__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/health": {
@@ -628,6 +678,23 @@ export interface components {
             /** Not Found */
             not_found: string[];
         };
+        /**
+         * DeliveryResult
+         * @description What one Deliver sent. Strings that were not approved keep their current text in the repository.
+         */
+        DeliveryResult: {
+            /** Locale */
+            locale: string;
+            /** Delivered */
+            delivered: number;
+            /** Not Approved */
+            not_approved: number;
+            /**
+             * Delivered At
+             * Format: date-time
+             */
+            delivered_at: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -645,6 +712,11 @@ export interface components {
              * @default 0
              */
             approved: number;
+            /**
+             * Delivered
+             * @default 0
+             */
+            delivered: number;
         };
         /** LocaleIn */
         LocaleIn: {
@@ -746,6 +818,10 @@ export interface components {
             total: number;
             /** Approved */
             approved: number;
+            /** Delivered */
+            delivered: number;
+            /** Last Delivered At */
+            last_delivered_at: string | null;
             /** Reviewers */
             reviewers: components["schemas"]["ReviewerRef"][];
         };
@@ -828,6 +904,10 @@ export interface components {
             machine_translated: number;
             /** Approved */
             approved: number;
+            /** Delivered */
+            delivered: number;
+            /** Last Delivered At */
+            last_delivered_at: string | null;
         };
         /** ReviewProject */
         ReviewProject: {
@@ -860,6 +940,12 @@ export interface components {
             approved_at: string | null;
             /** Approved By */
             approved_by: string | null;
+            /** Delivered Value */
+            delivered_value: string | null;
+            /** Delivered At */
+            delivered_at: string | null;
+            /** Delivered By */
+            delivered_by: string | null;
         };
         /** ReviewStringPage */
         ReviewStringPage: {
@@ -1985,6 +2071,75 @@ export interface operations {
                 "application/json": components["schemas"]["ReviewEdit"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewString"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deliver_language_api_review_projects__projectId__locales__locale__deliver_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_string_api_review_projects__projectId__locales__locale__strings__keyPath__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+                keyPath: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

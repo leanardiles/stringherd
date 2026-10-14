@@ -25,7 +25,8 @@ class PushResult(BaseModel):
 
 class LocaleCounts(BaseModel):
     machine_translated: int = 0
-    approved: int = 0
+    approved: int = 0  # approved, waiting for Deliver
+    delivered: int = 0  # delivered: what deepl sync pull exports
 
 
 class ProjectStatus(BaseModel):
@@ -164,7 +165,9 @@ class ReviewLocale(BaseModel):
     locale: str
     total: int
     machine_translated: int
-    approved: int
+    approved: int  # approved in the current session, waiting for Deliver
+    delivered: int
+    last_delivered_at: datetime | None
 
 
 class ReviewProject(BaseModel):
@@ -180,10 +183,13 @@ class ReviewString(BaseModel):
     source_file: str | None
     value: str
     machine_translation: str | None  # what DeepL last delivered (pushed_value)
-    status: str
+    status: str  # machine_translated, approved or delivered
     updated_at: datetime | None
     approved_at: datetime | None
     approved_by: str | None  # name of the approver
+    delivered_value: str | None  # what the repository gets on pull; differs from value only after a reopen
+    delivered_at: datetime | None
+    delivered_by: str | None
 
 
 class ReviewStringPage(BaseModel):
@@ -213,8 +219,17 @@ class BulkApprove(BaseModel):
 
 class BulkApproveResult(BaseModel):
     approved: int
-    already_approved: int
+    already_approved: int  # approved or delivered already
     not_found: list[str]
+
+
+class DeliveryResult(BaseModel):
+    """What one Deliver sent. Strings that were not approved keep their current text in the repository."""
+
+    locale: str
+    delivered: int
+    not_approved: int
+    delivered_at: datetime
 
 
 # ---------- Projects (administration) ----------
@@ -254,7 +269,9 @@ class ReviewerRef(BaseModel):
 class ProjectLocaleOut(BaseModel):
     locale: str
     total: int
-    approved: int
+    approved: int  # waiting for Deliver
+    delivered: int
+    last_delivered_at: datetime | None
     reviewers: list[ReviewerRef]
 
 

@@ -13,11 +13,21 @@ def push(client, key, locale, value, headers=AUTH):
 
 
 def approve(session_factory, key_locale_pairs):
-    """Stand-in for the review UI (step 5): mark translations as approved."""
+    """Stand-in for the review UI: mark translations as approved (not delivered yet)."""
     with session_factory() as session:
         for translation in session.scalars(select(Translation)):
             if (translation.key.key_path, translation.locale) in key_locale_pairs:
                 translation.status = TranslationStatus.APPROVED
+        session.commit()
+
+
+def deliver(session_factory, key_locale_pairs):
+    """Stand-in for review and Deliver: translations approved and delivered as they are."""
+    with session_factory() as session:
+        for translation in session.scalars(select(Translation)):
+            if (translation.key.key_path, translation.locale) in key_locale_pairs:
+                translation.status = TranslationStatus.DELIVERED
+                translation.delivered_value = translation.value
         session.commit()
 
 
@@ -101,11 +111,13 @@ def test_oversized_value_is_rejected(client):
 
 # ---------- Export (pull) ----------
 
-def test_export_returns_only_approved_translations(client, db_session_factory):
+def test_export_returns_only_delivered_translations(client, db_session_factory):
     push(client, "home.title", "de", "Start")
     push(client, "home.subtitle", "de", "Willkommen")
     push(client, "home.title", "fr", "Accueil")
-    approve(db_session_factory, {("home.title", "de"), ("home.title", "fr")})
+    push(client, "home.footer", "de", "Fußzeile")
+    deliver(db_session_factory, {("home.title", "de"), ("home.title", "fr")})
+    approve(db_session_factory, {("home.footer", "de")})  # approved, waiting for Deliver
 
     response = client.get(f"{BASE}/keys/export", params={"format": "json", "locale": "de"}, headers=AUTH)
 
@@ -136,6 +148,7 @@ def test_project_status_counts_per_locale(client, db_session_factory):
     push(client, "home.subtitle", "de", "Willkommen")
     push(client, "home.title", "fr", "Accueil")
     approve(db_session_factory, {("home.title", "de")})
+    deliver(db_session_factory, {("home.title", "fr")})
 
     response = client.get(BASE, headers=AUTH)
 
@@ -144,8 +157,8 @@ def test_project_status_counts_per_locale(client, db_session_factory):
         "project_id": "demo-app",
         "keys": 2,
         "locales": {
-            "de": {"machine_translated": 1, "approved": 1},
-            "fr": {"machine_translated": 1, "approved": 0},
+            "de": {"machine_translated": 1, "approved": 1, "delivered": 0},
+            "fr": {"machine_translated": 0, "approved": 0, "delivered": 1},
         },
     }
 
@@ -181,6 +194,7 @@ def test_reviewer_edit_survives_repush_of_old_machine_translation(client, db_ses
 
     assert response.json()["changed"] is False
     assert response.json()["status"] == "approved"
+    deliver(db_session_factory, {("dashboard.sets_other", "fr")})
     export = client.get(f"{BASE}/keys/export", params={"locale": "fr"}, headers=AUTH).json()
     assert export == {"dashboard.sets_other": "{{count}} séries"}
 

@@ -65,6 +65,10 @@
 }
 
 .remaining {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
   font-size: var(--font-size-sm);
 }
 

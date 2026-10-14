@@ -13,11 +13,12 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Project, Translation, TranslationKey, TranslationStatus, User
-from app.permissions import can_review, projects_visible_to, reviewable_locales
+from app.permissions import can_deliver, can_reopen, can_review, projects_visible_to, reviewable_locales
 from app.schemas import (
     LOCALE_PATTERN,
     BulkApprove,
     BulkApproveResult,
+    DeliveryResult,
     ReviewEdit,
     ReviewLocale,
     ReviewProject,
@@ -25,6 +26,7 @@ from app.schemas import (
     ReviewStringPage,
 )
 from app.security import CurrentUser
+from app.services.delivery import NotDeliveredError, NothingToDeliverError, deliver, last_deliveries, reopen
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -55,6 +57,9 @@ def _to_review_string(key: TranslationKey, translation: Translation) -> ReviewSt
         updated_at=translation.updated_at,
         approved_at=translation.approved_at,
         approved_by=translation.approved_by.name if translation.approved_by else None,
+        delivered_value=translation.delivered_value,
+        delivered_at=translation.delivered_at,
+        delivered_by=translation.delivered_by.name if translation.delivered_by else None,
     )
 
 
@@ -63,6 +68,7 @@ def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
     """Projects and languages the signed-in user can review, with progress counts."""
     result: list[ReviewProject] = []
     for project in projects_visible_to(db, user):
+        delivered_at = last_deliveries(db, project)
         counts: dict[str, dict[str, int]] = {}
         rows = db.execute(
             select(Translation.locale, Translation.status, func.count())
@@ -89,6 +95,8 @@ def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
                         total=sum(counts.get(locale, {}).values()),
                         machine_translated=counts.get(locale, {}).get("machine_translated", 0),
                         approved=counts.get(locale, {}).get("approved", 0),
+                        delivered=counts.get(locale, {}).get("delivered", 0),
+                        last_delivered_at=delivered_at.get(locale),
                     )
                     for locale in locales
                 ],
@@ -103,7 +111,9 @@ def list_strings(
     locale: Locale,
     user: CurrentUser,
     db: DbSession,
-    status_filter: Annotated[str | None, Query(alias="status", pattern=r"^(machine_translated|approved)$")] = None,
+    status_filter: Annotated[
+        str | None, Query(alias="status", pattern=r"^(machine_translated|approved|delivered)$")
+    ] = None,
     q: Annotated[str | None, Query(max_length=200, description="Search in key, source and translation")] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -155,8 +165,8 @@ def bulk_approve(
     approved = already = 0
     now = datetime.now(UTC)
     for translation in found.values():
-        if translation.status == TranslationStatus.APPROVED:
-            already += 1
+        if translation.status != TranslationStatus.MACHINE_TRANSLATED:
+            already += 1  # approved, or delivered (locked)
             continue
         translation.status = TranslationStatus.APPROVED
         translation.approved_at = now
@@ -184,6 +194,8 @@ def edit_string(
     - value only: saves the edit and leaves it unapproved (like an unconfirmed segment)
     - approved=true: approves the current (or newly edited) value and records who approved it
     - approved=false: withdraws an approval
+
+    Delivered strings are locked (409) until an admin reopens them.
     """
     project = _project_for_review(db, user, project_slug, locale)
     row = db.execute(
@@ -198,6 +210,11 @@ def edit_string(
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No '{locale}' translation for '{key_path}'.")
     key, translation = row
+    if translation.status == TranslationStatus.DELIVERED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This string is delivered and locked. An admin can reopen it.",
+        )
 
     if body.value is not None and body.value != translation.value:
         translation.value = body.value
@@ -214,6 +231,59 @@ def edit_string(
         translation.approved_at = None
         translation.approved_by_id = None
 
+    db.commit()
+    db.refresh(translation)
+    return _to_review_string(key, translation)
+
+
+@router.post("/projects/{projectId}/locales/{locale}/deliver", response_model=DeliveryResult)
+def deliver_language(project_slug: ProjectSlug, locale: Locale, user: CurrentUser, db: DbSession) -> DeliveryResult:
+    """Deliver the approved strings of one language: `deepl sync pull` returns them from now on.
+
+    Delivered strings leave the reviewer's working list and are locked. Strings that are
+    not approved yet keep their current text in the repository.
+    """
+    project = _project_for_review(db, user, project_slug, locale)
+    if not can_deliver(db, user, project, locale):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"You can't deliver '{locale}' in '{project_slug}'.")
+    try:
+        summary = deliver(db, project, locale, user)
+    except NothingToDeliverError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Nothing to deliver: no approved strings.")
+    return DeliveryResult(
+        locale=locale, delivered=summary.delivered, not_approved=summary.not_approved, delivered_at=summary.delivered_at
+    )
+
+
+@router.post("/projects/{projectId}/locales/{locale}/strings/{keyPath:path}/reopen", response_model=ReviewString)
+def reopen_string(
+    project_slug: ProjectSlug,
+    locale: Locale,
+    key_path: Annotated[str, Path(alias="keyPath", max_length=500)],
+    user: CurrentUser,
+    db: DbSession,
+) -> ReviewString:
+    """Unlock a delivered string so it can be corrected (admins). It shows as approved again;
+    pull keeps exporting the delivered text until the next Deliver."""
+    project = _project_for_review(db, user, project_slug, locale)
+    if not can_reopen(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can reopen delivered strings.")
+    row = db.execute(
+        select(TranslationKey, Translation)
+        .join(Translation, Translation.key_id == TranslationKey.id)
+        .where(
+            TranslationKey.project_id == project.id,
+            TranslationKey.key_path == key_path,
+            Translation.locale == locale,
+        )
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No '{locale}' translation for '{key_path}'.")
+    key, translation = row
+    try:
+        reopen(translation)
+    except NotDeliveredError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This string is not delivered.")
     db.commit()
     db.refresh(translation)
     return _to_review_string(key, translation)

@@ -19,9 +19,9 @@ vi.mock('../components/editor/TargetEditor', () => ({
 afterEach(() => vi.unstubAllGlobals())
 
 const STRINGS: ReviewString[] = [
-  { key: 'home.title', source_text: 'Home', source_file: 'en/common.json', value: 'Accueil', machine_translation: 'Accueil', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null },
-  { key: 'dashboard.sets_other', source_text: '{{count}} sets', source_file: 'en/common.json', value: '{{count}} définit', machine_translation: '{{count}} définit', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null },
-  { key: 'login.button', source_text: 'Sign in', source_file: 'en/common.json', value: 'Connexion', machine_translation: 'Connexion', status: 'approved', updated_at: null, approved_at: null, approved_by: 'Marie Dubois' },
+  { key: 'home.title', source_text: 'Home', source_file: 'en/common.json', value: 'Accueil', machine_translation: 'Accueil', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
+  { key: 'dashboard.sets_other', source_text: '{{count}} sets', source_file: 'en/common.json', value: '{{count}} définit', machine_translation: '{{count}} définit', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
+  { key: 'login.button', source_text: 'Sign in', source_file: 'en/common.json', value: 'Connexion', machine_translation: 'Connexion', status: 'approved', updated_at: null, approved_at: null, approved_by: 'Marie Dubois', delivered_value: null, delivered_at: null, delivered_by: null },
 ]
 
 function setup(path = '/review/fitjournal/fr?view=list') {
@@ -56,7 +56,7 @@ describe('review screen, list view', () => {
     expect(within(row).getAllByText('{{count}}')).toHaveLength(2)
     expect(within(row).getByText('MT')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /To review/ })).toHaveTextContent('2')
-    expect(screen.getByText('3 strings · 2 to review · 1 approved')).toBeInTheDocument()
+    expect(screen.getByText('3 strings · 2 to review · 1 approved · 0 delivered')).toBeInTheDocument()
   })
 
   it('edits and approves, then opens the next string', async () => {
@@ -133,7 +133,7 @@ describe('review screen, single key view', () => {
     const list = screen.getByRole('navigation', { name: 'Strings' })
     expect(within(list).getByRole('button', { name: /home\.title/ })).toHaveAttribute('aria-current', 'true')
     expect(within(list).getByText('{{count}} sets')).toBeInTheDocument()
-    expect(within(list).getByRole('img', { name: 'Approved' })).toBeInTheDocument()
+    expect(within(list).getByRole('img', { name: 'Approved, waiting for Deliver' })).toBeInTheDocument()
     expect(within(list).getAllByRole('img', { name: 'Machine translation, not reviewed yet' })).toHaveLength(2)
   })
 
@@ -145,7 +145,7 @@ describe('review screen, single key view', () => {
     expect(patches[0]).toEqual({ key: 'home.title', body: { approved: true } })
     expect(await screen.findByRole('region', { name: 'String 2: dashboard.sets_other' })).toBeInTheDocument()
     const homeRow = within(screen.getByRole('navigation', { name: 'Strings' })).getByRole('button', { name: /home\.title/ })
-    expect(within(homeRow).getByRole('img', { name: 'Approved' })).toBeInTheDocument()
+    expect(within(homeRow).getByRole('img', { name: 'Approved, waiting for Deliver' })).toBeInTheDocument()
   })
 
   it('stays on the last string after approving it', async () => {

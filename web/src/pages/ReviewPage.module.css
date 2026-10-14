@@ -175,3 +175,27 @@
     display: none;
   }
 }
+
+.noticeBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* "3 delivered strings also match. Show delivered" under the list while searching. */
+.alsoDelivered {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

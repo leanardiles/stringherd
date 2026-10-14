@@ -35,6 +35,7 @@ const pairs: [string, string, number][] = [
   ['color-danger-text', 'color-danger-bg', TEXT],
   ['color-danger-inline', 'color-surface', TEXT],
   ['color-on-primary', 'color-danger-inline', TEXT],
+  ['color-on-primary', 'color-success-bar', TEXT],
   ['color-danger-inline', 'color-danger-bg', TEXT],
   ['color-neutral-text', 'color-neutral-bg', TEXT],
   ['color-field-border', 'color-field', UI],

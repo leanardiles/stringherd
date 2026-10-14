@@ -6,12 +6,13 @@ calls store_source_strings(), so the storage and change-detection rules live in 
 
 from dataclasses import dataclass, field
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from app.models import Project, Translation, TranslationKey, TranslationStatus
+from app.models import Project, TranslationKey
+from app.services.delivery import reset_for_source_change
 
 
 class SourceConflictError(Exception):
@@ -37,7 +38,7 @@ class SourceUploadSummary:
     filled: int = 0  # keys that existed (e.g. from a translation push) without source text
     updated: int = 0  # keys whose source text changed
     unchanged: int = 0
-    approvals_reset: int = 0  # approved translations sent back to review because the source changed
+    approvals_reset: int = 0  # approved or delivered translations sent back to review because the source changed
     removed: list[str] = field(default_factory=list)  # keys of this file missing from the upload
 
 
@@ -120,15 +121,7 @@ def store_source_strings(
         key.source_commit = commit
 
     if changed_key_ids:
-        result = db.execute(
-            update(Translation)
-            .where(
-                Translation.key_id.in_(changed_key_ids),
-                Translation.status == TranslationStatus.APPROVED,
-            )
-            .values(status=TranslationStatus.MACHINE_TRANSLATED, approved_at=None)
-        )
-        summary.approvals_reset = result.rowcount or 0
+        summary.approvals_reset = reset_for_source_change(db, changed_key_ids)
 
     # Removed keys are reported, not deleted: removal could be a mistake, and deleting would
     # drop their translations and history. Only keys known to belong to this file are checked.

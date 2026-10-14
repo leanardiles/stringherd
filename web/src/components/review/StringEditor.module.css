@@ -111,3 +111,23 @@
   font-size: var(--font-size-sm);
   margin-inline-start: var(--space-2);
 }
+
+.locked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-sm);
+}
+
+.locked > svg {
+  flex-shrink: 0;
+  margin-block-start: 2px;
+}
+
+.locked p {
+  margin: var(--space-1) 0 0;
+}

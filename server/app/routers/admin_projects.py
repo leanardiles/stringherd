@@ -39,6 +39,7 @@ from app.schemas import (
     ReviewerRef,
 )
 from app.security import AdminUser
+from app.services.delivery import last_deliveries
 from app.services.projects import (
     ProjectExistsError,
     create_project,
@@ -101,6 +102,7 @@ def _project_out(db: Session, project: Project) -> ProjectAdminOut:
     ):
         reviewers.setdefault(locale, []).append(ReviewerRef(id=user_id, name=name))
 
+    delivered_at = last_deliveries(db, project)
     strings = db.scalar(select(func.count()).where(TranslationKey.project_id == project.id)) or 0
     return ProjectAdminOut(
         project_id=project.slug,
@@ -113,6 +115,8 @@ def _project_out(db: Session, project: Project) -> ProjectAdminOut:
                 locale=locale,
                 total=sum(counts.get(locale, {}).values()),
                 approved=counts.get(locale, {}).get("approved", 0),
+                delivered=counts.get(locale, {}).get("delivered", 0),
+                last_delivered_at=delivered_at.get(locale),
                 reviewers=reviewers.get(locale, []),
             )
             for locale in project.target_locales

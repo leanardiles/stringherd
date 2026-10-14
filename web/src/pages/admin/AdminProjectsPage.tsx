@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../api/client'
 import { useAdminProjects, useCreateProject } from '../../api/queries'
-import { Dialog } from '../../components/admin/Dialog'
+import { Dialog } from '../../components/Dialog'
 import { LoadError, Loading } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'
 import { errorMessage } from '../../lib/errors'
@@ -70,11 +70,11 @@ export function AdminProjectsPage() {
                             {project.locales.map((locale) => (
                               <span
                                 key={locale.locale}
-                                className={locale.total > 0 && locale.approved === locale.total ? ui.pillSuccess : ui.pillNeutral}
+                                className={locale.total > 0 && locale.delivered === locale.total ? ui.pillSuccess : ui.pillNeutral}
                                 title={languageLabel(locale.locale)}
                               >
                                 {locale.locale}
-                                {locale.total > 0 && ` · ${formatPercent(locale.approved / locale.total)}`}
+                                {locale.total > 0 && ` · ${formatPercent(locale.delivered / locale.total)}`}
                               </span>
                             ))}
                           </span>

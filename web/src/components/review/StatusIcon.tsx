@@ -1,11 +1,11 @@
-import { Circle, CircleCheck, Pencil, TriangleAlert } from 'lucide-react'
+import { Circle, CircleCheck, PackageCheck, Pencil, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { QaLevel } from '../../lib/qa'
 import type { DisplayStatus } from '../../lib/review'
 import styles from './StatusIcon.module.css'
 
 // Status symbols (UI plan, decision 17). Each has its own shape, so meaning never depends on colour alone.
-const ICONS = { approved: CircleCheck, edited: Pencil, mt: Circle } as const
+const ICONS = { delivered: PackageCheck, approved: CircleCheck, edited: Pencil, mt: Circle } as const
 
 export function StatusIcon({ status }: { status: DisplayStatus }) {
   const { t } = useTranslation()

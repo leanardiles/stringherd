@@ -102,3 +102,38 @@ def new_client(db_session_factory):
 
 def login(client, email, password=PASSWORD):
     return client.post("/api/auth/login", json={"email": email, "password": password})
+
+
+# ---------- Review ----------
+
+@pytest.fixture
+def setup(new_client, make_user, db_session_factory):
+    """fitjournal with fr and de translations and English source; an admin and a French reviewer."""
+    from sqlalchemy import select
+
+    from app.models import Project, ReviewerAssignment
+
+    tms = new_client()
+    for key, en, fr, de in [
+        ("dashboard.sets_other", "{{count}} sets", "{{count}} définit", "{{count}} Sätze"),
+        ("home.title", "Home", "Accueil", "Startseite"),
+        ("login.button", "Sign in", "Connexion", "Anmelden"),
+    ]:
+        tms.put(f"/api/projects/fitjournal/keys/{key}", json={"locale": "fr", "value": fr}, headers=AUTH)
+        tms.put(f"/api/projects/fitjournal/keys/{key}", json={"locale": "de", "value": de}, headers=AUTH)
+    tms.put(
+        "/api/projects/fitjournal/source",
+        json={"locale": "en", "file": "locales/en/common.json", "strings": {
+            "dashboard.sets_other": "{{count}} sets", "home.title": "Home", "login.button": "Sign in"}},
+        headers=AUTH,
+    )
+    make_user("admin@example.com", role="admin", name="Ada Admin")
+    rev_id = make_user("rev@example.com", name="René Reviewer")
+    with db_session_factory() as session:
+        project = session.scalar(select(Project).where(Project.slug == "fitjournal"))
+        session.add(ReviewerAssignment(user_id=rev_id, project_id=project.id, locale="fr"))
+        session.commit()
+    admin, reviewer = new_client(), new_client()
+    login(admin, "admin@example.com")
+    login(reviewer, "rev@example.com")
+    return {"admin": admin, "reviewer": reviewer, "tms": tms}

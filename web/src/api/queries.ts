@@ -5,6 +5,7 @@ import {
   PASSWORD_CHANGE_REQUIRED,
   type ApiKey,
   type ApiKeyIssued,
+  type DeliveryResult,
   type PasswordChange,
   type ProjectAdmin,
   type ProjectAdminDetail,
@@ -162,6 +163,40 @@ export function useEditString(projectId: string, locale: string) {
       queryClient.setQueryData<ReviewString[]>(listKey, (items) => items?.map((item) => (item.key === saved.key ? saved : item)))
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviewProjects }),
+  })
+}
+
+/** Deliver a language: its approved strings become pullable and locked. */
+export function useDeliver(projectId: string, locale: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<DeliveryResult>(
+        `/api/review/projects/${encodeURIComponent(projectId)}/locales/${encodeURIComponent(locale)}/deliver`,
+        { method: 'POST' },
+      ),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.reviewStrings(projectId, locale) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.reviewProjects }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.adminProjects }),
+      ]),
+  })
+}
+
+/** Unlock a delivered string so it can be corrected (admins). */
+export function useReopenString(projectId: string, locale: string) {
+  const queryClient = useQueryClient()
+  const listKey = queryKeys.reviewStrings(projectId, locale)
+  return useMutation({
+    mutationFn: (key: string) =>
+      api<ReviewString>(`${stringsPath(projectId, locale)}/${key.split('/').map(encodeURIComponent).join('/')}/reopen`, {
+        method: 'POST',
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData<ReviewString[]>(listKey, (items) => items?.map((item) => (item.key === saved.key ? saved : item)))
+      void queryClient.invalidateQueries({ queryKey: queryKeys.reviewProjects })
+    },
   })
 }
 

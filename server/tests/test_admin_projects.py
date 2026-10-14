@@ -70,7 +70,14 @@ def test_list_shows_progress_and_reviewers(admin, client, make_user):
     assert shop["strings"] == 1
     assert shop["active_keys"] == 1
     fr = next(entry for entry in shop["locales"] if entry["locale"] == "fr")
-    assert fr == {"locale": "fr", "total": 1, "approved": 0, "reviewers": [{"id": rev_id, "name": "Marie"}]}
+    assert fr == {
+        "locale": "fr",
+        "total": 1,
+        "approved": 0,
+        "delivered": 0,
+        "last_delivered_at": None,
+        "reviewers": [{"id": rev_id, "name": "Marie"}],
+    }
 
 
 def test_rename_keeps_the_project_id(admin):

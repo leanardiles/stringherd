@@ -34,22 +34,26 @@
   "projects": {
     "title": "Your projects",
     "source": "Source: {{language}}",
-    "approved": "{{approved, number}} of {{total, number}} approved",
+    "approved": "{{delivered, number}} of {{total, number}} delivered",
     "toReview_one": "{{count, number}} string to review",
     "toReview_other": "{{count, number}} strings to review",
-    "allApproved": "All approved",
+    "allApproved": "All delivered",
     "review": "Review",
     "reviewLanguage": "Review {{language}}",
-    "progress": "{{percent}} approved",
+    "progress": "{{percent}} delivered",
     "emptyReviewer": "No languages assigned to you yet. Ask an admin to assign you a project and language.",
-    "emptyAdmin": "No projects yet. Create one in <projects>Projects</projects>, then push translations with DeepL Sync."
+    "emptyAdmin": "No projects yet. Create one in <projects>Projects</projects>, then push translations with DeepL Sync.",
+    "toDeliver_one": "{{count, number}} approved, not delivered",
+    "toDeliver_other": "{{count, number}} approved, not delivered",
+    "lastDelivered": "Last delivered {{date}}"
   },
   "review": {
     "filterLabel": "Show",
     "filter": {
-      "all": "All",
+      "all": "Open",
       "review": "To review",
-      "approved": "Approved"
+      "approved": "Approved",
+      "delivered": "Delivered"
     },
     "searchLabel": "Search strings",
     "searchPlaceholder": "Search source, translation or key",
@@ -64,12 +68,14 @@
     "status": {
       "approved": "Approved",
       "edited": "Edited",
-      "mt": "MT"
+      "mt": "MT",
+      "delivered": "Delivered"
     },
     "statusHint": {
-      "approved": "Approved",
+      "approved": "Approved, waiting for Deliver",
       "edited": "Edited, not approved yet",
-      "mt": "Machine translation, not reviewed yet"
+      "mt": "Machine translation, not reviewed yet",
+      "delivered": "Delivered: pulled into the code, and locked"
     },
     "chars_one": "{{count, number}} character",
     "chars_other": "{{count, number}} characters",
@@ -88,7 +94,7 @@
     "emptyNone": "This language has no strings yet.",
     "saveFailed": "Couldn't save {{key}}. The change was undone; try again.",
     "notAssigned": "You aren't assigned to review this language.",
-    "summary": "{{total, number}} strings · {{toReview, number}} to review · {{approved, number}} approved",
+    "summary": "{{total, number}} strings · {{toReview, number}} to review · {{approved, number}} approved · {{delivered, number}} delivered",
     "hints": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard or close",
     "backToProjects": "Back to your projects",
     "view": {
@@ -99,9 +105,10 @@
     },
     "keyList": "Strings",
     "statusIcon": {
-      "approved": "Approved",
+      "approved": "Approved, waiting for Deliver",
       "edited": "Edited, not approved yet",
-      "mt": "Machine translation, not reviewed yet"
+      "mt": "Machine translation, not reviewed yet",
+      "delivered": "Delivered"
     },
     "qaIcon": {
       "error": "QA error: fix before approving",
@@ -126,10 +133,43 @@
       "file": "File",
       "updated": "Last change",
       "approved": "Approved",
-      "approvedByOn": "{{name}}, {{date}}"
+      "approvedByOn": "{{name}}, {{date}}",
+      "delivered": "Delivered",
+      "inCode": "In the code",
+      "inCodeHint": "Reopened: the code keeps this text until the next Deliver."
     },
     "selectString": "Choose a string from the list.",
-    "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard"
+    "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard",
+    "progress": "{{percent}} reviewed",
+    "deliver": {
+      "button": "Deliver",
+      "count_one": "Deliver {{count, number}} string",
+      "count_other": "Deliver {{count, number}} strings",
+      "nothing": "Approve strings first; Deliver sends the approved ones.",
+      "title": "Deliver {{language}}?",
+      "body_one": "{{count, number}} approved string goes to the repository: the next deepl sync pull brings it into the code. It leaves your list and is locked.",
+      "body_other": "{{count, number}} approved strings go to the repository: the next deepl sync pull brings them into the code. They leave your list and are locked.",
+      "notApproved_one": "{{count, number}} string isn't approved yet. It stays in your list and keeps its current text in the code.",
+      "notApproved_other": "{{count, number}} strings aren't approved yet. They stay in your list and keep their current text in the code.",
+      "unsaved": "Your unsaved change to {{key}} is kept as an edit, not approved, so it isn't delivered.",
+      "confirm": "Deliver",
+      "delivering": "Delivering…",
+      "done_one": "Delivered {{count, number}} string. It reaches the code with the next deepl sync pull.",
+      "done_other": "Delivered {{count, number}} strings. They reach the code with the next deepl sync pull.",
+      "dismiss": "Dismiss"
+    },
+    "locked": {
+      "title": "Delivered and locked",
+      "body": "Delivered on {{date}} by {{name}}. Delivered strings can't be edited.",
+      "bodyNoName": "Delivered on {{date}}. Delivered strings can't be edited.",
+      "askAdmin": "If it needs a fix, ask an admin to reopen it.",
+      "reopen": "Reopen",
+      "reopenHint": "Reopening lets reviewers correct it. The code keeps the delivered text until the next Deliver."
+    },
+    "alsoDelivered_one": "{{count, number}} delivered string also matches.",
+    "alsoDelivered_other": "{{count, number}} delivered strings also match.",
+    "showDelivered": "Show delivered",
+    "emptyOpen": "Nothing open: every string is delivered."
   },
   "errors": {
     "loadFailed": "Couldn't load this page.",
@@ -212,7 +252,7 @@
         "title": "Languages",
         "intro": "The repository decides which languages get translated: target_locales in its .deepl-sync.yaml. Adding a language here only lets you assign reviewers before the first push; a push in a new language adds it here automatically.",
         "empty": "No target languages yet. Add the languages DeepL Sync translates into.",
-        "approved": "{{approved, number}} of {{total, number}} approved",
+        "approved": "{{delivered, number}} of {{total, number}} delivered",
         "noStrings": "No translations yet",
         "noReviewers": "No reviewer assigned",
         "add": "Add",
@@ -223,7 +263,10 @@
         "removeTitle": "Remove {{language}}?",
         "removeBody": "Reviewers assigned to this language lose the assignment. You can add the language again later.",
         "removeConfirm": "Remove language",
-        "locked": "Has translations, so it stays"
+        "locked": "Has translations, so it stays",
+        "toDeliver": "{{count, number}} approved, waiting for Deliver",
+        "lastDelivered": "Last delivered {{date}}",
+        "neverDelivered": "Not delivered yet"
       },
       "keys": {
         "title": "API keys",

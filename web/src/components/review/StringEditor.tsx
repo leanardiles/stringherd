@@ -1,8 +1,10 @@
+import { Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewString } from '../../api/client'
 import { languageLabel } from '../../lib/languages'
 import { countCharacters } from '../../lib/placeholders'
 import type { QaIssue } from '../../lib/qa'
+import { formatDateTime } from '../../lib/format'
 import { displayStatus } from '../../lib/review'
 import { TargetEditor, type TargetEditorHandle } from '../editor/TargetEditor'
 import { PlaceholderText } from '../PlaceholderText'
@@ -26,6 +28,10 @@ export interface StringEditorProps {
   onWithdraw: () => void
   onDiscard: () => void
   onInsertSuggestion: (text: string) => void
+  /** Admins may unlock a delivered string. */
+  canReopen: boolean
+  reopening: boolean
+  onReopen: () => void
 }
 
 function QaMessage({ issue }: { issue: QaIssue }) {
@@ -40,9 +46,8 @@ function QaMessage({ issue }: { issue: QaIssue }) {
  */
 export function StringEditor(props: StringEditorProps) {
   const { t } = useTranslation()
-  const { number, item, value, dirty, issues, sourceLang, targetLang, error, editorRef } = props
+  const { number, item, value, dirty, sourceLang } = props
   const status = displayStatus({ ...item, value, status: dirty ? 'machine_translated' : item.status })
-  const deepl = item.machine_translation
 
   return (
     <div className={styles.editor}>
@@ -68,6 +73,63 @@ export function StringEditor(props: StringEditorProps) {
         </div>
       </div>
 
+      {item.status === 'delivered' ? (
+        <DeliveredTarget {...props} />
+      ) : (
+        <EditableTarget {...props} />
+      )}
+    </div>
+  )
+}
+
+/** A delivered string: its text, read-only, and who delivered it. Admins can reopen it. */
+function DeliveredTarget({ item, targetLang, error, canReopen, reopening, onReopen }: StringEditorProps) {
+  const { t } = useTranslation()
+  const date = item.delivered_at ? formatDateTime(item.delivered_at) : ''
+  return (
+    <>
+      <div className={styles.block}>
+        <span className={styles.label} title={languageLabel(targetLang)}>
+          {t('review.targetLabel', { code: targetLang.toUpperCase() })}
+        </span>
+        <div className={styles.source} lang={targetLang}>
+          <PlaceholderText text={item.value} lang={targetLang} />
+        </div>
+      </div>
+      <div className={styles.locked} role="status">
+        <Lock size={16} aria-hidden="true" />
+        <div>
+          <strong>{t('review.locked.title')}</strong>
+          <p>
+            {item.delivered_by
+              ? t('review.locked.body', { date, name: item.delivered_by })
+              : t('review.locked.bodyNoName', { date })}{' '}
+            {canReopen ? t('review.locked.reopenHint') : t('review.locked.askAdmin')}
+          </p>
+        </div>
+      </div>
+      {error && (
+        <div className={ui.alert} role="alert">
+          {error}
+        </div>
+      )}
+      {canReopen && (
+        <footer className={styles.actions}>
+          <button type="button" className={ui.secondary} onClick={onReopen} disabled={reopening}>
+            {t('review.locked.reopen')}
+          </button>
+        </footer>
+      )}
+    </>
+  )
+}
+
+function EditableTarget(props: StringEditorProps) {
+  const { t } = useTranslation()
+  const { item, value, dirty, issues, targetLang, error, editorRef } = props
+  const deepl = item.machine_translation
+  return (
+    <>
       <div className={styles.block}>
         <span className={styles.label} title={languageLabel(targetLang)}>
           {t('review.targetLabel', { code: targetLang.toUpperCase() })}
@@ -140,6 +202,6 @@ export function StringEditor(props: StringEditorProps) {
           <span className={`${ui.muted} ${styles.approvedBy}`}>{t('review.approvedBy', { name: item.approved_by })}</span>
         )}
       </footer>
-    </div>
+    </>
   )
 }

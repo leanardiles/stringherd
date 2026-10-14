@@ -1,41 +1,15 @@
-"""Review API: listing, editing and approving, with per-project, per-language permissions."""
+"""Review API: listing, editing and approving, with per-project, per-language permissions.
 
-import pytest
-from sqlalchemy import select
+The `setup` fixture (conftest.py) has fitjournal with fr and de strings, an admin and a French reviewer.
+"""
 
-from app.models import Project, ReviewerAssignment
-from tests.conftest import AUTH, login
+from tests.conftest import AUTH
 
 BASE = "/api/review/projects/fitjournal/locales"
 
 
-@pytest.fixture
-def setup(new_client, make_user, db_session_factory):
-    """fitjournal with fr and de translations and English source; an admin and a French reviewer."""
-    tms = new_client()
-    for key, en, fr, de in [
-        ("dashboard.sets_other", "{{count}} sets", "{{count}} définit", "{{count}} Sätze"),
-        ("home.title", "Home", "Accueil", "Startseite"),
-        ("login.button", "Sign in", "Connexion", "Anmelden"),
-    ]:
-        tms.put(f"/api/projects/fitjournal/keys/{key}", json={"locale": "fr", "value": fr}, headers=AUTH)
-        tms.put(f"/api/projects/fitjournal/keys/{key}", json={"locale": "de", "value": de}, headers=AUTH)
-    tms.put(
-        "/api/projects/fitjournal/source",
-        json={"locale": "en", "file": "locales/en/common.json", "strings": {
-            "dashboard.sets_other": "{{count}} sets", "home.title": "Home", "login.button": "Sign in"}},
-        headers=AUTH,
-    )
-    make_user("admin@example.com", role="admin", name="Ada Admin")
-    rev_id = make_user("rev@example.com", name="René Reviewer")
-    with db_session_factory() as session:
-        project = session.scalar(select(Project).where(Project.slug == "fitjournal"))
-        session.add(ReviewerAssignment(user_id=rev_id, project_id=project.id, locale="fr"))
-        session.commit()
-    admin, reviewer = new_client(), new_client()
-    login(admin, "admin@example.com")
-    login(reviewer, "rev@example.com")
-    return {"admin": admin, "reviewer": reviewer, "tms": tms}
+def deliver(client, locale="fr"):
+    return client.post(f"{BASE}/{locale}/deliver")
 
 
 def export(tms, locale="fr"):
@@ -58,7 +32,14 @@ def test_admin_sees_all_languages(setup):
     projects = setup["admin"].get("/api/review/projects").json()
     assert [loc["locale"] for loc in projects[0]["locales"]] == ["de", "fr"]
     fr = next(loc for loc in projects[0]["locales"] if loc["locale"] == "fr")
-    assert fr == {"locale": "fr", "total": 3, "machine_translated": 3, "approved": 0}
+    assert fr == {
+        "locale": "fr",
+        "total": 3,
+        "machine_translated": 3,
+        "approved": 0,
+        "delivered": 0,
+        "last_delivered_at": None,
+    }
 
 
 def test_reviewer_cannot_list_unassigned_language(setup):
@@ -113,6 +94,8 @@ def test_edit_and_approve_in_one_call_records_the_reviewer(setup):
     assert body["value"] == "{{count}} séries"
     assert body["machine_translation"] == "{{count}} définit"  # DeepL's original is kept for reference
     assert body["status"] == "approved" and body["approved_by"] == "René Reviewer"
+    assert "dashboard.sets_other" not in export(setup["tms"])  # approved, not delivered yet
+    deliver(setup["reviewer"])
     assert export(setup["tms"])["dashboard.sets_other"] == "{{count}} séries"
 
 
@@ -146,6 +129,7 @@ def test_bulk_approve(setup):
     ).json()
 
     assert result == {"approved": 2, "already_approved": 1, "not_found": ["nope"]}
+    deliver(reviewer)
     assert len(export(setup["tms"])) == 3
 
 
@@ -159,6 +143,7 @@ def test_admin_can_review_any_language(setup):
 def test_reviewer_edit_survives_repush_and_comes_back_on_pull(setup):
     tms, reviewer = setup["tms"], setup["reviewer"]
     reviewer.patch(f"{BASE}/fr/strings/dashboard.sets_other", json={"value": "{{count}} séries", "approved": True})
+    deliver(reviewer)
 
     # A push before pull re-sends DeepL's original text: the edit stays.
     tms.put("/api/projects/fitjournal/keys/dashboard.sets_other", json={"locale": "fr", "value": "{{count}} définit"}, headers=AUTH)
@@ -167,4 +152,5 @@ def test_reviewer_edit_survives_repush_and_comes_back_on_pull(setup):
     # After pull the file holds the edit; pushing it back changes nothing.
     tms.put("/api/projects/fitjournal/keys/dashboard.sets_other", json={"locale": "fr", "value": "{{count}} séries"}, headers=AUTH)
     item = reviewer.get(f"{BASE}/fr/strings", params={"q": "sets"}).json()["items"][0]
-    assert item["status"] == "approved" and item["approved_by"] == "René Reviewer"
+    assert item["status"] == "delivered" and item["approved_by"] == "René Reviewer"
+    assert item["delivered_by"] == "René Reviewer"

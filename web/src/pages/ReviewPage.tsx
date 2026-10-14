@@ -1,11 +1,13 @@
+import { Send } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { ApiError, type ReviewEdit } from '../api/client'
-import { useEditString, useReviewProjects, useReviewStrings } from '../api/queries'
+import { useDeliver, useEditString, useMe, useReopenString, useReviewProjects, useReviewStrings } from '../api/queries'
 import type { TargetEditorHandle } from '../components/editor/TargetEditor'
 import { ProgressBar } from '../components/ProgressBar'
 import { ContextPanel } from '../components/review/ContextPanel'
+import { DeliverDialog } from '../components/review/DeliverDialog'
 import { KeyList } from '../components/review/KeyList'
 import reviewStyles from '../components/review/Review.module.css'
 import { StringCard } from '../components/review/StringCard'
@@ -13,12 +15,13 @@ import { StringEditor, type StringEditorProps } from '../components/review/Strin
 import { StringRow } from '../components/review/StringRow'
 import { LoadError, Loading } from '../components/StatusMessage'
 import ui from '../components/ui.module.css'
-import { formatPercent } from '../lib/languages'
+import { errorMessage } from '../lib/errors'
+import { formatPercent, languageLabel } from '../lib/languages'
 import { checkTranslation, qaLevel } from '../lib/qa'
-import { matchesFilter, neighbourKey, type StatusFilter } from '../lib/review'
+import { countByFilter, matchesFilter, matchesQuery, neighbourKey, type StatusFilter } from '../lib/review'
 import styles from './ReviewPage.module.css'
 
-const FILTERS: StatusFilter[] = ['all', 'review', 'approved']
+const FILTERS: StatusFilter[] = ['all', 'review', 'approved', 'delivered']
 type View = 'single' | 'list'
 const VIEW_STORAGE_KEY = 'stringherd.reviewView'
 
@@ -45,6 +48,12 @@ export function ReviewPage() {
   const strings = useReviewStrings(projectId, locale)
   const projects = useReviewProjects()
   const edit = useEditString(projectId, locale)
+  const deliver = useDeliver(projectId, locale)
+  const reopen = useReopenString(projectId, locale)
+  const { data: me } = useMe()
+  const canReopen = me?.role === 'admin'
+  const [delivering, setDelivering] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const sourceLang = projects.data?.find((p) => p.project_id === projectId)?.source_locale ?? 'en'
 
   // Strings that changed status while a filter is on stay visible until the filter changes,
@@ -67,8 +76,13 @@ export function ReviewPage() {
   const dirty = active !== null && value !== active.value
   const issues = useMemo(() => (active ? checkTranslation(active.source_text, value) : []), [active, value])
 
-  const approved = items.filter((item) => item.status === 'approved').length
-  const counts: Record<StatusFilter, number> = { all: items.length, review: items.length - approved, approved }
+  const counts = countByFilter(items)
+  const { approved, delivered } = counts
+  // Delivered strings stay findable: say so when a search matches some that the filter hides.
+  const hiddenDelivered =
+    query.trim() && filter !== 'delivered'
+      ? items.filter((item) => item.status === 'delivered' && matchesQuery(item, query)).length
+      : 0
 
   function setParam(name: string, next: string | null) {
     setParams(
@@ -100,7 +114,7 @@ export function ReviewPage() {
   }
 
   function approveAndNext() {
-    if (!active) return
+    if (!active || active.status === 'delivered') return
     if (qaLevel(issues) === 'error') {
       setError(t('review.qa.blocked'))
       return
@@ -137,6 +151,32 @@ export function ReviewPage() {
   function setFilter(next: StatusFilter) {
     setSticky(new Set())
     setParam('status', next === 'all' ? null : next)
+  }
+
+  async function confirmDeliver() {
+    // An unsaved edit is kept as an edit, never delivered: save it first, then deliver.
+    if (active && dirty) {
+      try {
+        await edit.mutateAsync({ key: active.key, edit: { value } })
+      } catch {
+        return
+      }
+      setDraft(null)
+    }
+    deliver.mutate(undefined, {
+      onSuccess: (result) => {
+        setDelivering(false)
+        setSticky(new Set())
+        setNotice(t('review.deliver.done', { count: result.delivered }))
+      },
+    })
+  }
+
+  function reopenActive() {
+    if (!active) return
+    setError(null)
+    setSticky((current) => new Set(current).add(active.key)) // stays in view under the Delivered filter
+    reopen.mutate(active.key, { onError: (e) => setError(errorMessage(e, t)) })
   }
 
   function setView(next: View) {
@@ -206,6 +246,7 @@ export function ReviewPage() {
   if (visible.length === 0) {
     if (items.length === 0) emptyMessage = t('review.emptyNone')
     else if (filter === 'review' && !query) emptyMessage = t('review.emptyToReview')
+    else if (filter === 'all' && !query) emptyMessage = t('review.emptyOpen')
     else emptyMessage = t('review.emptyFiltered')
   }
 
@@ -224,9 +265,21 @@ export function ReviewPage() {
     onWithdraw: withdraw,
     onDiscard: discardOrClose,
     onInsertSuggestion: (text) => editorRef.current?.replaceAll(text),
+    canReopen,
+    reopening: reopen.isPending,
+    onReopen: reopenActive,
   })
 
-  const percent = formatPercent(items.length ? approved / items.length : 0)
+  const reviewed = approved + delivered
+  const percent = formatPercent(items.length ? reviewed / items.length : 0)
+  const alsoDelivered = hiddenDelivered > 0 && (
+    <p className={`${styles.alsoDelivered} ${ui.muted}`}>
+      {t('review.alsoDelivered', { count: hiddenDelivered })}{' '}
+      <button type="button" className={styles.linkButton} onClick={() => setFilter('delivered')}>
+        {t('review.showDelivered')}
+      </button>
+    </p>
+  )
 
   return (
     <div className={styles.page}>
@@ -263,9 +316,22 @@ export function ReviewPage() {
           ))}
         </div>
         <div className={styles.progress}>
-          <ProgressBar value={approved} max={items.length} label={t('projects.progress', { percent })} />
+          <ProgressBar value={reviewed} max={items.length} label={t('review.progress', { percent })} />
           <span className={`${ui.muted} tabular`}>{percent}</span>
         </div>
+        <button
+          type="button"
+          className={ui.primary}
+          onClick={() => {
+            deliver.reset()
+            setDelivering(true)
+          }}
+          disabled={approved === 0}
+          title={approved === 0 ? t('review.deliver.nothing') : undefined}
+        >
+          <Send size={14} aria-hidden="true" />
+          {approved > 0 ? t('review.deliver.count', { count: approved }) : t('review.deliver.button')}
+        </button>
       </div>
 
       {error && !active && (
@@ -273,13 +339,35 @@ export function ReviewPage() {
           {error}
         </div>
       )}
+      {notice && (
+        <div className={`${ui.notice} ${styles.banner} ${styles.noticeBanner}`} role="status">
+          <span>{notice}</span>
+          <button type="button" className={ui.quiet} onClick={() => setNotice(null)}>
+            {t('review.deliver.dismiss')}
+          </button>
+        </div>
+      )}
+      <DeliverDialog
+        open={delivering}
+        onOpenChange={setDelivering}
+        language={languageLabel(locale)}
+        approved={approved}
+        notApproved={counts.review}
+        unsavedKey={active && dirty ? active.key : null}
+        pending={deliver.isPending || edit.isPending}
+        error={deliver.error ? errorMessage(deliver.error, t) : null}
+        onConfirm={() => void confirmDeliver()}
+      />
 
       {view === 'single' ? (
         <div className={styles.panes}>
           {emptyMessage ? (
-            <p className={`${styles.empty} ${ui.muted} ${styles.paneEmpty}`}>{emptyMessage}</p>
+            <div className={styles.paneEmpty}>
+              <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>
+              {alsoDelivered}
+            </div>
           ) : (
-            <KeyList items={visible} activeKey={activeKey} activeValue={value} onOpen={open} />
+            <KeyList items={visible} activeKey={activeKey} activeValue={value} onOpen={open} footer={alsoDelivered} />
           )}
           <section className={styles.middle} aria-label={active ? t('review.cardLabel', { number: numbers.get(active.key) ?? 0, key: active.key }) : undefined}>
             {active ? <StringEditor {...editorProps(active)} /> : <p className={ui.muted}>{t('review.selectString')}</p>}
@@ -319,13 +407,16 @@ export function ReviewPage() {
               ))}
             </ul>
             {emptyMessage && <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>}
+            {alsoDelivered}
           </div>
           <ContextPanel item={active} />
         </div>
       )}
 
       <footer className={styles.footer}>
-        <span className="tabular">{t('review.summary', { total: items.length, toReview: counts.review, approved })}</span>
+        <span className="tabular">
+          {t('review.summary', { total: items.length, toReview: counts.review, approved, delivered })}
+        </span>
         <span className={styles.hints}>{view === 'single' ? t('review.hintsSingle') : t('review.hints')}</span>
       </footer>
     </div>
