@@ -125,6 +125,7 @@ op run --env-file=../.env.op -- uvicorn app.main:app --port 8100 --reload
 Port **8100** avoids clashing with apps that use 8000 (such as the FitJournal backend). Then open:
 - `http://127.0.0.1:8100/health`: should return `{"status":"ok","database":"ok"}`
 - `http://127.0.0.1:8100/docs`: interactive API docs
+- `http://127.0.0.1:8100`: the review UI, once it is built (see [Running Stringherd as one server](#running-stringherd-as-one-server))
 
 ### Users and sign-in
 
@@ -233,6 +234,43 @@ Then open `http://localhost:5180`. The backend server must be running on port 81
 | `npm run api:types` | Regenerates `src/api/schema.d.ts` from the running server's OpenAPI schema |
 
 Run `npm run api:types` after changing an endpoint or schema in the backend, with the server running. A field the UI uses that changed or disappeared then shows up as a type error.
+
+---
+
+## Running Stringherd as one server
+
+To use Stringherd rather than work on its UI, the server also serves the built review UI, so everything runs at one address: the browser and DeepL Sync both use `http://localhost:8100`. No Node process runs alongside.
+
+```bash
+cd web && npm install && cd ..      # once, and again when web/package.json changes
+npm run build:web                   # from the repository root: builds the UI into web/dist/
+cd server
+op run --env-file=../.env.op -- uvicorn app.main:app --port 8100
+```
+
+Then open `http://localhost:8100`. After pulling UI changes, run `npm run build:web` again and reload the page; the server does not need a restart.
+
+### Which setup to use
+
+| Doing | Use |
+|---|---|
+| Changing UI code | The development setup: Vite on 5180 and the server on 8100 ([Review UI](#review-ui)). Each save shows up in the browser at once; a build takes 10 to 20 seconds |
+| Changing only backend code | Either; the one server is simpler |
+| Checking the real build before a release | One server |
+| Trying Stringherd, demos, screenshots, self-hosting | One server |
+
+If `web/dist/` exists while you use the development setup, port 8100 serves that older build. Work on 5180.
+
+### How it works
+
+`server/app/web.py` answers only the requests no endpoint claims, so the UI can never shadow the API:
+- `/api/...`, `/health` and `/docs` behave exactly as without a UI. An unknown `/api` path still gets a JSON 404, which DeepL Sync and the UI rely on.
+- A file that exists in the build is served as is: the bundles in `/assets`, the logo, the favicon.
+- Any other address gets `index.html`, and the React app opens the page itself. Reloading a page or opening a bookmark works.
+- Bundles have a content hash in their names, so browsers keep them for a year. `index.html` is revalidated on every load, so a new build shows up at once.
+- Without a build, the server runs the API only, and opening a page shows how to build the UI.
+
+`WEB_DIST` points the server to another build folder. `WEB_DIST=` (empty) turns the UI off, for hosts that serve `web/dist` themselves from a CDN (the plan for Vercel, see the [roadmap](../ROADMAP.md)).
 
 ### Translating the interface
 
@@ -399,11 +437,12 @@ stringherd/
 │   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   └── UI-PLAN.md        review UI design decisions
 ├── server/               Python + FastAPI backend (own pyproject.toml)
-│   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, CLI, models, settings
+│   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), CLI, models, settings
 │   ├── migrations/       Alembic database migrations
 │   └── tests/            pytest suite (in-memory SQLite, no network)
 ├── web/                  review UI: React + Vite + TypeScript (own package.json)
-│   └── src/              api/ (client, generated types), components/, pages/, locales/, styles/
+│   ├── src/              api/ (client, generated types), components/, pages/, locales/, styles/
+│   └── dist/             the built UI (npm run build:web), served by the server; not committed
 ├── shared/
 │   └── qa-cases.json     quality check cases tested by both the server and the UI
 ├── scripts/
@@ -415,7 +454,7 @@ stringherd/
 ├── .gitattributes        LF line endings for all text files
 ├── .gitignore
 ├── CLAUDE.md             instructions for coding sessions
-├── package.json          JS tooling root
+├── package.json          JS tooling root (DeepL CLI, npm run build:web)
 ├── package-lock.json
 └── README.md
 ```
@@ -433,6 +472,7 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | `op` cannot resolve a reference | Vault, item or field name mismatch, or 1Password locked | Compare `.env.op` with 1Password; run `op read "op://..."` |
 | `rm` or `chmod` not recognized during build | npm runs scripts in `cmd.exe` on Windows | Use `npx tsc` instead of `npm run build` |
 | Git says another git process is running | Stale `.git/index.lock` | Make sure no git process is running, then delete `.git/index.lock` |
+| `localhost:8100` says the review UI is not built | No `web/dist/` yet | Run `npm run build:web` from the repository root, then reload |
 | `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
 | `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
 | pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |

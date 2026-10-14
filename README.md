@@ -47,7 +47,7 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Review interface: sign-in, project overview, review screen with single key and list views, DeepL suggestion with diff, approve and next, status symbols, QA checks, bulk approve and withdraw, Deliver, Phrase-style keyboard shortcuts with an in-app reference ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)), non-printable characters |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
-| 📋 Planned | Regional variants stored as deltas (e.g. `es-AR` holds only what differs from `es`) |
+| 📋 Planned | Existing translations imported per language, and regional variants stored as overrides (e.g. `es-AR` holds only what differs from `es-419`); design in [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) |
 | 📋 Planned | Translation memory with visual context, glossary checks |
 | 📋 Planned | GitHub App: connect a repository from the UI; Stringherd opens the setup PR |
 
@@ -143,6 +143,8 @@ Quick check that everything works:
 cd server && pip install -e ".[dev]" && pytest     # backend
 cd web && npm install && npm test                  # review UI
 ```
+
+To run Stringherd itself, build the UI once with `npm run build:web`, start the server, and open `http://localhost:8100`: the server serves the UI and the API at one address ([details](docs/DEVELOPMENT.md#running-stringherd-as-one-server)).
 
 ---
 

@@ -216,7 +216,7 @@ Planned: over the character limit (error, locked, with character limits); French
 | UI translation | react-i18next | See below |
 | Fonts | Inter and JetBrains Mono, self-hosted through `@fontsource` | No external font service |
 | Tests | Vitest and Testing Library; Playwright for end-to-end later | Logic (placeholders, QA, counting) tested without the browser |
-| Serving | Development: Vite on its own port, proxying `/api` to the server on 8100. Production: FastAPI serves the built UI | One address in both cases, so the session cookie works without cross-origin setup |
+| Serving | Development: Vite on its own port, proxying `/api` to the server on 8100. Otherwise FastAPI serves the built UI (`server/app/web.py`, in place); a host with a CDN can serve `web/dist` itself | One address in both cases, so the session cookie works without cross-origin setup |
 
 ### Editor boundary
 - The rest of the app talks only to `TargetEditor`: value in, value out, plus commands (insert placeholder, insert suggestion, insert non-breaking space). Nothing else imports CodeMirror.

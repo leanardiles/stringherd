@@ -5,7 +5,8 @@
   "description": "Translation review server for software projects. DeepL translates your app's text; Stringherd lets people review and approve those translations before they go back into your codebase.",
   "type": "commonjs",
   "scripts": {
-    "deepl:usage": "op run --env-file=.env.op -- deepl usage"
+    "deepl:usage": "op run --env-file=.env.op -- deepl usage",
+    "build:web": "npm --prefix web run build"
   },
   "repository": {
     "type": "git",
