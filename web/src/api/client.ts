@@ -7,6 +7,22 @@ export type ReviewLocale = components['schemas']['ReviewLocale']
 export type ReviewString = components['schemas']['ReviewString']
 export type ReviewStringPage = components['schemas']['ReviewStringPage']
 export type ReviewEdit = components['schemas']['ReviewEdit']
+export type ProjectAdmin = components['schemas']['ProjectAdminOut']
+export type ProjectAdminDetail = components['schemas']['ProjectAdminDetail']
+export type ProjectCreate = components['schemas']['ProjectCreate']
+export type ProjectUpdate = components['schemas']['ProjectUpdate']
+export type ProjectLocaleAdmin = components['schemas']['ProjectLocaleOut']
+export type ApiKey = components['schemas']['ApiKeyOut']
+export type ApiKeyIssued = components['schemas']['ApiKeyIssued']
+export type ProjectSetup = components['schemas']['ProjectSetup']
+export type UserCreate = components['schemas']['UserCreate']
+export type UserCreated = components['schemas']['UserCreated']
+export type UserUpdate = components['schemas']['UserUpdate']
+export type TemporaryPassword = components['schemas']['TemporaryPassword']
+export type PasswordChange = components['schemas']['PasswordChange']
+
+/** The server's answer while a user still has a temporary password (app/security.py). */
+export const PASSWORD_CHANGE_REQUIRED = 'Choose a new password before continuing.'
 
 /** An API call that failed. status 0 means the server could not be reached. */
 export class ApiError extends Error {

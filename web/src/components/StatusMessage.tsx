@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import ui from './ui.module.css'
 import styles from './StatusMessage.module.css'
 
@@ -26,6 +27,18 @@ export function LoadError({ onRetry, unreachable }: { onRetry: () => void; unrea
       <button type="button" className={ui.secondary} onClick={onRetry}>
         {t('errors.retry')}
       </button>
+    </StatusMessage>
+  )
+}
+
+export function NotFound() {
+  const { t } = useTranslation()
+  return (
+    <StatusMessage>
+      <p>{t('errors.notFound')}</p>
+      <Link to="/" className={ui.secondary}>
+        {t('review.backToProjects')}
+      </Link>
     </StatusMessage>
   )
 }

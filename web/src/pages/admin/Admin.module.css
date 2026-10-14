@@ -1,0 +1,264 @@
+/* Shared layout for the administration pages. */
+
+.page {
+  max-inline-size: 1040px;
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-5);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block-end: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-block-end: var(--space-5);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ---------- Sections (cards) ---------- */
+
+.section {
+  margin-block-end: var(--space-5);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-block-end: 1px solid var(--color-divider);
+  background: var(--color-surface-raised);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.sectionBody > p {
+  margin: 0;
+}
+
+.intro {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Tables ---------- */
+
+.tableWrap {
+  /* Contains visually hidden header text, which would otherwise widen the page on phones. */
+  position: relative;
+  overflow-x: auto;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  padding: var(--space-2) var(--space-4);
+  border-block-end: 1px solid var(--color-divider);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3) var(--space-4);
+  vertical-align: middle;
+}
+
+.table tbody tr + tr td {
+  border-block-start: 1px solid var(--color-divider);
+}
+
+.table .numeric {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table .actionCell {
+  inline-size: 1%;
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* Rows that open a detail page: the whole row is clickable, the name is the real link. */
+.linkRow {
+  cursor: pointer;
+}
+
+.linkRow:hover td {
+  background: var(--color-surface-raised);
+}
+
+.rowLink {
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+}
+
+.secondaryLine {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.chips a {
+  text-decoration: none;
+}
+
+.chips a:hover {
+  text-decoration: underline;
+}
+
+.revoked td {
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Forms inside sections ---------- */
+
+.inlineForm {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.inlineForm .grow {
+  flex: 1 1 200px;
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.radioGroup legend {
+  margin-block-end: var(--space-2);
+  padding: 0;
+}
+
+.radio {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.radio input {
+  margin-block-start: 3px;
+  accent-color: var(--color-primary);
+}
+
+.split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.table th.rowHeader {
+  padding-block: var(--space-3);
+  border-block-end: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  white-space: nowrap;
+}
+
+.table tbody tr + tr th {
+  border-block-start: 1px solid var(--color-divider);
+}
+
+.progressCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 160px;
+}

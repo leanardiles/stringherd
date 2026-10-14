@@ -3,7 +3,11 @@
     "loading": "Loading…"
   },
   "nav": {
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "main": "Main",
+    "review": "Review",
+    "projects": "Projects",
+    "people": "People"
   },
   "login": {
     "title": "Sign in to Stringherd",
@@ -24,7 +28,8 @@
     "role": {
       "admin": "Admin",
       "reviewer": "Reviewer"
-    }
+    },
+    "changePassword": "Change password"
   },
   "projects": {
     "title": "Your projects",
@@ -37,7 +42,7 @@
     "reviewLanguage": "Review {{language}}",
     "progress": "{{percent}} approved",
     "emptyReviewer": "No languages assigned to you yet. Ask an admin to assign you a project and language.",
-    "emptyAdmin": "No projects yet. Run deepl sync push to send translations to Stringherd."
+    "emptyAdmin": "No projects yet. Create one in <projects>Projects</projects>, then push translations with DeepL Sync."
   },
   "review": {
     "filterLabel": "Show",
@@ -128,6 +133,217 @@
   },
   "errors": {
     "loadFailed": "Couldn't load this page.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "generic": "Something went wrong. Try again.",
+    "notFound": "This page doesn't exist, or you don't have access to it."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "done": "Done",
+    "save": "Save",
+    "saving": "Saving…",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyThing": "Copy {{thing}}",
+    "never": "Never",
+    "you": "You"
+  },
+  "password": {
+    "title": "Change your password",
+    "forcedTitle": "Choose your own password",
+    "forcedIntro": "You signed in with a temporary password. Choose a new one to continue.",
+    "current": "Current password",
+    "currentTemporary": "Temporary password",
+    "new": "New password",
+    "confirm": "Repeat new password",
+    "hint": "At least {{count, number}} characters. A passphrase of a few words works well.",
+    "submit": "Change password",
+    "submitting": "Saving…",
+    "back": "Back",
+    "signOut": "Sign out instead",
+    "errors": {
+      "mismatch": "The new passwords don't match.",
+      "tooShort": "Use at least {{count, number}} characters.",
+      "current": "The current password is incorrect.",
+      "same": "Choose a password different from the current one."
+    }
+  },
+  "admin": {
+    "projects": {
+      "title": "Projects",
+      "new": "New project",
+      "empty": "No projects yet. Create one, then connect a repository with the setup steps on its page.",
+      "columns": {
+        "project": "Project",
+        "languages": "Languages",
+        "strings": "Strings",
+        "keys": "API keys"
+      },
+      "activeKeys_one": "{{count, number}} active",
+      "activeKeys_other": "{{count, number}} active",
+      "noKeys": "None",
+      "noLanguages": "None yet",
+      "create": {
+        "title": "New project",
+        "name": "Name",
+        "id": "Project ID",
+        "idHint": "Must match tms.project_id in the repository's .deepl-sync.yaml. It can't change later.",
+        "source": "Source language",
+        "sourceHint": "The language the strings are written in, as a code such as en.",
+        "targets": "Target languages",
+        "targetsHint": "Codes separated by commas, such as fr, es, de-CH. You can add more later.",
+        "submit": "Create project",
+        "submitting": "Creating…",
+        "invalidId": "Use letters, numbers, dots, dashes and underscores only.",
+        "invalidLocale": "{{code}} isn't a valid language code.",
+        "sourceIsTarget": "{{code}} is the source language, so it can't also be a target."
+      }
+    },
+    "project": {
+      "back": "All projects",
+      "edit": "Edit",
+      "editTitle": "Edit project",
+      "idLocked": "The project ID can't change: repositories refer to it.",
+      "sourceLocked": "The source language can't change once source strings have been uploaded.",
+      "summary": "{{id}} · source: {{language}}",
+      "noSource": "not set",
+      "languages": {
+        "title": "Languages",
+        "intro": "The repository decides which languages get translated: target_locales in its .deepl-sync.yaml. Adding a language here only lets you assign reviewers before the first push; a push in a new language adds it here automatically.",
+        "empty": "No target languages yet. Add the languages DeepL Sync translates into.",
+        "approved": "{{approved, number}} of {{total, number}} approved",
+        "noStrings": "No translations yet",
+        "noReviewers": "No reviewer assigned",
+        "add": "Add",
+        "addLabel": "Add a language",
+        "addPlaceholder": "Code, such as it",
+        "remove": "Remove {{language}}",
+        "removeShort": "Remove",
+        "removeTitle": "Remove {{language}}?",
+        "removeBody": "Reviewers assigned to this language lose the assignment. You can add the language again later.",
+        "removeConfirm": "Remove language",
+        "locked": "Has translations, so it stays"
+      },
+      "keys": {
+        "title": "API keys",
+        "intro": "DeepL Sync and the source upload use a key to send strings to this project. A key opens this project only.",
+        "empty": "No keys yet. Create one to connect a repository.",
+        "new": "New key",
+        "newTitle": "New API key",
+        "label": "Label",
+        "labelHint": "Where the key will be used, such as GitHub Actions or a laptop.",
+        "labelDefault": "Default",
+        "create": "Create key",
+        "creating": "Creating…",
+        "columns": {
+          "label": "Label",
+          "key": "Key",
+          "created": "Created",
+          "lastUsed": "Last used",
+          "status": "Status"
+        },
+        "createdBy": "{{date}} by {{name}}",
+        "active": "Active",
+        "revoked": "Revoked {{date}}",
+        "revoke": "Revoke",
+        "revokeLabel": "Revoke {{label}}",
+        "revokeTitle": "Revoke {{label}}?",
+        "revokeBody": "Anything using this key stops working at once. This can't be undone; create a new key if you need one.",
+        "revokeConfirm": "Revoke key",
+        "issuedTitle": "Copy your new key",
+        "issuedBody": "This is the only time Stringherd shows this key. Store it in your secret manager, then provide it as TMS_API_KEY wherever DeepL Sync runs.",
+        "issuedLabel": "API key"
+      },
+      "setup": {
+        "title": "Connect a repository",
+        "intro": "In the repository being localized:",
+        "yaml": "Add this block to .deepl-sync.yaml",
+        "commands": "Then run",
+        "keyNote": "Replace shp_... with one of this project's keys. Never commit the key.",
+        "yamlThing": "the .deepl-sync.yaml block",
+        "commandsThing": "the commands"
+      }
+    },
+    "people": {
+      "title": "People",
+      "add": "Add person",
+      "columns": {
+        "person": "Person",
+        "role": "Role",
+        "languages": "Languages",
+        "status": "Status",
+        "lastSignIn": "Last sign-in"
+      },
+      "allLanguages": "All (admin)",
+      "noLanguages": "None",
+      "active": "Active",
+      "deactivated": "Deactivated",
+      "temporary": "Temporary password",
+      "create": {
+        "title": "Add person",
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "reviewer": "Reviewer",
+        "reviewerHint": "Reviews the languages you assign.",
+        "admin": "Admin",
+        "adminHint": "Manages projects and people, and reviews every language.",
+        "password": "First password",
+        "generate": "Generate a temporary password",
+        "choose": "Choose one myself",
+        "passwordLabel": "Temporary password",
+        "passwordHint": "At least {{count, number}} characters. They choose their own at first sign-in.",
+        "submit": "Add person",
+        "submitting": "Adding…",
+        "createdTitle": "{{name}} can sign in now",
+        "createdGenerated": "Share this temporary password with them through a safe channel. It's shown only once; they choose their own at first sign-in.",
+        "createdChosen": "Share the password you chose with them. They choose their own at first sign-in.",
+        "assign": "Assign languages"
+      }
+    },
+    "person": {
+      "back": "All people",
+      "details": "Details",
+      "name": "Name",
+      "role": "Role",
+      "saved": "Saved.",
+      "selfNote": "You can't change your own role or deactivate yourself.",
+      "status": {
+        "title": "Access",
+        "activeBody": "Can sign in.",
+        "deactivatedBody": "Can't sign in. Assignments and approvals are kept.",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "deactivateTitle": "Deactivate {{name}}?",
+        "deactivateBody": "They're signed out at once and can't sign in until reactivated. Their approvals stay.",
+        "deactivateConfirm": "Deactivate"
+      },
+      "languages": {
+        "title": "Languages",
+        "adminNote": "Admins review every language. Assignments only matter if this person becomes a reviewer.",
+        "empty": "No languages assigned. Until you assign one, they see nothing to review.",
+        "project": "Project",
+        "language": "Language",
+        "choose": "Choose…",
+        "assign": "Assign",
+        "remove": "Remove {{project}}, {{language}}",
+        "noProjects": "Create a project first.",
+        "noTargets": "This project has no target languages yet. Add them on the project page.",
+        "allAssigned": "Every language of this project is already assigned."
+      },
+      "password": {
+        "title": "Password",
+        "intro": "If they forgot their password, issue a new temporary one. They're signed out everywhere and choose their own at next sign-in.",
+        "pending": "They haven't replaced their temporary password yet.",
+        "reset": "Reset password",
+        "resetTitle": "Reset {{name}}'s password?",
+        "resetBody": "Their current password stops working and they're signed out everywhere.",
+        "resetConfirm": "Reset password",
+        "doneTitle": "New temporary password",
+        "doneBody": "Share it with {{name}} through a safe channel. It's shown only once.",
+        "self": "To change your own password, use Change password in the account menu."
+      }
+    }
   }
 }

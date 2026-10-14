@@ -14,6 +14,13 @@ describe('pseudoize', () => {
     expect(pseudoize('{{approved, number}} of {{total, number}}')).toContain('{{approved, number}}')
   })
 
+  it('leaves Trans tags untouched', () => {
+    const result = pseudoize('Create one in <projects>Projects</projects>.')
+    expect(result).toContain('<projects>')
+    expect(result).toContain('</projects>')
+    expect(result).toContain('Ƥŕöĵéçţš')
+  })
+
   it('works through nested catalogs', () => {
     expect(pseudoizeCatalog({ a: { b: 'Sign in' } })).toEqual({ a: { b: expect.stringContaining('Šîĝñ îñ') } })
   })

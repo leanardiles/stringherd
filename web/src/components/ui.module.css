@@ -41,6 +41,65 @@
   border-color: var(--color-primary);
 }
 
+.danger {
+  composes: button;
+  border: 1px solid var(--color-danger-inline);
+  background: var(--color-danger-inline);
+  color: var(--color-on-primary);
+}
+
+.danger:hover {
+  background: var(--color-danger-text);
+  border-color: var(--color-danger-text);
+}
+
+/* Quiet action inside tables and rows, e.g. Remove or Revoke. */
+.quiet {
+  composes: button;
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+}
+
+.quiet:hover {
+  border-color: var(--color-field-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.quietDanger {
+  composes: quiet;
+}
+
+.quietDanger:hover {
+  border-color: var(--color-danger-inline);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-inline);
+}
+
+.button:disabled,
+.secondary:disabled,
+.quiet:disabled,
+.danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.notice {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: var(--font-size-sm);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -58,6 +117,16 @@
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius);
   background: var(--color-field);
+}
+
+.input:disabled {
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+select.input {
+  padding-inline-end: var(--space-2);
 }
 
 .input:focus-visible {
@@ -87,6 +156,18 @@
   composes: pill;
   background: var(--color-success-bg);
   color: var(--color-success-text);
+}
+
+.pillWarning {
+  composes: pill;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.pillDanger {
+  composes: pill;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-inline);
 }
 
 .pillNeutral {

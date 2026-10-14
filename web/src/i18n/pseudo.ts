@@ -1,6 +1,6 @@
 // Pseudo-localization: turns "Approve" into "[Àƥƥŕöṽé ~~~]" so untranslated text
 // and layouts that break with longer languages show up before a real translation
-// exists. Placeholders such as {{count}} are left untouched.
+// exists. Placeholders such as {{count}} and <tags> are left untouched.
 
 const ACCENTED: Record<string, string> = {
   a: 'à', b: 'ƀ', c: 'ç', d: 'ď', e: 'é', f: 'ƒ', g: 'ĝ', h: 'ĥ', i: 'î', j: 'ĵ', k: 'ķ', l: 'ļ', m: 'ɱ',
@@ -9,7 +9,8 @@ const ACCENTED: Record<string, string> = {
   N: 'Ñ', O: 'Ö', P: 'Ƥ', Q: 'Ǫ', R: 'Ŕ', S: 'Š', T: 'Ţ', U: 'Û', V: 'Ṽ', W: 'Ŵ', X: 'Ẋ', Y: 'Ý', Z: 'Ž',
 }
 
-const PLACEHOLDER = /(\{\{[^}]+\}\}|\$t\([^)]*\))/
+// Also keeps <tag>…</tag> markers intact, which <Trans> replaces with links or emphasis.
+const PLACEHOLDER = /(\{\{[^}]+\}\}|\$t\([^)]*\)|<\/?[A-Za-z0-9]+\s*\/?>)/
 
 export function pseudoize(text: string): string {
   const parts = text.split(PLACEHOLDER)

@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ApiError, type ReviewLocale } from '../api/client'
 import { useMe, useReviewProjects } from '../api/queries'
@@ -57,15 +57,20 @@ export function ProjectsPage() {
       <h1 className={styles.title}>{t('projects.title')}</h1>
       {projects.data.length === 0 ? (
         <p className={`${styles.empty} ${ui.muted}`}>
-          {user?.role === 'admin' ? t('projects.emptyAdmin') : t('projects.emptyReviewer')}
+          {user?.role === 'admin' ? (
+            <Trans i18nKey="projects.emptyAdmin" components={{ projects: <Link to="/admin/projects" /> }} />
+          ) : (
+            t('projects.emptyReviewer')
+          )}
         </p>
       ) : (
         projects.data.map((project) => (
           <section key={project.project_id} className={styles.project} aria-labelledby={`project-${project.project_id}`}>
             <header className={styles.projectHeader}>
               <h2 id={`project-${project.project_id}`} className={styles.projectName}>
-                {project.project_id}
+                {project.name}
               </h2>
+              {project.name !== project.project_id && <span className={`${ui.muted} mono`}>{project.project_id}</span>}
               {project.source_locale && (
                 <span className={ui.muted}>{t('projects.source', { language: languageLabel(project.source_locale) })}</span>
               )}

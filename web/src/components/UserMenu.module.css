@@ -32,6 +32,12 @@
   font-size: var(--font-size-sm);
 }
 
+@media (max-width: 640px) {
+  .name {
+    display: none;
+  }
+}
+
 .content {
   min-inline-size: 220px;
   padding: var(--space-2);

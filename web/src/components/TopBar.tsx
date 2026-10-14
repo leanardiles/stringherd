@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Link, useMatch } from 'react-router'
+import { Link, NavLink, useMatch } from 'react-router'
 import type { User } from '../api/client'
 import { languageLabel } from '../lib/languages'
 import { LogoLockup } from './Logo'
@@ -24,6 +24,19 @@ export function TopBar({ user }: { user: User }) {
         </nav>
       )}
       <div className={styles.spacer} />
+      {user.role === 'admin' && (
+        <nav className={styles.nav} aria-label={t('nav.main')}>
+          <NavLink to="/" end className={styles.navLink}>
+            {t('nav.review')}
+          </NavLink>
+          <NavLink to="/admin/projects" className={styles.navLink}>
+            {t('nav.projects')}
+          </NavLink>
+          <NavLink to="/admin/people" className={styles.navLink}>
+            {t('nav.people')}
+          </NavLink>
+        </nav>
+      )}
       <UserMenu user={user} />
     </header>
   )

@@ -144,9 +144,9 @@ op read "op://Stringherd/Stringherd Admin/password" | \
   op run --env-file=../.env.op -- python -m app.cli set-password --email you@example.com
 ```
 
-Then, in `/docs`: call `POST /api/auth/login`. The browser keeps the session cookie, so the other endpoints work from the same page. Create reviewers with `POST /api/admin/users` and give them a language with `POST /api/admin/users/{id}/assignments` (the language must be one of the project's target languages).
+Then sign in to the review UI (see [Review UI](#review-ui)) and open **People** in the top bar to add reviewers and assign them languages (a language must be one of the project's target languages). Everything is also available in `/docs`: call `POST /api/auth/login` first, and the browser keeps the session cookie for the other endpoints.
 
-Passwords set by an admin are temporary. Leave `password` out of `POST /api/admin/users` and Stringherd generates one, returned once as `temporary_password`. At first sign-in the user must choose their own with `POST /api/auth/password`; until then every other endpoint answers `403 Choose a new password before continuing.` An admin can issue a new temporary password with `POST /api/admin/users/{id}/reset-password`. Passwords set with `set-password` on the command line are not temporary.
+Passwords set by an admin are temporary: Stringherd generates one and shows it once (`temporary_password` in the API), or the admin chooses one. At first sign-in the user is taken to a page to choose their own (`POST /api/auth/password`); until then every other endpoint answers `403 Choose a new password before continuing.` An admin can issue a new temporary password from the person's page (`POST /api/admin/users/{id}/reset-password`). Passwords set with `set-password` on the command line are not temporary.
 
 | Role | Can do |
 |---|---|
@@ -168,13 +168,15 @@ Passwords are stored as Argon2 hashes. The session cookie holds a random token; 
 
 ### Projects and API keys
 
-A project must exist before DeepL Sync pushes to it; a push to an unknown project answers `404 Project 'x' not found`. Its id is the `tms.project_id` in the repository's `.deepl-sync.yaml`. As an admin, in `/docs`:
+A project must exist before DeepL Sync pushes to it; a push to an unknown project answers `404 Project 'x' not found`. Its id is the `tms.project_id` in the repository's `.deepl-sync.yaml`. As an admin, open **Projects** in the top bar:
 
-1. `POST /api/admin/projects` with `{"project_id": "my-app", "name": "My App", "source_locale": "en", "target_locales": ["fr", "es"]}`.
-2. `POST /api/admin/projects/my-app/keys` with `{"label": "My laptop"}`. The response holds the key (`shp_...`) **once**: save it in 1Password right away. Stringherd stores only its hash.
-3. `GET /api/admin/projects/my-app/setup` returns the `.deepl-sync.yaml` block and the commands for the repository.
+1. **New project**: name, project id, source language and target languages.
+2. On the project's page, **New key**. The key (`shp_...`) is shown **once**: save it in 1Password right away. Stringherd stores only its hash.
+3. **Connect a repository**, on the same page, shows the `.deepl-sync.yaml` block and the commands for the repository.
 
-The repository then sends that key as `TMS_API_KEY`. A project key opens only its own project (`403` for another one); revoke it with `DELETE /api/admin/projects/my-app/keys/{id}`. The server-wide `TMS_API_KEY` keeps working for every existing project, which is how FitJournal is set up locally. Design and rules: [ADMIN-PLAN.md](ADMIN-PLAN.md).
+The same steps work in `/docs` with `POST /api/admin/projects`, `POST /api/admin/projects/{projectId}/keys` and `GET /api/admin/projects/{projectId}/setup`.
+
+The repository then sends that key as `TMS_API_KEY`. A project key opens only its own project (`403` for another one); revoke it on the project's page. The server-wide `TMS_API_KEY` keeps working for every existing project, which is how FitJournal is set up locally. Design and rules: [ADMIN-PLAN.md](ADMIN-PLAN.md).
 
 ### Uploading source strings
 
@@ -423,8 +425,8 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
 | `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
 | pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |
-| `404 Project 'x' not found` on push or upload | The project does not exist in Stringherd yet, or `project_id` has a typo | Create it with `POST /api/admin/projects`, using the same id as `tms.project_id` |
+| `404 Project 'x' not found` on push or upload | The project does not exist in Stringherd yet, or `project_id` has a typo | Create it under **Projects**, using the same id as `tms.project_id` |
 | `403 This key belongs to project ...` | The key was issued for another project | Use that project's key, or issue one for this project |
-| `403 Choose a new password before continuing.` | The account still has a temporary password | Call `POST /api/auth/password` with the temporary and the new password |
+| `403 Choose a new password before continuing.` | The account still has a temporary password | Sign in to the review UI and choose a new password (or call `POST /api/auth/password`) |
 | `401 Not signed in.` in `/docs` | No session cookie, or it expired | Call `POST /api/auth/login` first, on the same host you use for `/docs` (`127.0.0.1` and `localhost` keep separate cookies) |
 | `op run`: `exec: "deepl": executable file not found` | `deepl` defined as a shell function; `op` only finds real executables | Use `npx deepl` inside this repo, or add `stringherd/node_modules/.bin` to `PATH` to call `deepl` from another project |

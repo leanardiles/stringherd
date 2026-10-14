@@ -1,6 +1,6 @@
 # Administration
 
-How projects, machine keys and people are managed in Stringherd, and what is prepared for organizations later. The backend described here is built; the admin screens come next.
+How projects, machine keys and people are managed in Stringherd, and what is prepared for organizations later. The backend and the admin screens are built; admins reach them through **Projects** and **People** in the top bar.
 
 ## Roles in v1
 
@@ -12,6 +12,18 @@ v1 has a single organization: everyone on a server works for the same team.
 | `reviewer` | Review only the project and language pairs assigned to them |
 
 The first admin is created from the command line (`python -m app.cli create-admin`). Admins create everyone else; there is no self-signup.
+
+## Screens
+
+| Screen | What happens there |
+|---|---|
+| Projects | Every project with its languages, string count and keys. **New project** suggests the id from the name |
+| Project | Languages with progress and reviewers; add or remove a language. API keys: a new key is shown once, revoked keys stay listed. Setup steps to copy |
+| People | Everyone with role, languages, status and last sign-in. **Add person** generates a temporary password (or takes one the admin chooses) and shows it once |
+| Person | Name and role, language assignments, deactivate or reactivate, reset password |
+| Change password | Everyone, from the account menu. Required right after signing in with a temporary password |
+
+Admins cannot change their own role or deactivate themselves, so a server cannot lose its last admin by accident. Their own password changes through **Change password**, not a reset.
 
 ## Projects
 

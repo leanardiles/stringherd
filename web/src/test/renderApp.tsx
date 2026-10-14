@@ -26,5 +26,6 @@ export function renderApp(path: string, handler: Handler) {
   return { router, fetch: vi.mocked(fetch) }
 }
 
-export const ADMIN = { id: 1, email: 'ana@example.com', name: 'Ana Admin', role: 'admin', is_active: true, assignments: [] }
-export const REVIEWER = { id: 2, email: 'rene@example.com', name: 'René Reviewer', role: 'reviewer', is_active: true, assignments: [] }
+const USER_DEFAULTS = { is_active: true, must_change_password: false, last_login_at: null, assignments: [] }
+export const ADMIN = { ...USER_DEFAULTS, id: 1, email: 'ana@example.com', name: 'Ana Admin', role: 'admin' }
+export const REVIEWER = { ...USER_DEFAULTS, id: 2, email: 'rene@example.com', name: 'René Reviewer', role: 'reviewer' }

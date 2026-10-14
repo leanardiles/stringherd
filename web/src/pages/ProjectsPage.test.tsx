@@ -8,6 +8,7 @@ afterEach(() => vi.unstubAllGlobals())
 const PROJECTS = [
   {
     project_id: 'fitjournal',
+    name: 'FitJournal',
     source_locale: 'en',
     locales: [
       { locale: 'es-AR', total: 10, machine_translated: 0, approved: 10 },
@@ -24,7 +25,7 @@ describe('projects page', () => {
       return { status: 404 }
     })
 
-    const project = await screen.findByRole('region', { name: 'fitjournal' })
+    const project = await screen.findByRole('region', { name: 'FitJournal' })
     expect(within(project).getByText('Source: English (en)')).toBeInTheDocument()
     expect(within(project).getByText('112 of 240 approved')).toBeInTheDocument()
     expect(within(project).getByText('128 strings to review')).toBeInTheDocument()

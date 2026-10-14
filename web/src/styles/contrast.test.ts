@@ -34,6 +34,8 @@ const pairs: [string, string, number][] = [
   ['color-warning-text', 'color-warning-bg', TEXT],
   ['color-danger-text', 'color-danger-bg', TEXT],
   ['color-danger-inline', 'color-surface', TEXT],
+  ['color-on-primary', 'color-danger-inline', TEXT],
+  ['color-danger-inline', 'color-danger-bg', TEXT],
   ['color-neutral-text', 'color-neutral-bg', TEXT],
   ['color-field-border', 'color-field', UI],
   ['color-focus', 'color-page', UI],

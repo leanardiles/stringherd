@@ -146,10 +146,33 @@ export interface paths {
         /**
          * Me
          * @description The signed-in user and their assignments.
+         *
+         *     Works while a temporary password is still in place, so the UI can see
+         *     `must_change_password` and show the change-password page.
          */
         get: operations["me_api_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Replace your password. Required after a temporary one; signs out your other browsers.
+         */
+        post: operations["change_password_api_auth_password_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -168,7 +191,10 @@ export interface paths {
         put?: never;
         /**
          * Create User
-         * @description Create a user with a temporary password the admin shares with them.
+         * @description Create a user with a temporary password, which they must change at first sign-in.
+         *
+         *     Leave `password` out to have Stringherd generate one; it is returned once, in
+         *     `temporary_password`, for the admin to pass on.
          */
         post: operations["create_user_api_admin_users_post"];
         delete?: never;
@@ -192,9 +218,34 @@ export interface paths {
         head?: never;
         /**
          * Update User
-         * @description Change name, role, active state or password. A password change or deactivation signs the user out.
+         * @description Change name, role, active state or password.
+         *
+         *     A password set here is temporary: the user must change it at next sign-in. A password
+         *     change or deactivation signs the user out everywhere.
          */
         patch: operations["update_user_api_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Replace a user's password with a generated temporary one, shown once.
+         *
+         *     The user is signed out everywhere and must choose a new password at next sign-in.
+         */
+        post: operations["reset_password_api_admin_users__user_id__reset_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/users/{user_id}/assignments": {
@@ -229,6 +280,159 @@ export interface paths {
         post?: never;
         /** Remove Assignment */
         delete: operations["remove_assignment_api_admin_users__user_id__assignments__project_id___locale__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Projects
+         * @description Every project the admin manages, with string counts, progress and reviewers per language.
+         */
+        get: operations["list_projects_api_admin_projects_get"];
+        put?: never;
+        /**
+         * Add Project
+         * @description Create a project. `project_id` must match `tms.project_id` in the repository's .deepl-sync.yaml.
+         */
+        post: operations["add_project_api_admin_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project Detail */
+        get: operations["project_detail_api_admin_projects__projectId__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Project
+         * @description Rename a project, or change its source language while it has no source strings yet.
+         *
+         *     The project id cannot change: repositories refer to it in .deepl-sync.yaml.
+         */
+        patch: operations["update_project_api_admin_projects__projectId__patch"];
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/locales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Locale
+         * @description Add a target language, so reviewers can be assigned to it before the first push.
+         */
+        post: operations["add_locale_api_admin_projects__projectId__locales_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/locales/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Locale
+         * @description Remove a target language that has no translations yet. Its reviewer assignments go with it.
+         *
+         *     Languages with translations stay, so nothing reviewed is lost by accident.
+         */
+        delete: operations["remove_locale_api_admin_projects__projectId__locales__locale__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Keys
+         * @description The project's keys, including revoked ones. Only a short prefix of each key is shown.
+         */
+        get: operations["list_keys_api_admin_projects__projectId__keys_get"];
+        put?: never;
+        /**
+         * Create Key
+         * @description Issue a key for DeepL Sync and the source upload. `key` is returned only in this response.
+         */
+        post: operations["create_key_api_admin_projects__projectId__keys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Key
+         * @description Revoke a key. It stops working at once; the record stays for the audit trail.
+         */
+        delete: operations["revoke_key_api_admin_projects__projectId__keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Setup
+         * @description What to put in the repository: the .deepl-sync.yaml block and the commands to run.
+         */
+        get: operations["setup_api_admin_projects__projectId__setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -342,6 +546,54 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApiKeyCreate */
+        ApiKeyCreate: {
+            /**
+             * Label
+             * @default Default
+             * @example GitHub Actions
+             */
+            label: string;
+        };
+        /**
+         * ApiKeyIssued
+         * @description The new key. `key` is shown only in this response; Stringherd stores just its hash.
+         */
+        ApiKeyIssued: {
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            /** Prefix */
+            prefix: string;
+            /** Created At */
+            created_at: string | null;
+            /** Created By */
+            created_by: string | null;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Revoked At */
+            revoked_at: string | null;
+            /** Key */
+            key: string;
+        };
+        /** ApiKeyOut */
+        ApiKeyOut: {
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            /** Prefix */
+            prefix: string;
+            /** Created At */
+            created_at: string | null;
+            /** Created By */
+            created_by: string | null;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Revoked At */
+            revoked_at: string | null;
+        };
         /** AssignmentIn */
         AssignmentIn: {
             /**
@@ -394,6 +646,14 @@ export interface components {
              */
             approved: number;
         };
+        /** LocaleIn */
+        LocaleIn: {
+            /**
+             * Locale
+             * @example es
+             */
+            locale: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -403,6 +663,105 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** PasswordChange */
+        PasswordChange: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
+        };
+        /** ProjectAdminDetail */
+        ProjectAdminDetail: {
+            /** Project Id */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Source Locale */
+            source_locale: string | null;
+            /** Target Locales */
+            target_locales: string[];
+            /** Strings */
+            strings: number;
+            /** Locales */
+            locales: components["schemas"]["ProjectLocaleOut"][];
+            /** Active Keys */
+            active_keys: number;
+            /** Created At */
+            created_at: string | null;
+            /** Api Keys */
+            api_keys: components["schemas"]["ApiKeyOut"][];
+        };
+        /** ProjectAdminOut */
+        ProjectAdminOut: {
+            /** Project Id */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Source Locale */
+            source_locale: string | null;
+            /** Target Locales */
+            target_locales: string[];
+            /** Strings */
+            strings: number;
+            /** Locales */
+            locales: components["schemas"]["ProjectLocaleOut"][];
+            /** Active Keys */
+            active_keys: number;
+            /** Created At */
+            created_at: string | null;
+        };
+        /** ProjectCreate */
+        ProjectCreate: {
+            /**
+             * Project Id
+             * @description The project_id in .deepl-sync.yaml
+             * @example fitjournal
+             */
+            project_id: string;
+            /**
+             * Name
+             * @example FitJournal
+             */
+            name: string;
+            /**
+             * Source Locale
+             * @example en
+             */
+            source_locale: string;
+            /**
+             * Target Locales
+             * @example [
+             *       "fr",
+             *       "es"
+             *     ]
+             */
+            target_locales?: string[];
+        };
+        /** ProjectLocaleOut */
+        ProjectLocaleOut: {
+            /** Locale */
+            locale: string;
+            /** Total */
+            total: number;
+            /** Approved */
+            approved: number;
+            /** Reviewers */
+            reviewers: components["schemas"]["ReviewerRef"][];
+        };
+        /**
+         * ProjectSetup
+         * @description What a repository needs to connect to this project, ready to copy.
+         */
+        ProjectSetup: {
+            /** Server Url */
+            server_url: string;
+            /** Project Id */
+            project_id: string;
+            /** Deepl Sync Yaml */
+            deepl_sync_yaml: string;
+            /** Commands */
+            commands: string;
         };
         /** ProjectStatus */
         ProjectStatus: {
@@ -414,6 +773,13 @@ export interface components {
             locales: {
                 [key: string]: components["schemas"]["LocaleCounts"];
             };
+        };
+        /** ProjectUpdate */
+        ProjectUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Source Locale */
+            source_locale?: string | null;
         };
         /** PushResult */
         PushResult: {
@@ -467,6 +833,8 @@ export interface components {
         ReviewProject: {
             /** Project Id */
             project_id: string;
+            /** Name */
+            name: string;
             /** Source Locale */
             source_locale: string | null;
             /** Locales */
@@ -503,6 +871,13 @@ export interface components {
             total: number;
             /** Items */
             items: components["schemas"]["ReviewString"][];
+        };
+        /** ReviewerRef */
+        ReviewerRef: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /**
          * SourceUpload
@@ -556,6 +931,11 @@ export interface components {
             /** Removed */
             removed: string[];
         };
+        /** TemporaryPassword */
+        TemporaryPassword: {
+            /** Temporary Password */
+            temporary_password: string;
+        };
         /** UserCreate */
         UserCreate: {
             /**
@@ -572,9 +952,33 @@ export interface components {
             role: string;
             /**
              * Password
-             * @description Temporary password
+             * @description Temporary password. Leave out to have Stringherd generate one.
              */
-            password: string;
+            password?: string | null;
+        };
+        /**
+         * UserCreated
+         * @description The new user, plus the temporary password when Stringherd generated it (shown once).
+         */
+        UserCreated: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Must Change Password */
+            must_change_password: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Assignments */
+            assignments: components["schemas"]["AssignmentOut"][];
+            /** Temporary Password */
+            temporary_password: string | null;
         };
         /** UserOut */
         UserOut: {
@@ -588,6 +992,10 @@ export interface components {
             role: string;
             /** Is Active */
             is_active: boolean;
+            /** Must Change Password */
+            must_change_password: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
             /** Assignments */
             assignments: components["schemas"]["AssignmentOut"][];
         };
@@ -631,8 +1039,8 @@ export interface operations {
                 authorization?: string | null;
             };
             path: {
-                projectId: string;
                 keyPath: string;
+                projectId: string;
             };
             cookie?: never;
         };
@@ -863,6 +1271,41 @@ export interface operations {
             };
         };
     };
+    change_password_api_auth_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_users_api_admin_users_get: {
         parameters: {
             query?: never;
@@ -915,7 +1358,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserOut"];
+                    "application/json": components["schemas"]["UserCreated"];
                 };
             };
             /** @description Validation Error */
@@ -953,6 +1396,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_api_admin_users__user_id__reset_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryPassword"];
                 };
             };
             /** @description Validation Error */
@@ -1025,6 +1501,350 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_api_admin_projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_project_api_admin_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_detail_api_admin_projects__projectId__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_api_admin_projects__projectId__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_locale_api_admin_projects__projectId__locales_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocaleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_locale_api_admin_projects__projectId__locales__locale__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keys_api_admin_projects__projectId__keys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_key_api_admin_projects__projectId__keys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyIssued"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_key_api_admin_projects__projectId__keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                key_id: number;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setup_api_admin_projects__projectId__setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSetup"];
                 };
             };
             /** @description Validation Error */

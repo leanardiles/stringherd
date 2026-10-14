@@ -242,8 +242,8 @@ Behaviour decided while building step 3:
 ## Phases
 | Phase | Scope |
 |---|---|
-| MVP | Sign-in screen, project and language picker, string list with expanding card, edit / approve / bulk approve, filters and search, DeepL suggestion and diff, other languages, QA, character counter (limits once the backend supports them), shortcuts marked MVP |
-| Next | TM suggestions, context descriptions, find and replace, admin screens for users and assignments, character limit editing |
+| MVP | Sign-in screen, project and language picker, string list with expanding card, edit / approve / bulk approve, filters and search, DeepL suggestion and diff, other languages, QA, character counter (limits once the backend supports them), shortcuts marked MVP, admin screens for projects, API keys and people |
+| Next | TM suggestions, context descriptions, find and replace, character limit editing |
 | Later | Screenshots in the side panel, glossary, comments, history of changes, focus view |
 
 ---
