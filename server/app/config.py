@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,17 @@ class Settings(BaseSettings):
     # The address repositories use to reach this server, shown on each project's setup page
     # (e.g. https://stringherd.example.com). Defaults to the address the admin's browser used.
     public_url: str | None = None
+
+    # The built review UI (npm run build in web/), served by this server at the same address.
+    # Defaults to web/dist in the repository. Without a build the server runs the API only, which
+    # is also how a host that serves the UI itself (such as a CDN) runs it. WEB_DIST= turns it off.
+    web_dist: Path | None = Path(__file__).resolve().parents[2] / "web" / "dist"
+
+    @field_validator("web_dist", mode="before")
+    @classmethod
+    def empty_means_none(cls, value: object) -> object:
+        # An empty WEB_DIST would otherwise become Path(""), the current directory.
+        return None if value == "" else value
 
     @field_validator("database_url")
     @classmethod

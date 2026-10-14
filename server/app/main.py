@@ -6,8 +6,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import get_db
 from app.routers import admin, admin_projects, auth, review, source, tms
+from app.web import serve_ui
 
 app = FastAPI(
     title="Stringherd",
@@ -34,3 +36,7 @@ def health(db: Annotated[Session, Depends(get_db)]):
             content={"status": "degraded", "database": "unreachable"},
         )
     return {"status": "ok", "database": "ok"}
+
+
+# Last, so it only sees requests that no endpoint above claimed.
+serve_ui(app, get_settings().web_dist)
