@@ -109,7 +109,7 @@ def test_delivered_strings_are_locked(setup):
     assert "An admin can reopen it" in response.json()["detail"]
     assert setup["admin"].patch(f"{BASE}/fr/strings/home.title", json={"approved": False}).status_code == 409
     bulk = reviewer.post(f"{BASE}/fr/strings/approve", json={"keys": ["home.title"]}).json()
-    assert bulk == {"approved": 0, "already_approved": 1, "not_found": []}
+    assert bulk == {"approved": 0, "already_approved": 1, "not_found": [], "skipped": []}
 
 
 def test_delivered_strings_stay_searchable(setup):

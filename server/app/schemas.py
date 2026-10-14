@@ -217,10 +217,24 @@ class BulkApprove(BaseModel):
     keys: list[str] = Field(min_length=1, max_length=MAX_SOURCE_KEYS)
 
 
+class QaIssueOut(BaseModel):
+    code: str  # e.g. placeholdersMissing; the UI words it
+    severity: str  # error or warning
+    items: list[str]
+
+
+class BulkSkipped(BaseModel):
+    """A string bulk approve left alone because a quality check failed."""
+
+    key: str
+    issues: list[QaIssueOut]
+
+
 class BulkApproveResult(BaseModel):
     approved: int
     already_approved: int  # approved or delivered already
     not_found: list[str]
+    skipped: list[BulkSkipped]  # QA errors: fix them, then approve
 
 
 class DeliveryResult(BaseModel):

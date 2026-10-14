@@ -128,7 +128,7 @@ def test_bulk_approve(setup):
         f"{BASE}/fr/strings/approve", json={"keys": ["home.title", "login.button", "dashboard.sets_other", "nope"]}
     ).json()
 
-    assert result == {"approved": 2, "already_approved": 1, "not_found": ["nope"]}
+    assert result == {"approved": 2, "already_approved": 1, "not_found": ["nope"], "skipped": []}
     deliver(reviewer)
     assert len(export(setup["tms"])) == 3
 

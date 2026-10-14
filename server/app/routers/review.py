@@ -18,7 +18,9 @@ from app.schemas import (
     LOCALE_PATTERN,
     BulkApprove,
     BulkApproveResult,
+    BulkSkipped,
     DeliveryResult,
+    QaIssueOut,
     ReviewEdit,
     ReviewLocale,
     ReviewProject,
@@ -27,6 +29,7 @@ from app.schemas import (
 )
 from app.security import CurrentUser
 from app.services.delivery import NotDeliveredError, NothingToDeliverError, deliver, last_deliveries, reopen
+from app.services.qa import QaIssue, blocking, check_translation, qa_rules
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -44,6 +47,10 @@ def _project_for_review(db: Session, user: User, slug: str, locale: str) -> Proj
             status_code=status.HTTP_403_FORBIDDEN, detail=f"You are not assigned to review '{locale}' in '{slug}'."
         )
     return project
+
+
+def _issue_out(issue: QaIssue) -> QaIssueOut:
+    return QaIssueOut(code=issue.code, severity=issue.severity, items=issue.items)
 
 
 def _to_review_string(key: TranslationKey, translation: Translation) -> ReviewString:
@@ -150,10 +157,15 @@ def list_strings(
 def bulk_approve(
     project_slug: ProjectSlug, locale: Locale, body: BulkApprove, user: CurrentUser, db: DbSession
 ) -> BulkApproveResult:
-    """Approve several translations at once, as they are."""
+    """Approve several translations at once, as they are.
+
+    Strings with a QA error (empty, placeholder mismatch) are skipped and listed with their
+    issues; the rest are approved.
+    """
     project = _project_for_review(db, user, project_slug, locale)
+    rules = qa_rules(project, locale)
     rows = db.execute(
-        select(TranslationKey.key_path, Translation)
+        select(TranslationKey.key_path, TranslationKey.source_text, Translation)
         .join(Translation, Translation.key_id == TranslationKey.id)
         .where(
             TranslationKey.project_id == project.id,
@@ -161,12 +173,17 @@ def bulk_approve(
             TranslationKey.key_path.in_(body.keys),
         )
     ).all()
-    found = {key_path: translation for key_path, translation in rows}
+    found = {key_path: (source, translation) for key_path, source, translation in rows}
     approved = already = 0
+    skipped: list[BulkSkipped] = []
     now = datetime.now(UTC)
-    for translation in found.values():
+    for key_path, (source, translation) in sorted(found.items()):
         if translation.status != TranslationStatus.MACHINE_TRANSLATED:
             already += 1  # approved, or delivered (locked)
+            continue
+        errors = blocking(check_translation(source, translation.value, rules))
+        if errors:
+            skipped.append(BulkSkipped(key=key_path, issues=[_issue_out(issue) for issue in errors]))
             continue
         translation.status = TranslationStatus.APPROVED
         translation.approved_at = now
@@ -177,6 +194,7 @@ def bulk_approve(
         approved=approved,
         already_approved=already,
         not_found=sorted(set(body.keys) - set(found)),
+        skipped=skipped,
     )
 
 
@@ -215,6 +233,16 @@ def edit_string(
             status_code=status.HTTP_409_CONFLICT,
             detail="This string is delivered and locked. An admin can reopen it.",
         )
+
+    if body.approved is True:
+        # The server has the final say on quality: the screen blocks the same errors.
+        final = body.value if body.value is not None else translation.value
+        errors = blocking(check_translation(key.source_text, final, qa_rules(project, locale)))
+        if errors:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Fix before approving: " + "; ".join(issue.describe() for issue in errors) + ".",
+            )
 
     if body.value is not None and body.value != translation.value:
         translation.value = body.value

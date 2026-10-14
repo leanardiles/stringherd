@@ -121,7 +121,11 @@
       "placeholdersExtra": "Placeholders not in the source: {{items}}",
       "sameAsSource": "Same as the source text. Fine for names and codes; otherwise translate it.",
       "outerSpaces": "Spaces at the start or end differ from the source.",
-      "blocked": "Fix the errors before approving."
+      "blocked": "Fix the errors before approving.",
+      "numbers": "Numbers differ from the source: {{items}}",
+      "endPunctuation": "Ending punctuation differs from the source.",
+      "doubleSpaces": "Double spaces in the translation.",
+      "unbalanced": "Unbalanced brackets or quotes."
     },
     "sourceLabel": "{{code}} · source",
     "targetLabel": "{{code}} · translation",

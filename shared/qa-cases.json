@@ -1,0 +1,58 @@
+{
+  "description": "Quality check cases shared by the server (server/tests/test_qa.py) and the review screen (web/src/lib/qa.test.ts). Each case lists the expected issues in order, with the default levels: empty and placeholder checks are errors, the rest are warnings.",
+  "cases": [
+    { "name": "clean translation", "source": "Save changes", "target": "Enregistrer les modifications", "issues": [] },
+    { "name": "empty", "source": "Save", "target": "", "issues": [{ "code": "empty" }] },
+    { "name": "only spaces is empty", "source": "Save", "target": "    ", "issues": [{ "code": "empty" }] },
+    { "name": "empty without source", "source": null, "target": " ", "issues": [{ "code": "empty" }] },
+    { "name": "no source, nothing else checked", "source": null, "target": "Bonjour  {{name}}", "issues": [] },
+
+    { "name": "i18next placeholder kept", "source": "{{count}} sets", "target": "{{count}} séries", "issues": [] },
+    { "name": "i18next placeholder missing", "source": "{{count}} sets", "target": "séries", "issues": [{ "code": "placeholdersMissing", "items": ["{{count}}"] }] },
+    { "name": "placeholder renamed", "source": "Hello {{name}}", "target": "Bonjour {{nom}}", "issues": [{ "code": "placeholdersMissing", "items": ["{{name}}"] }, { "code": "placeholdersExtra", "items": ["{{nom}}"] }] },
+    { "name": "formatted placeholder", "source": "{{date, datetime}} at {{time}}", "target": "{{time}} le {{date, datetime}}", "issues": [] },
+    { "name": "order does not matter", "source": "{{a}} of {{b}}", "target": "{{b}} de {{a}}", "issues": [] },
+    { "name": "repeated placeholder counted", "source": "{{n}} and {{n}}", "target": "{{n}} et", "issues": [{ "code": "placeholdersMissing", "items": ["{{n}}"] }] },
+    { "name": "nesting", "source": "See $t(common.terms)", "target": "Voir $t(common.terms)", "issues": [] },
+    { "name": "Trans tags kept", "source": "Read the <0>terms</0>.", "target": "Lisez les <0>conditions</0>.", "issues": [] },
+    { "name": "Trans tag dropped", "source": "Read the <0>terms</0>.", "target": "Lisez les conditions.", "issues": [{ "code": "placeholdersMissing", "items": ["<0>", "</0>"] }] },
+    { "name": "self-closing tag", "source": "Line<br/>break", "target": "Saut<br/>de ligne", "issues": [] },
+    { "name": "printf", "source": "%s of %d", "target": "%s sur %d", "issues": [] },
+    { "name": "printf positional", "source": "%1$s by %2$s", "target": "%2$s par %1$s", "issues": [] },
+    { "name": "ICU simple argument", "source": "Hi {name}", "target": "Salut", "issues": [{ "code": "placeholdersMissing", "items": ["{name}"] }] },
+
+    { "name": "same as source with words", "source": "Dashboard", "target": "Dashboard", "issues": [{ "code": "sameAsSource" }] },
+    { "name": "same as source, short word", "source": "OK", "target": "OK", "issues": [{ "code": "sameAsSource" }] },
+    { "name": "same as source, single letter", "source": "A", "target": "A", "issues": [] },
+    { "name": "same as source, placeholder only", "source": "{{count}}", "target": "{{count}}", "issues": [] },
+
+    { "name": "trailing space lost", "source": "Total: ", "target": "Total :", "issues": [{ "code": "outerSpaces" }] },
+    { "name": "leading space added", "source": "Next", "target": " Suivant", "issues": [{ "code": "outerSpaces" }] },
+
+    { "name": "number kept", "source": "Up to 5 workouts", "target": "Jusqu'à 5 séances", "issues": [] },
+    { "name": "number changed", "source": "Up to 5 workouts", "target": "Jusqu'à 6 séances", "issues": [{ "code": "numbers", "items": ["5", "6"] }] },
+    { "name": "number dropped", "source": "Rest 90 seconds", "target": "Reposez-vous", "issues": [{ "code": "numbers", "items": ["90"] }] },
+    { "name": "thousands separators differ", "source": "1,000 users", "target": "1 000 utilisateurs", "issues": [] },
+    { "name": "decimal separator differs", "source": "12.5 kg", "target": "12,5 kg", "issues": [] },
+    { "name": "numbers inside placeholders ignored", "source": "%1$s sets", "target": "%1$s séries", "issues": [] },
+
+    { "name": "question mark kept", "source": "Delete this workout?", "target": "Supprimer cette séance ?", "issues": [] },
+    { "name": "question mark lost", "source": "Delete this workout?", "target": "Supprimer cette séance", "issues": [{ "code": "endPunctuation" }] },
+    { "name": "period added", "source": "Saved", "target": "Enregistré.", "issues": [{ "code": "endPunctuation" }] },
+    { "name": "ellipsis forms match", "source": "Loading...", "target": "Chargement…", "issues": [] },
+    { "name": "full-width punctuation matches", "source": "Done!", "target": "完了！", "issues": [] },
+    { "name": "punctuation before closing tag", "source": "Read the <0>terms.</0>", "target": "Lisez les <0>conditions.</0>", "issues": [] },
+
+    { "name": "double space", "source": "Save changes", "target": "Enregistrer  les modifications", "issues": [{ "code": "doubleSpaces" }] },
+    { "name": "double space also in source", "source": "A  B", "target": "C  D", "issues": [] },
+
+    { "name": "unclosed bracket", "source": "Sets (optional)", "target": "Séries (facultatif", "issues": [{ "code": "unbalanced" }] },
+    { "name": "German quotes balanced", "source": "Tap “Save”", "target": "Tippe auf „Speichern“", "issues": [] },
+    { "name": "guillemets balanced", "source": "Tap “Save”", "target": "Touchez « Enregistrer »", "issues": [] },
+    { "name": "unbalanced guillemets", "source": "Tap “Save”", "target": "Touchez « Enregistrer", "issues": [{ "code": "unbalanced" }] },
+    { "name": "source already unbalanced", "source": "1) First step", "target": "1) Première étape", "issues": [] },
+    { "name": "ICU braces in placeholder ignored", "source": "Hi {name} (admin)", "target": "Salut {name} (admin)", "issues": [] },
+
+    { "name": "several issues in order", "source": "{{count}} sets?", "target": " Séries  ", "issues": [{ "code": "placeholdersMissing", "items": ["{{count}}"] }, { "code": "outerSpaces" }, { "code": "endPunctuation" }, { "code": "doubleSpaces" }] }
+  ]
+}

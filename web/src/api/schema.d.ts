@@ -494,6 +494,9 @@ export interface paths {
         /**
          * Bulk Approve
          * @description Approve several translations at once, as they are.
+         *
+         *     Strings with a QA error (empty, placeholder mismatch) are skipped and listed with their
+         *     issues; the rest are approved.
          */
         post: operations["bulk_approve_api_review_projects__projectId__locales__locale__strings_approve_post"];
         delete?: never;
@@ -677,6 +680,18 @@ export interface components {
             already_approved: number;
             /** Not Found */
             not_found: string[];
+            /** Skipped */
+            skipped: components["schemas"]["BulkSkipped"][];
+        };
+        /**
+         * BulkSkipped
+         * @description A string bulk approve left alone because a quality check failed.
+         */
+        BulkSkipped: {
+            /** Key */
+            key: string;
+            /** Issues */
+            issues: components["schemas"]["QaIssueOut"][];
         };
         /**
          * DeliveryResult
@@ -883,6 +898,15 @@ export interface components {
              * @example Speichern
              */
             value: string;
+        };
+        /** QaIssueOut */
+        QaIssueOut: {
+            /** Code */
+            code: string;
+            /** Severity */
+            severity: string;
+            /** Items */
+            items: string[];
         };
         /**
          * ReviewEdit

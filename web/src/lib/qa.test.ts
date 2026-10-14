@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
+// The same cases run in server/tests/test_qa.py, so the screen and the server agree.
+import shared from '../../../shared/qa-cases.json'
 import { checkTranslation, qaLevel } from './qa'
+
+type SharedIssue = { code: string; items?: string[] }
+const shape = (issues: SharedIssue[]) => issues.map((i) => (i.items?.length ? { code: i.code, items: i.items } : { code: i.code }))
+
+describe('shared QA cases', () => {
+  it.each(shared.cases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    const got = checkTranslation(c.source, c.target).map((i) => ('items' in i ? { code: i.code, items: i.items } : { code: i.code }))
+    expect(shape(got)).toEqual(shape(c.issues as SharedIssue[]))
+  })
+})
 
 describe('checkTranslation', () => {
   it('passes a correct translation', () => {
