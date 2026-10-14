@@ -39,7 +39,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Sign-in, project overview with progress per language
 - Single key view (key list, editor, context panel) and list view, toggled in the toolbar
 - Editor with placeholders as locked chips, DeepL's original as a suggestion with a word diff, approve and next, withdraw, autosave on leave, Phrase-style shortcuts
-- Status symbols per string; basic QA (placeholder mismatch and empty translation block approval; same as source and outer spaces warn)
+- Status symbols per string; quality checks, enforced by the server too: empty and placeholder mismatch block approval; same as source, outer spaces, numbers, ending punctuation, double spaces and unbalanced brackets or quotes warn. One shared set of cases tests the UI and the server
+- Bulk approve and withdraw in the list view: checkboxes, select all shown, Shift+click ranges, an action bar; strings with QA errors are skipped, reported and stay selected
 - The interface itself is translatable (react-i18next, pseudo-locale for testing), with a palette checked against WCAG AA
 - Admin screens: projects with their languages, API keys (shown once, revocable) and setup steps; people with roles, temporary passwords, deactivation and language assignments; change password, required after a temporary one
 - Deliver: approved strings become pullable only when the reviewer delivers the language, so approved strings can still change during a session. Delivered strings leave the working list, stay searchable read-only under Delivered, and are locked; an admin can reopen one, and the code keeps the delivered text until the next Deliver. A source change or a new machine translation sends a delivered string back to review
@@ -53,8 +54,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 Goal: a complete review tool someone else can run locally and use without opening the API docs. Ends with a `v1.0.0` tag.
 
 **Needed**
-- **Review screen, rest of the MVP**: bulk approve (checkboxes and an action bar), `F8` to insert placeholders, `Ctrl+G` to go to a string, `Ctrl+Shift+Space` for a non-breaking space, show non-printable characters
-- **QA enforced on the server**: the API refuses to approve a translation with a broken placeholder or empty text, as the UI already does
+- **Review screen, rest of the MVP**: `F8` to insert placeholders, `Ctrl+G` to go to a string, `Ctrl+Shift+Space` for a non-breaking space, show non-printable characters
 - **One process to run**: FastAPI serves the built UI, so Stringherd is a single server at a single address
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step
 - **`v1.0.0` tag and a changelog**
@@ -64,6 +64,7 @@ Goal: a complete review tool someone else can run locally and use without openin
 - **Character limits** (hard limits; placeholders count as one character)
 - **Translation memory** suggestions from approved strings
 - **GitHub Action** that runs `deepl sync` and the source upload on every push to the source files
+- **Bulk actions in the single key view**: a "Show translations" option adds the target text to each row of the key list, so it can be scanned and multi-selected like the list view
 
 ---
 
@@ -109,7 +110,8 @@ Goal: reviewers see where each string appears in the app, without changes to the
 - **Adding and releasing languages**: add a language from Stringherd (setup pull request); keep it hidden until review is complete; release it with one deliberate step
 - **Workflows per locale and path**: MT only, MT + review, MT + review + sign-off, configured as ordered rules. With sign-off, the reviewer's Deliver sends the strings to an admin, and only the admin's sign-off makes them pullable
 - **Source change handling**: show old and new source next to the previous translation; option to carry over translations when only punctuation or typos changed
-- **More quality checks**: length expansion warnings, French spacing before `! ? : ;`, glossary terms not used
+- **QA profiles**: admins set each check to error, warning or off per project and language; empty and placeholder checks stay locked as errors. Custom pattern rules and forbidden terms; reviewers mark a warning as a false positive, with their name recorded
+- **More quality checks** (warnings by default): URLs and emails that differ, length expansion, French spacing before `! ? : ;`, glossary terms not used, inconsistency (the same source translated differently in a project), and a 100% TM match that was changed
 - **Glossary**: import (TBX, CSV), term highlighting, consistency checks, sync to DeepL glossaries
 - **Translation memory** with fuzzy matching across projects, each match shown with the screenshot of its original context
 - **Translation memory lookup**: reviewers search how a term or string was translated before (concordance search across delivered strings), and see the same string in the project's other languages next to each result. Grows out of the read-only Delivered view in the review screen

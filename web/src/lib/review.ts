@@ -55,3 +55,41 @@ export function neighbourKey(keys: string[], current: string | null, step: 1 | -
   if (index === -1) return keys[0]
   return keys[index + step] ?? null
 }
+
+// ---------- Selection for bulk actions (list view) ----------
+
+/** Delivered strings are locked, so they cannot be part of a bulk action. */
+export function isSelectable(s: Pick<ReviewString, 'status'>): boolean {
+  return s.status !== 'delivered'
+}
+
+/** The keys from `from` to `to` (both included) in list order, for Shift+click. */
+export function keyRange(keys: string[], from: string, to: string): string[] {
+  const a = keys.indexOf(from)
+  const b = keys.indexOf(to)
+  if (a === -1 || b === -1) return [to]
+  return keys.slice(Math.min(a, b), Math.max(a, b) + 1)
+}
+
+export interface SelectionSummary {
+  /** In review: Approve sends these. */
+  approvable: string[]
+  /** Of those, how many the server will skip for a QA error. */
+  withErrors: number
+  /** Approved, not delivered: Withdraw sends these. */
+  withdrawable: string[]
+}
+
+export function summarizeSelection(
+  items: ReviewString[],
+  selected: ReadonlySet<string>,
+  hasError: (item: ReviewString) => boolean,
+): SelectionSummary {
+  const chosen = items.filter((item) => selected.has(item.key))
+  const approvable = chosen.filter((item) => item.status === 'machine_translated')
+  return {
+    approvable: approvable.map((item) => item.key),
+    withErrors: approvable.filter(hasError).length,
+    withdrawable: chosen.filter((item) => item.status === 'approved').map((item) => item.key),
+  }
+}

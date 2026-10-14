@@ -7,19 +7,62 @@
   padding-inline: var(--space-3);
 }
 
+/* A row with its bulk-selection checkbox in front; the header row uses the same layout. */
+.selectable {
+  display: flex;
+  align-items: stretch;
+  border-block-end: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.selectable:hover,
+.selectable:hover .row {
+  background: var(--color-surface-raised);
+}
+
+.selected,
+.selected .row {
+  background: var(--color-neutral-bg);
+}
+
+.check {
+  display: flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+.check input {
+  inline-size: 15px;
+  block-size: 15px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.check input:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 .row {
   composes: grid;
-  inline-size: 100%;
+  flex: 1;
+  min-inline-size: 0;
   min-block-size: var(--row-height);
+  padding-inline-start: 0;
   border: 0;
-  border-block-end: 1px solid var(--color-divider);
   background: var(--color-surface);
   text-align: start;
   cursor: pointer;
 }
 
-.row:hover {
-  background: var(--color-surface-raised);
+/* Header columns line up with the row grid after the checkbox. */
+.headGrid {
+  composes: grid;
+  flex: 1;
+  min-inline-size: 0;
+  padding-inline-start: 0;
 }
 
 .row:focus-visible {

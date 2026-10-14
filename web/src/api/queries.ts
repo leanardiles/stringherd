@@ -5,6 +5,8 @@ import {
   PASSWORD_CHANGE_REQUIRED,
   type ApiKey,
   type ApiKeyIssued,
+  type BulkApproveResult,
+  type BulkWithdrawResult,
   type DeliveryResult,
   type PasswordChange,
   type ProjectAdmin,
@@ -164,6 +166,53 @@ export function useEditString(projectId: string, locale: string) {
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviewProjects }),
   })
+}
+
+/**
+ * Approve or withdraw several strings at once. The list updates from the server's answer
+ * (skipped strings keep their status), then reloads in the background for exact details.
+ */
+export function useBulkReview(projectId: string, locale: string, approverName: string) {
+  const queryClient = useQueryClient()
+  const listKey = queryKeys.reviewStrings(projectId, locale)
+  const settle = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: listKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviewProjects }),
+    ])
+
+  const approve = useMutation({
+    mutationFn: (keys: string[]) =>
+      api<BulkApproveResult>(`${stringsPath(projectId, locale)}/approve`, { method: 'POST', json: { keys } }),
+    onSuccess: (result, keys) => {
+      const skipped = new Set(result.skipped.map((s) => s.key))
+      queryClient.setQueryData<ReviewString[]>(listKey, (items) =>
+        items?.map((item) =>
+          keys.includes(item.key) && !skipped.has(item.key) && item.status === 'machine_translated'
+            ? { ...item, status: 'approved', approved_by: approverName }
+            : item,
+        ),
+      )
+    },
+    onSettled: settle,
+  })
+
+  const withdraw = useMutation({
+    mutationFn: (keys: string[]) =>
+      api<BulkWithdrawResult>(`${stringsPath(projectId, locale)}/withdraw`, { method: 'POST', json: { keys } }),
+    onSuccess: (_result, keys) => {
+      queryClient.setQueryData<ReviewString[]>(listKey, (items) =>
+        items?.map((item) =>
+          keys.includes(item.key) && item.status === 'approved'
+            ? { ...item, status: 'machine_translated', approved_by: null, approved_at: null }
+            : item,
+        ),
+      )
+    },
+    onSettled: settle,
+  })
+
+  return { approve, withdraw }
 }
 
 /** Deliver a language: its approved strings become pullable and locked. */

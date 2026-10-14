@@ -173,7 +173,28 @@
     "alsoDelivered_one": "{{count, number}} delivered string also matches.",
     "alsoDelivered_other": "{{count, number}} delivered strings also match.",
     "showDelivered": "Show delivered",
-    "emptyOpen": "Nothing open: every string is delivered."
+    "emptyOpen": "Nothing open: every string is delivered.",
+    "bulk": {
+      "label": "Selected strings",
+      "selectAll": "Select all shown strings",
+      "selectOne": "Select {{key}}",
+      "locked": "Delivered strings are locked",
+      "selected_one": "{{count, number}} selected",
+      "selected_other": "{{count, number}} selected",
+      "withErrors_one": "{{count, number}} has QA errors and will be skipped",
+      "withErrors_other": "{{count, number}} have QA errors and will be skipped",
+      "approve_one": "Approve {{count, number}} string",
+      "approve_other": "Approve {{count, number}} strings",
+      "withdraw_one": "Withdraw {{count, number}} approval",
+      "withdraw_other": "Withdraw {{count, number}} approvals",
+      "clear": "Clear selection",
+      "approved_one": "{{count, number}} string approved.",
+      "approved_other": "{{count, number}} strings approved.",
+      "skipped_one": "{{count, number}} skipped: fix the QA errors first. It stays selected.",
+      "skipped_other": "{{count, number}} skipped: fix the QA errors first. They stay selected.",
+      "withdrawn_one": "{{count, number}} approval withdrawn.",
+      "withdrawn_other": "{{count, number}} approvals withdrawn."
+    }
   },
   "errors": {
     "loadFailed": "Couldn't load this page.",

@@ -19,6 +19,7 @@ from app.schemas import (
     BulkApprove,
     BulkApproveResult,
     BulkSkipped,
+    BulkWithdrawResult,
     DeliveryResult,
     QaIssueOut,
     ReviewEdit,
@@ -195,6 +196,40 @@ def bulk_approve(
         already_approved=already,
         not_found=sorted(set(body.keys) - set(found)),
         skipped=skipped,
+    )
+
+
+@router.post("/projects/{projectId}/locales/{locale}/strings/withdraw", response_model=BulkWithdrawResult)
+def bulk_withdraw(
+    project_slug: ProjectSlug, locale: Locale, body: BulkApprove, user: CurrentUser, db: DbSession
+) -> BulkWithdrawResult:
+    """Withdraw several approvals at once: the strings go back to review.
+
+    Only approved strings change. Delivered strings are locked (an admin reopens them one by
+    one), and strings still in review stay as they are.
+    """
+    project = _project_for_review(db, user, project_slug, locale)
+    rows = db.execute(
+        select(TranslationKey.key_path, Translation)
+        .join(Translation, Translation.key_id == TranslationKey.id)
+        .where(
+            TranslationKey.project_id == project.id,
+            Translation.locale == locale,
+            TranslationKey.key_path.in_(body.keys),
+        )
+    ).all()
+    found = {key_path: translation for key_path, translation in rows}
+    withdrawn = 0
+    for translation in found.values():
+        if translation.status != TranslationStatus.APPROVED:
+            continue
+        translation.status = TranslationStatus.MACHINE_TRANSLATED
+        translation.approved_at = None
+        translation.approved_by_id = None
+        withdrawn += 1
+    db.commit()
+    return BulkWithdrawResult(
+        withdrawn=withdrawn, not_approved=len(found) - withdrawn, not_found=sorted(set(body.keys) - set(found))
     )
 
 

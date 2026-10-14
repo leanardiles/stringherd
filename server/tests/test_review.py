@@ -154,3 +154,24 @@ def test_reviewer_edit_survives_repush_and_comes_back_on_pull(setup):
     item = reviewer.get(f"{BASE}/fr/strings", params={"q": "sets"}).json()["items"][0]
     assert item["status"] == "delivered" and item["approved_by"] == "René Reviewer"
     assert item["delivered_by"] == "René Reviewer"
+
+
+def test_bulk_withdraw(setup, db_session_factory):
+    reviewer = setup["reviewer"]
+    reviewer.post(f"{BASE}/fr/strings/approve", json={"keys": ["home.title", "login.button"]})
+    deliver(reviewer)
+    reviewer.post(f"{BASE}/fr/strings/approve", json={"keys": ["dashboard.sets_other"]})
+
+    # home.title and login.button are delivered (locked); only dashboard.sets_other is approved.
+    result = reviewer.post(
+        f"{BASE}/fr/strings/withdraw", json={"keys": ["home.title", "login.button", "dashboard.sets_other", "nope"]}
+    ).json()
+
+    assert result == {"withdrawn": 1, "not_approved": 2, "not_found": ["nope"]}
+    statuses = {i["key"]: i["status"] for i in reviewer.get(f"{BASE}/fr/strings").json()["items"]}
+    assert statuses == {"dashboard.sets_other": "machine_translated", "home.title": "delivered", "login.button": "delivered"}
+
+
+def test_bulk_withdraw_needs_the_language(setup):
+    response = setup["reviewer"].post(f"{BASE}/de/strings/withdraw", json={"keys": ["home.title"]})
+    assert response.status_code == 403

@@ -237,6 +237,12 @@ class BulkApproveResult(BaseModel):
     skipped: list[BulkSkipped]  # QA errors: fix them, then approve
 
 
+class BulkWithdrawResult(BaseModel):
+    withdrawn: int
+    not_approved: int  # still in review already, or delivered (locked): left as they were
+    not_found: list[str]
+
+
 class DeliveryResult(BaseModel):
     """What one Deliver sent. Strings that were not approved keep their current text in the repository."""
 

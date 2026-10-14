@@ -403,6 +403,8 @@ stringherd/
 │   └── tests/            pytest suite (in-memory SQLite, no network)
 ├── web/                  review UI: React + Vite + TypeScript (own package.json)
 │   └── src/              api/ (client, generated types), components/, pages/, locales/, styles/
+├── shared/
+│   └── qa-cases.json     quality check cases tested by both the server and the UI
 ├── scripts/
 │   └── upload-source.mjs source string upload (Node, no dependencies)
 ├── vendor/

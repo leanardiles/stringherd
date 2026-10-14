@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, and basic QA checks; bulk approve and more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, quality checks enforced by the server, and bulk approve and withdraw in the list view; more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
 
 ---
 
@@ -43,7 +43,8 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Reviewer accounts: admins and reviewers, sign-in with a secure session cookie, temporary passwords changed at first sign-in, reviewers assigned per project and language |
 | ✅ Done | Admin screens: projects and their languages, API keys shown once, setup steps per project, people with temporary passwords and language assignments |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
-| 🚧 In progress | Review interface: sign-in, project overview and review screen done (single key and list views, DeepL suggestion with diff, approve and next, status symbols, placeholder QA checks, keyboard shortcuts); bulk approve next |
+| ✅ Done | Quality checks: empty and placeholder errors block approval in the review screen and on the server; warnings for same as source, spacing, numbers, ending punctuation, double spaces, unbalanced brackets and quotes |
+| 🚧 In progress | Review interface: sign-in, project overview and review screen done (single key and list views, DeepL suggestion with diff, approve and next, status symbols, placeholder QA checks, keyboard shortcuts, bulk approve and withdraw); more shortcuts next |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
 | 📋 Planned | Regional variants stored as deltas (e.g. `es-AR` holds only what differs from `es`) |
@@ -80,8 +81,9 @@ People sign in with email and password and get a session cookie (`HttpOnly`, `Sa
 | `POST` | `/api/auth/password` | Change your password (required after a temporary one) |
 | `GET` | `/api/review/projects` | Projects and languages the user may review, with progress |
 | `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, DeepL's original, status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
-| `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}` |
-| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}` |
+| `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}`. Approving a string with a QA error answers `422` with the reason |
+| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}`. Strings with a QA error are skipped and listed with their issues |
+| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/withdraw` | Withdraw several approvals. Body: `{"keys": [...]}`. Only approved strings change; delivered ones are locked |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/deliver` | Deliver the language: its approved strings become what `deepl sync pull` exports, and are locked |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}/reopen` | Unlock a delivered string so it can be corrected (admins). The code keeps the delivered text until the next Deliver |
 

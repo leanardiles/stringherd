@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReviewString } from '../api/client'
-import { countByFilter, displayStatus, matchesFilter, neighbourKey } from './review'
+import { countByFilter, displayStatus, isSelectable, keyRange, matchesFilter, neighbourKey, summarizeSelection } from './review'
 
 const base: ReviewString = {
   key: 'home.title', source_text: 'Home', source_file: null, value: 'Accueil', machine_translation: 'Accueil',
@@ -56,5 +56,31 @@ describe('neighbourKey', () => {
     expect(neighbourKey(keys, null, 1)).toBe('a')
     expect(neighbourKey(keys, null, -1)).toBe('c')
     expect(neighbourKey([], 'a', 1)).toBeNull()
+  })
+})
+
+describe('selection', () => {
+  it('leaves delivered strings out', () => {
+    expect(isSelectable(base)).toBe(true)
+    expect(isSelectable({ status: 'approved' })).toBe(true)
+    expect(isSelectable({ status: 'delivered' })).toBe(false)
+  })
+
+  it('selects a range in either direction', () => {
+    const keys = ['a', 'b', 'c', 'd']
+    expect(keyRange(keys, 'b', 'd')).toEqual(['b', 'c', 'd'])
+    expect(keyRange(keys, 'd', 'b')).toEqual(['b', 'c', 'd'])
+    expect(keyRange(keys, 'x', 'c')).toEqual(['c'])
+  })
+
+  it('splits a selection into what Approve and Withdraw send', () => {
+    const items = [
+      { ...base, key: 'a' },
+      { ...base, key: 'b', value: '' },
+      { ...base, key: 'c', status: 'approved' },
+      { ...base, key: 'd' },
+    ]
+    const summary = summarizeSelection(items, new Set(['a', 'b', 'c']), (item) => item.value === '')
+    expect(summary).toEqual({ approvable: ['a', 'b'], withErrors: 1, withdrawable: ['c'] })
   })
 })

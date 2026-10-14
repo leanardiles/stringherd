@@ -28,6 +28,7 @@ References studied: Phrase TMS (CAT web editor), Phrase Strings (software string
 | 16 | **Stringherd's own UI is translatable from day one** with react-i18next (i18next JSON with `_one` / `_other` plurals), `Intl` for numbers and dates, CSS logical properties, and a pseudo-locale for testing | A localization tool must be localizable; Stringherd can review its own translations as a second demo |
 | 17 | **Status symbols at the end of each row**, two fixed slots: QA (red triangle error, amber triangle warning) then status (green package with a tick delivered, green circled tick approved, pencil edited, empty circle machine translation). Shapes differ, so meaning never depends on colour; each has a tooltip and a screen-reader label | Phrase-like and scannable; to be reviewed in use and amended |
 | 18 | **Deliver per language**: approved strings become pullable only when the reviewer clicks Deliver in the toolbar, which shows how many approved strings are waiting and confirms what goes and what stays. Delivered strings leave the working list (the default Open filter), stay findable read-only under Delivered and through a hint when a search matches them, and are locked; admins can Reopen one | Reviewers revisit approved strings during a session; CAT tools close a job only on delivery. Delivered work stays visible for consistency until translation memory search exists |
+| 19 | **Bulk approve and withdraw in the list view**: a checkbox per row, a header checkbox for everything the filter and search show, Shift+click for ranges, and an action bar at the bottom while something is selected. Delivered strings can't be selected. Strings with QA errors are skipped by the server, reported, and stay selected; changing the filter, search or view clears the selection. No confirmation step: Deliver is the checkpoint | Phrase-style; list view only, because the single key view does not show the translations until a string is opened |
 
 ---
 
@@ -179,15 +180,22 @@ Not decided yet. B as the source of truth with A to fill gaps is one candidate; 
 
 ---
 
-## QA checks (MVP)
-| Check | Severity |
-|---|---|
-| Placeholder missing, extra or changed (`{{count}}`) | Error, blocks approval |
-| Over the character limit | Error, blocks approval |
-| Empty translation | Error |
-| Target identical to source | Warning (often fine: brand names, "OK") |
-| Leading or trailing spaces differ from source | Warning |
-| French: missing non-breaking space before `! ? : ;` | Warning (locale-specific rule) |
+## QA checks
+Errors block approval, in the browser and on the server; warnings only inform. Only what breaks the app is an error by default; anything about wording warns. The rules live in `web/src/lib/qa.ts` and `server/app/services/qa.py`, and both are tested against `shared/qa-cases.json`.
+
+| Check | Default | Locked |
+|---|---|---|
+| Empty translation | Error | Yes |
+| Placeholder or tag missing (`{{count}}`, `<0>`, `%s`, `{name}`) | Error | Yes |
+| Placeholder or tag not in the source | Error | Yes |
+| Target identical to source (only when the source has words) | Warning | No |
+| Leading or trailing spaces differ from source | Warning | No |
+| Numbers differ from source (compared by digits, so `1,000` and `1 000` match) | Warning | No |
+| Ending punctuation differs (`.` `?` `!` `:` `…`, with full-width and Arabic equivalents) | Warning | No |
+| Double spaces in the translation, not in the source | Warning | No |
+| Unbalanced brackets or quotes (when the source is balanced) | Warning | No |
+
+Planned: over the character limit (error, locked, with character limits); French spacing before `! ? : ;` (warning, French only). Later, admins set each unlocked check to error, warning or off per project and language (QA profiles, see the roadmap); locked checks stay errors because they break the app.
 
 ---
 
@@ -229,13 +237,14 @@ Not decided yet. B as the source of truth with A to fill gaps is one candidate; 
 | 1. Scaffold, sign-in, account menu | Done |
 | 2. Project and language overview with progress | Done |
 | 3. Review screen: Single key and List views, edit, approve and next, withdraw, autosave on leave, DeepL suggestion and diff, filters, search, placeholder chips, character counter, status symbols, basic QA (placeholders, empty, same as source, outer spaces) | Done |
-| 4. Remaining MVP shortcuts, bulk approve, non-printable characters, French spacing check | Next |
+| 4. Bulk approve and withdraw (list view) | Done |
+| 4b. Remaining MVP shortcuts, non-printable characters, French spacing check | Next |
 | 5. Backend additions: other languages in the review API, character limits | Planned |
 
 Behaviour decided while building step 3:
 - `Ctrl+Enter` approves and opens the next string in the visible list (Phrase's default: next segment).
 - Leaving a string with unsaved changes saves them, unapproved, as CAT tools do; `Esc` discards changes.
-- QA errors block approval in the browser; the server-side check comes with character limits (step 5).
+- QA errors block approval in the browser and on the server; bulk approve approves what passes and reports the rest.
 - All strings of a language are loaded once and filtered in the browser; filters, search, view and the open string live in the URL.
 
 ---
@@ -322,5 +331,4 @@ Not for us: Figma previews and in-context editing (screenshots instead), jobs, k
 
 ## Open questions
 - Character limits: where they are set (A, B or C).
-- Bulk approve: by checkbox selection, by filter ("approve all visible"), or both? (Phrase Strings: checkboxes plus a bottom action bar.)
 - Mark as minor change: worth having, and who may use it?

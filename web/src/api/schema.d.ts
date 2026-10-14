@@ -505,6 +505,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/review/projects/{projectId}/locales/{locale}/strings/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Withdraw
+         * @description Withdraw several approvals at once: the strings go back to review.
+         *
+         *     Only approved strings change. Delivered strings are locked (an admin reopens them one by
+         *     one), and strings still in review stay as they are.
+         */
+        post: operations["bulk_withdraw_api_review_projects__projectId__locales__locale__strings_withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}": {
         parameters: {
             query?: never;
@@ -692,6 +715,15 @@ export interface components {
             key: string;
             /** Issues */
             issues: components["schemas"]["QaIssueOut"][];
+        };
+        /** BulkWithdrawResult */
+        BulkWithdrawResult: {
+            /** Withdrawn */
+            withdrawn: number;
+            /** Not Approved */
+            not_approved: number;
+            /** Not Found */
+            not_found: string[];
         };
         /**
          * DeliveryResult
@@ -2064,6 +2096,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkApproveResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_withdraw_api_review_projects__projectId__locales__locale__strings_withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkApprove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkWithdrawResult"];
                 };
             };
             /** @description Validation Error */

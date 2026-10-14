@@ -3,9 +3,18 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { ApiError, type ReviewEdit } from '../api/client'
-import { useDeliver, useEditString, useMe, useReopenString, useReviewProjects, useReviewStrings } from '../api/queries'
+import {
+  useBulkReview,
+  useDeliver,
+  useEditString,
+  useMe,
+  useReopenString,
+  useReviewProjects,
+  useReviewStrings,
+} from '../api/queries'
 import type { TargetEditorHandle } from '../components/editor/TargetEditor'
 import { ProgressBar } from '../components/ProgressBar'
+import { BulkBar } from '../components/review/BulkBar'
 import { ContextPanel } from '../components/review/ContextPanel'
 import { DeliverDialog } from '../components/review/DeliverDialog'
 import { KeyList } from '../components/review/KeyList'
@@ -18,7 +27,16 @@ import ui from '../components/ui.module.css'
 import { errorMessage } from '../lib/errors'
 import { formatPercent, languageLabel } from '../lib/languages'
 import { checkTranslation, qaLevel } from '../lib/qa'
-import { countByFilter, matchesFilter, matchesQuery, neighbourKey, type StatusFilter } from '../lib/review'
+import {
+  countByFilter,
+  isSelectable,
+  keyRange,
+  matchesFilter,
+  matchesQuery,
+  neighbourKey,
+  summarizeSelection,
+  type StatusFilter,
+} from '../lib/review'
 import styles from './ReviewPage.module.css'
 
 const FILTERS: StatusFilter[] = ['all', 'review', 'approved', 'delivered']
@@ -52,6 +70,10 @@ export function ReviewPage() {
   const reopen = useReopenString(projectId, locale)
   const { data: me } = useMe()
   const canReopen = me?.role === 'admin'
+  const bulk = useBulkReview(projectId, locale, me?.name ?? '')
+  // List view: strings checked for a bulk action, and the last one clicked (for Shift+click).
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const anchor = useRef<string | null>(null)
   const [delivering, setDelivering] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const sourceLang = projects.data?.find((p) => p.project_id === projectId)?.source_locale ?? 'en'
@@ -71,6 +93,16 @@ export function ReviewPage() {
     [items, filter, query, sticky],
   )
   const visibleKeys = useMemo(() => visible.map((item) => item.key), [visible])
+  // Only what is on screen and not locked counts, so a bulk action never reaches a hidden string.
+  const selection = useMemo(
+    () => new Set(visible.filter((item) => isSelectable(item) && selected.has(item.key)).map((item) => item.key)),
+    [visible, selected],
+  )
+  const selectableKeys = useMemo(() => visible.filter(isSelectable).map((item) => item.key), [visible])
+  const selectionSummary = useMemo(
+    () => summarizeSelection(visible, selection, (item) => qaLevel(checkTranslation(item.source_text, item.value)) === 'error'),
+    [visible, selection],
+  )
   const active = activeKey ? items.find((item) => item.key === activeKey) ?? null : null
   const value = active ? (draft?.key === active.key ? draft.value : active.value) : ''
   const dirty = active !== null && value !== active.value
@@ -148,7 +180,79 @@ export function ReviewPage() {
     if (index === 1 && active?.machine_translation != null) editorRef.current?.replaceAll(active.machine_translation)
   }
 
+  function clearSelection() {
+    setSelected(new Set())
+    anchor.current = null
+  }
+
+  function toggleSelected(key: string, range: boolean) {
+    const turnOn = !selection.has(key)
+    const keys = range && anchor.current ? keyRange(selectableKeys, anchor.current, key) : [key]
+    setSelected((current) => {
+      const next = new Set([...current].filter((k) => selectableKeys.includes(k)))
+      for (const k of keys) {
+        if (turnOn) next.add(k)
+        else next.delete(k)
+      }
+      return next
+    })
+    anchor.current = key
+  }
+
+  function toggleAll() {
+    if (selection.size === selectableKeys.length) clearSelection()
+    else setSelected(new Set(selectableKeys))
+  }
+
+  /** An unsaved edit in the open string is saved first, unapproved, so bulk actions see it. */
+  async function saveDraft(): Promise<boolean> {
+    if (!active || !dirty) return true
+    try {
+      await edit.mutateAsync({ key: active.key, edit: { value } })
+    } catch {
+      return false
+    }
+    setDraft(null)
+    return true
+  }
+
+  async function bulkApprove() {
+    const keys = selectionSummary.approvable
+    if (!(await saveDraft())) return
+    setSticky((current) => new Set([...current, ...keys]))
+    bulk.approve.mutate(keys, {
+      onSuccess: (result) => {
+        const skipped = result.skipped.map((s) => s.key)
+        setSelected(new Set(skipped))
+        anchor.current = null
+        setNotice(
+          [
+            t('review.bulk.approved', { count: result.approved }),
+            skipped.length ? t('review.bulk.skipped', { count: skipped.length }) : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
+        )
+      },
+      onError: (e) => setError(errorMessage(e, t)),
+    })
+  }
+
+  async function bulkWithdraw() {
+    const keys = selectionSummary.withdrawable
+    if (!(await saveDraft())) return
+    setSticky((current) => new Set([...current, ...keys]))
+    bulk.withdraw.mutate(keys, {
+      onSuccess: (result) => {
+        setSelected((current) => new Set([...current].filter((k) => !keys.includes(k))))
+        setNotice(t('review.bulk.withdrawn', { count: result.withdrawn }))
+      },
+      onError: (e) => setError(errorMessage(e, t)),
+    })
+  }
+
   function setFilter(next: StatusFilter) {
+    clearSelection()
     setSticky(new Set())
     setParam('status', next === 'all' ? null : next)
   }
@@ -180,6 +284,7 @@ export function ReviewPage() {
   }
 
   function setView(next: View) {
+    clearSelection()
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, next)
     } catch {
@@ -291,6 +396,7 @@ export function ReviewPage() {
           placeholder={t('review.searchPlaceholder')}
           defaultValue={query}
           onChange={(e) => {
+            clearSelection()
             setSticky(new Set())
             setParam('q', e.target.value)
           }}
@@ -378,17 +484,31 @@ export function ReviewPage() {
         <div className={styles.listLayout}>
           <div className={styles.listScroll}>
             <ul className={styles.list}>
-              <li className={`${reviewStyles.grid} ${styles.head}`} aria-hidden="true">
-                <span>{t('review.columns.number')}</span>
-                <span>{t('review.columns.key')}</span>
-                <span>
-                  {t('review.columns.source')} · {sourceLang}
+              <li className={`${reviewStyles.selectable} ${styles.head}`}>
+                <span className={reviewStyles.check}>
+                  <input
+                    type="checkbox"
+                    ref={(box) => {
+                      if (box) box.indeterminate = selection.size > 0 && selection.size < selectableKeys.length
+                    }}
+                    checked={selectableKeys.length > 0 && selection.size === selectableKeys.length}
+                    disabled={selectableKeys.length === 0}
+                    onChange={toggleAll}
+                    aria-label={t('review.bulk.selectAll')}
+                  />
                 </span>
-                <span>
-                  {t('review.columns.target')} · {locale}
+                <span className={reviewStyles.headGrid} aria-hidden="true">
+                  <span>{t('review.columns.number')}</span>
+                  <span>{t('review.columns.key')}</span>
+                  <span>
+                    {t('review.columns.source')} · {sourceLang}
+                  </span>
+                  <span>
+                    {t('review.columns.target')} · {locale}
+                  </span>
+                  <span style={{ textAlign: 'end' }}>{t('review.columns.chars')}</span>
+                  <span>{t('review.columns.status')}</span>
                 </span>
-                <span style={{ textAlign: 'end' }}>{t('review.columns.chars')}</span>
-                <span>{t('review.columns.status')}</span>
               </li>
               {visible.map((item) => (
                 <li key={item.key}>
@@ -401,6 +521,8 @@ export function ReviewPage() {
                       sourceLang={sourceLang}
                       targetLang={locale}
                       onOpen={open}
+                      selected={selection.has(item.key)}
+                      onSelect={toggleSelected}
                     />
                   )}
                 </li>
@@ -408,6 +530,16 @@ export function ReviewPage() {
             </ul>
             {emptyMessage && <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>}
             {alsoDelivered}
+            {selection.size > 0 && (
+              <BulkBar
+                count={selection.size}
+                summary={selectionSummary}
+                pending={bulk.approve.isPending || bulk.withdraw.isPending || edit.isPending}
+                onApprove={() => void bulkApprove()}
+                onWithdraw={() => void bulkWithdraw()}
+                onClear={clearSelection}
+              />
+            )}
           </div>
           <ContextPanel item={active} />
         </div>
