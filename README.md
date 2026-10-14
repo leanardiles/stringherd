@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, quality checks enforced by the server, and bulk approve and withdraw in the list view; more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, quality checks enforced by the server, bulk approve and withdraw in the list view, and Phrase-style keyboard shortcuts ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)). Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
 
 ---
 
@@ -44,7 +44,7 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Admin screens: projects and their languages, API keys shown once, setup steps per project, people with temporary passwords and language assignments |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
 | ✅ Done | Quality checks: empty and placeholder errors block approval in the review screen and on the server; warnings for same as source, spacing, numbers, ending punctuation, double spaces, unbalanced brackets and quotes |
-| 🚧 In progress | Review interface: sign-in, project overview and review screen done (single key and list views, DeepL suggestion with diff, approve and next, status symbols, placeholder QA checks, keyboard shortcuts, bulk approve and withdraw); more shortcuts next |
+| ✅ Done | Review interface: sign-in, project overview, review screen with single key and list views, DeepL suggestion with diff, approve and next, status symbols, QA checks, bulk approve and withdraw, Deliver, Phrase-style keyboard shortcuts with an in-app reference ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)), non-printable characters |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
 | 📋 Planned | Regional variants stored as deltas (e.g. `es-AR` holds only what differs from `es`) |

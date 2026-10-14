@@ -36,3 +36,42 @@
   line-height: 1.5;
   user-select: none;
 }
+
+/* Non-printable characters: the character keeps its width, the mark is drawn over it. */
+.space,
+.nbsp,
+.narrowNbsp,
+.tab {
+  position: relative;
+}
+
+.space::after,
+.nbsp::after,
+.narrowNbsp::after,
+.tab::after {
+  position: absolute;
+  inset-inline: 0;
+  color: var(--color-field-border);
+  text-align: center;
+  pointer-events: none;
+}
+
+.space::after {
+  content: '·';
+}
+
+.nbsp::after {
+  content: '°';
+  color: var(--color-primary);
+}
+
+.narrowNbsp::after {
+  content: '°';
+  color: var(--color-primary);
+  font-size: 0.75em;
+}
+
+.tab::after {
+  content: '→';
+  text-align: start;
+}

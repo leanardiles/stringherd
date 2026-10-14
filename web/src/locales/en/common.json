@@ -29,7 +29,8 @@
       "admin": "Admin",
       "reviewer": "Reviewer"
     },
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "shortcuts": "Keyboard shortcuts"
   },
   "projects": {
     "title": "Your projects",
@@ -95,7 +96,7 @@
     "saveFailed": "Couldn't save {{key}}. The change was undone; try again.",
     "notAssigned": "You aren't assigned to review this language.",
     "summary": "{{total, number}} strings · {{toReview, number}} to review · {{approved, number}} approved · {{delivered, number}} delivered",
-    "hints": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard or close",
+    "hints": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ to review · Esc discard or close",
     "backToProjects": "Back to your projects",
     "view": {
       "label": "View",
@@ -143,7 +144,7 @@
       "inCodeHint": "Reopened: the code keeps this text until the next Deliver."
     },
     "selectString": "Choose a string from the list.",
-    "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ move · Esc discard",
+    "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ to review · Esc discard",
     "progress": "{{percent}} reviewed",
     "deliver": {
       "button": "Deliver",
@@ -194,6 +195,18 @@
       "skipped_other": "{{count, number}} skipped: fix the QA errors first. They stay selected.",
       "withdrawn_one": "{{count, number}} approval withdrawn.",
       "withdrawn_other": "{{count, number}} approvals withdrawn."
+    },
+    "invisibles": "Show non-printable characters",
+    "copySource": "Copy source",
+    "copySourceHint": "Copy the source text into the translation ({{keys}})",
+    "withdrawHint": "Withdraw the approval ({{keys}})",
+    "discardHint": "Discard the unsaved edit ({{keys}})",
+    "goTo": {
+      "title": "Go to string",
+      "label": "Number or key",
+      "placeholder": "For example 42 or settings.title",
+      "submit": "Go",
+      "notFound": "No string with number or key {{query}}."
     }
   },
   "errors": {
@@ -412,6 +425,49 @@
         "doneBody": "Share it with {{name}} through a safe channel. It's shown only once.",
         "self": "To change your own password, use Change password in the account menu."
       }
+    }
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "open": "Keyboard shortcuts ({{keys}})",
+    "search": "Search shortcuts",
+    "none": "No shortcut matches.",
+    "or": "or",
+    "note": "On a Mac, ⌘ replaces Ctrl and ⌥ replaces Alt. The list is also in docs/SHORTCUTS.md.",
+    "all": "All shortcuts",
+    "groups": {
+      "review": "Review",
+      "edit": "Edit",
+      "insert": "Insert",
+      "navigate": "Navigate",
+      "view": "View"
+    },
+    "labels": {
+      "approveNext": "Approve and go to the next string",
+      "withdraw": "Withdraw the approval",
+      "discard": "Discard the unsaved edit; in the list view, close the string",
+      "copySource": "Copy the source text into the translation",
+      "undo": "Undo",
+      "redo": "Redo",
+      "insertSuggestion": "Insert suggestion 1 to 9",
+      "insertSelectedSuggestion": "Insert the selected suggestion",
+      "previousSuggestion": "Select the previous suggestion",
+      "nextSuggestion": "Select the next suggestion",
+      "insertNextPlaceholder": "Insert the next missing placeholder",
+      "insertAllPlaceholders": "Insert all missing placeholders",
+      "insertNbsp": "Insert a non-breaking space",
+      "previousString": "Previous string (cursor on the first line)",
+      "nextString": "Next string (cursor on the last line)",
+      "previousToReview": "Previous string that still needs review",
+      "nextToReview": "Next string that still needs review",
+      "firstString": "First string",
+      "lastString": "Last string",
+      "goTo": "Go to a string by number or key",
+      "filterBySelection": "Search for the selected text",
+      "previousPane": "Focus the previous pane",
+      "nextPane": "Focus the next pane",
+      "contextPanel": "Focus the context panel",
+      "showShortcuts": "Show all shortcuts"
     }
   }
 }

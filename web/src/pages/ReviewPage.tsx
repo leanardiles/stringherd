@@ -1,4 +1,4 @@
-import { Send } from 'lucide-react'
+import { Keyboard, Pilcrow, Send } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams, useSearchParams } from 'react-router'
@@ -17,6 +17,9 @@ import { ProgressBar } from '../components/ProgressBar'
 import { BulkBar } from '../components/review/BulkBar'
 import { ContextPanel } from '../components/review/ContextPanel'
 import { DeliverDialog } from '../components/review/DeliverDialog'
+import { GoToDialog } from '../components/review/GoToDialog'
+import { ShowInvisiblesContext } from '../components/invisibles'
+import { useShowShortcuts } from '../components/shortcuts/context'
 import { KeyList } from '../components/review/KeyList'
 import reviewStyles from '../components/review/Review.module.css'
 import { StringCard } from '../components/review/StringCard'
@@ -25,6 +28,8 @@ import { StringRow } from '../components/review/StringRow'
 import { LoadError, Loading } from '../components/StatusMessage'
 import ui from '../components/ui.module.css'
 import { errorMessage } from '../lib/errors'
+import { missingPlaceholders } from '../lib/placeholders'
+import { displayKeys, matchShortcut, shortcut, type ShortcutId } from '../lib/shortcuts'
 import { formatPercent, languageLabel } from '../lib/languages'
 import { checkTranslation, qaLevel } from '../lib/qa'
 import {
@@ -42,6 +47,20 @@ import styles from './ReviewPage.module.css'
 const FILTERS: StatusFilter[] = ['all', 'review', 'approved', 'delivered']
 type View = 'single' | 'list'
 const VIEW_STORAGE_KEY = 'stringherd.reviewView'
+const INVISIBLES_STORAGE_KEY = 'stringherd.showInvisibles'
+
+function rememberedInvisibles(): boolean {
+  try {
+    return localStorage.getItem(INVISIBLES_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+/** Pane focus order for Ctrl+Alt+← and →: key list or rows, editor, context panel. */
+function panes(): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>('[data-pane]')]
+}
 
 function rememberedView(): View {
   try {
@@ -74,6 +93,11 @@ export function ReviewPage() {
   // List view: strings checked for a bulk action, and the last one clicked (for Shift+click).
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const anchor = useRef<string | null>(null)
+  const [showInvisibles, setShowInvisibles] = useState(rememberedInvisibles)
+  const [goingTo, setGoingTo] = useState(false)
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0)
+  const showShortcuts = useShowShortcuts()
+  const searchRef = useRef<HTMLInputElement>(null)
   const [delivering, setDelivering] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const sourceLang = projects.data?.find((p) => p.project_id === projectId)?.source_locale ?? 'en'
@@ -141,6 +165,7 @@ export function ReviewPage() {
     if (key === activeKey) return
     if (active && dirty) save(active.key, { value })
     setDraft(null)
+    setSelectedSuggestion(0)
     setError(null)
     setParam('key', key)
   }
@@ -171,13 +196,137 @@ export function ReviewPage() {
     }
   }
 
-  function move(step: 1 | -1) {
+  function move(step: 1 | -1): boolean {
     const next = neighbourKey(visibleKeys, activeKey, step)
     if (next) open(next)
+    return next !== null
   }
 
-  function insertSuggestion(index: number) {
-    if (index === 1 && active?.machine_translation != null) editorRef.current?.replaceAll(active.machine_translation)
+  /** Alt+↑ / Alt+↓: the nearest string in that direction that still needs review. */
+  function moveToReview(step: 1 | -1) {
+    const start = activeKey ? visibleKeys.indexOf(activeKey) : step === 1 ? -1 : visibleKeys.length
+    for (let i = start + step; i >= 0 && i < visibleKeys.length; i += step) {
+      if (visible[i].status === 'machine_translated') return open(visible[i].key)
+    }
+  }
+
+  // Suggestions in order; today only DeepL's translation (suggestion 1). TM matches will join.
+  const suggestions = active?.machine_translation != null ? [active.machine_translation] : []
+  const editable = active !== null && active.status !== 'delivered'
+
+  function insertSuggestion(number: number) {
+    const text = suggestions[number - 1]
+    if (editable && text !== undefined) editorRef.current?.replaceAll(text)
+  }
+
+  function insertText(text: string) {
+    if (editable && text) editorRef.current?.insertText(text)
+  }
+
+  function filterBySelection() {
+    const text = window.getSelection()?.toString().trim()
+    if (!text) return
+    clearSelection()
+    setSticky(new Set())
+    if (searchRef.current) searchRef.current.value = text
+    setParam('q', text)
+  }
+
+  function focusPane(target: HTMLElement | undefined) {
+    if (!target) return
+    if (target.dataset.pane === 'editor' && editable) return editorRef.current?.focus()
+    const row = target.querySelector<HTMLElement>('[aria-current="true"], button')
+    ;(target.dataset.pane === 'list' && row ? row : target).focus()
+  }
+
+  function cyclePane(step: 1 | -1) {
+    const all = panes()
+    if (all.length === 0) return
+    const current = all.findIndex((pane) => pane.contains(document.activeElement))
+    focusPane(all[(current + step + all.length) % all.length])
+  }
+
+  function runShortcut(id: ShortcutId, digit?: number) {
+    switch (id) {
+      case 'approveNext':
+        return approveAndNext()
+      case 'withdraw':
+        return withdraw()
+      case 'discard':
+        return discardOrClose()
+      case 'copySource':
+        return active?.source_text && editable ? editorRef.current?.replaceAll(active.source_text) : undefined
+      case 'insertSuggestion':
+        return insertSuggestion(digit ?? 1)
+      case 'insertSelectedSuggestion':
+        return insertSuggestion(selectedSuggestion + 1)
+      case 'previousSuggestion':
+        return setSelectedSuggestion((n) => Math.max(0, n - 1))
+      case 'nextSuggestion':
+        return setSelectedSuggestion((n) => Math.min(Math.max(suggestions.length - 1, 0), n + 1))
+      case 'insertNextPlaceholder':
+        return insertText(missingPlaceholders(active?.source_text ?? '', value)[0] ?? '')
+      case 'insertAllPlaceholders':
+        return insertText(missingPlaceholders(active?.source_text ?? '', value).join(''))
+      case 'insertNbsp':
+        return insertText('\u00a0')
+      case 'previousToReview':
+        return moveToReview(-1)
+      case 'nextToReview':
+        return moveToReview(1)
+      case 'firstString':
+        return visibleKeys.length ? open(visibleKeys[0]) : undefined
+      case 'lastString':
+        return visibleKeys.length ? open(visibleKeys[visibleKeys.length - 1]) : undefined
+      case 'goTo':
+        return setGoingTo(true)
+      case 'filterBySelection':
+        return filterBySelection()
+      case 'previousPane':
+        return cyclePane(-1)
+      case 'nextPane':
+        return cyclePane(1)
+      case 'contextPanel':
+        return focusPane(panes().find((pane) => pane.dataset.pane === 'context'))
+      default:
+        return undefined
+    }
+  }
+
+  /** Ctrl+G: show the string even if the current filter or search hides it. */
+  function goTo(key: string) {
+    setGoingTo(false)
+    const item = items.find((i) => i.key === key)
+    if (item && !visibleKeys.includes(key)) {
+      clearSelection()
+      setSticky(new Set())
+      if (searchRef.current) searchRef.current.value = ''
+      setParams(
+        (current) => {
+          const updated = new URLSearchParams(current)
+          updated.delete('q')
+          if (item.status === 'delivered') updated.set('status', 'delivered')
+          else updated.delete('status')
+          updated.set('key', key)
+          return updated
+        },
+        { replace: true },
+      )
+      setDraft(null)
+      return
+    }
+    open(key)
+  }
+
+  function toggleInvisibles() {
+    setShowInvisibles((on) => {
+      try {
+        localStorage.setItem(INVISIBLES_STORAGE_KEY, String(!on))
+      } catch {
+        // private window: the choice lasts for this page only
+      }
+      return !on
+    })
   }
 
   function clearSelection() {
@@ -295,26 +444,20 @@ export function ReviewPage() {
 
   // Review-screen shortcuts live at the app level (UI plan, editor boundary). Capture phase,
   // so they run before the editor sees the key.
-  const handlers = useRef({ approveAndNext, withdraw, discardOrClose, move, insertSuggestion, open })
+  // The keys and what they mean come from lib/shortcuts.ts, shared with the shortcuts reference.
+  const handlers = useRef({ runShortcut, open })
   useLayoutEffect(() => {
-    handlers.current = { approveAndNext, withdraw, discardOrClose, move, insertSuggestion, open }
+    handlers.current = { runShortcut, open }
   })
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const mod = event.ctrlKey || event.metaKey
-      const h = handlers.current
-      let handled = true
-      if (mod && event.key === 'Enter' && !event.shiftKey) h.approveAndNext()
-      else if (mod && event.key === 'Enter' && event.shiftKey) h.withdraw()
-      else if (event.altKey && event.key === 'ArrowDown') h.move(1)
-      else if (event.altKey && event.key === 'ArrowUp') h.move(-1)
-      else if (mod && !event.shiftKey && /^[1-9]$/.test(event.key)) h.insertSuggestion(Number(event.key))
-      else if (event.key === 'Escape' && !document.querySelector('[role="menu"]')) h.discardOrClose()
-      else handled = false
-      if (handled) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
+      // Dialogs and menus handle their own keys (Esc closes them, typing goes into their fields).
+      if (document.querySelector('[role="dialog"], [role="menu"]')) return
+      const match = matchShortcut(event, 'review')
+      if (!match) return
+      event.preventDefault()
+      event.stopPropagation()
+      handlers.current.runShortcut(match.id, match.digit)
     }
     window.addEventListener('keydown', onKeyDown, { capture: true })
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true })
@@ -373,6 +516,10 @@ export function ReviewPage() {
     canReopen,
     reopening: reopen.isPending,
     onReopen: reopenActive,
+    showInvisibles,
+    onEdge: (direction) => move(direction === 'down' ? 1 : -1),
+    onCopySource: () => runShortcut('copySource'),
+    selectedSuggestion,
   })
 
   const reviewed = approved + delivered
@@ -387,170 +534,200 @@ export function ReviewPage() {
   )
 
   return (
-    <div className={styles.page}>
-      <div className={styles.toolbar}>
-        <input
-          className={`${ui.input} ${styles.search}`}
-          type="search"
-          aria-label={t('review.searchLabel')}
-          placeholder={t('review.searchPlaceholder')}
-          defaultValue={query}
-          onChange={(e) => {
-            clearSelection()
-            setSticky(new Set())
-            setParam('q', e.target.value)
-          }}
-        />
-        <div className={styles.labelled}>
-          <span id="review-view-label" className={styles.groupLabel}>
-            {t('review.view.visibleLabel')}
-          </span>
-          <div className={styles.segmented} role="group" aria-labelledby="review-view-label">
-            {(['single', 'list'] as const).map((v) => (
-              <button key={v} type="button" className={styles.segment} aria-pressed={view === v} onClick={() => setView(v)}>
-                {t(`review.view.${v}`)}
+    <ShowInvisiblesContext.Provider value={showInvisibles}>
+      <div className={styles.page}>
+        <div className={styles.toolbar}>
+          <input
+            ref={searchRef}
+            className={`${ui.input} ${styles.search}`}
+            type="search"
+            aria-label={t('review.searchLabel')}
+            placeholder={t('review.searchPlaceholder')}
+            defaultValue={query}
+            onChange={(e) => {
+              clearSelection()
+              setSticky(new Set())
+              setParam('q', e.target.value)
+            }}
+          />
+          <div className={styles.labelled}>
+            <span id="review-view-label" className={styles.groupLabel}>
+              {t('review.view.visibleLabel')}
+            </span>
+            <div className={styles.segmented} role="group" aria-labelledby="review-view-label">
+              {(['single', 'list'] as const).map((v) => (
+                <button key={v} type="button" className={styles.segment} aria-pressed={view === v} onClick={() => setView(v)}>
+                  {t(`review.view.${v}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={styles.tools}>
+            <button
+              type="button"
+              className={styles.toolButton}
+              aria-pressed={showInvisibles}
+              onClick={toggleInvisibles}
+              title={t('review.invisibles')}
+              aria-label={t('review.invisibles')}
+            >
+              <Pilcrow size={15} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={styles.toolButton}
+              onClick={showShortcuts}
+              title={t('shortcuts.open', { keys: displayKeys(shortcut('showShortcuts').keys[0]) })}
+              aria-label={t('shortcuts.title')}
+            >
+              <Keyboard size={15} aria-hidden="true" />
+            </button>
+          </div>
+          <div className={styles.segmented} role="group" aria-label={t('review.filterLabel')}>
+            {FILTERS.map((f) => (
+              <button key={f} type="button" className={styles.segment} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                {t(`review.filter.${f}`)}
+                <span className={`${styles.count} tabular`}>{counts[f]}</span>
               </button>
             ))}
           </div>
-        </div>
-        <div className={styles.segmented} role="group" aria-label={t('review.filterLabel')}>
-          {FILTERS.map((f) => (
-            <button key={f} type="button" className={styles.segment} aria-pressed={filter === f} onClick={() => setFilter(f)}>
-              {t(`review.filter.${f}`)}
-              <span className={`${styles.count} tabular`}>{counts[f]}</span>
-            </button>
-          ))}
-        </div>
-        <div className={styles.progress}>
-          <ProgressBar value={reviewed} max={items.length} label={t('review.progress', { percent })} />
-          <span className={`${ui.muted} tabular`}>{percent}</span>
-        </div>
-        <button
-          type="button"
-          className={ui.primary}
-          onClick={() => {
-            deliver.reset()
-            setDelivering(true)
-          }}
-          disabled={approved === 0}
-          title={approved === 0 ? t('review.deliver.nothing') : undefined}
-        >
-          <Send size={14} aria-hidden="true" />
-          {approved > 0 ? t('review.deliver.count', { count: approved }) : t('review.deliver.button')}
-        </button>
-      </div>
-
-      {error && !active && (
-        <div className={`${ui.alert} ${styles.banner}`} role="alert">
-          {error}
-        </div>
-      )}
-      {notice && (
-        <div className={`${ui.notice} ${styles.banner} ${styles.noticeBanner}`} role="status">
-          <span>{notice}</span>
-          <button type="button" className={ui.quiet} onClick={() => setNotice(null)}>
-            {t('review.deliver.dismiss')}
+          <div className={styles.progress}>
+            <ProgressBar value={reviewed} max={items.length} label={t('review.progress', { percent })} />
+            <span className={`${ui.muted} tabular`}>{percent}</span>
+          </div>
+          <button
+            type="button"
+            className={ui.primary}
+            onClick={() => {
+              deliver.reset()
+              setDelivering(true)
+            }}
+            disabled={approved === 0}
+            title={approved === 0 ? t('review.deliver.nothing') : undefined}
+          >
+            <Send size={14} aria-hidden="true" />
+            {approved > 0 ? t('review.deliver.count', { count: approved }) : t('review.deliver.button')}
           </button>
         </div>
-      )}
-      <DeliverDialog
-        open={delivering}
-        onOpenChange={setDelivering}
-        language={languageLabel(locale)}
-        approved={approved}
-        notApproved={counts.review}
-        unsavedKey={active && dirty ? active.key : null}
-        pending={deliver.isPending || edit.isPending}
-        error={deliver.error ? errorMessage(deliver.error, t) : null}
-        onConfirm={() => void confirmDeliver()}
-      />
 
-      {view === 'single' ? (
-        <div className={styles.panes}>
-          {emptyMessage ? (
-            <div className={styles.paneEmpty}>
-              <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>
-              {alsoDelivered}
-            </div>
-          ) : (
-            <KeyList items={visible} activeKey={activeKey} activeValue={value} onOpen={open} footer={alsoDelivered} />
-          )}
-          <section className={styles.middle} aria-label={active ? t('review.cardLabel', { number: numbers.get(active.key) ?? 0, key: active.key }) : undefined}>
-            {active ? <StringEditor {...editorProps(active)} /> : <p className={ui.muted}>{t('review.selectString')}</p>}
-          </section>
-          <ContextPanel item={active} />
-        </div>
-      ) : (
-        <div className={styles.listLayout}>
-          <div className={styles.listScroll}>
-            <ul className={styles.list}>
-              <li className={`${reviewStyles.selectable} ${styles.head}`}>
-                <span className={reviewStyles.check}>
-                  <input
-                    type="checkbox"
-                    ref={(box) => {
-                      if (box) box.indeterminate = selection.size > 0 && selection.size < selectableKeys.length
-                    }}
-                    checked={selectableKeys.length > 0 && selection.size === selectableKeys.length}
-                    disabled={selectableKeys.length === 0}
-                    onChange={toggleAll}
-                    aria-label={t('review.bulk.selectAll')}
-                  />
-                </span>
-                <span className={reviewStyles.headGrid} aria-hidden="true">
-                  <span>{t('review.columns.number')}</span>
-                  <span>{t('review.columns.key')}</span>
-                  <span>
-                    {t('review.columns.source')} · {sourceLang}
-                  </span>
-                  <span>
-                    {t('review.columns.target')} · {locale}
-                  </span>
-                  <span style={{ textAlign: 'end' }}>{t('review.columns.chars')}</span>
-                  <span>{t('review.columns.status')}</span>
-                </span>
-              </li>
-              {visible.map((item) => (
-                <li key={item.key}>
-                  {item.key === activeKey ? (
-                    <StringCard ref={cardRef} {...editorProps(item)} />
-                  ) : (
-                    <StringRow
-                      number={numbers.get(item.key) ?? 0}
-                      item={item}
-                      sourceLang={sourceLang}
-                      targetLang={locale}
-                      onOpen={open}
-                      selected={selection.has(item.key)}
-                      onSelect={toggleSelected}
-                    />
-                  )}
-                </li>
-              ))}
-            </ul>
-            {emptyMessage && <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>}
-            {alsoDelivered}
-            {selection.size > 0 && (
-              <BulkBar
-                count={selection.size}
-                summary={selectionSummary}
-                pending={bulk.approve.isPending || bulk.withdraw.isPending || edit.isPending}
-                onApprove={() => void bulkApprove()}
-                onWithdraw={() => void bulkWithdraw()}
-                onClear={clearSelection}
-              />
-            )}
+        {error && !active && (
+          <div className={`${ui.alert} ${styles.banner}`} role="alert">
+            {error}
           </div>
-          <ContextPanel item={active} />
-        </div>
-      )}
+        )}
+        {notice && (
+          <div className={`${ui.notice} ${styles.banner} ${styles.noticeBanner}`} role="status">
+            <span>{notice}</span>
+            <button type="button" className={ui.quiet} onClick={() => setNotice(null)}>
+              {t('review.deliver.dismiss')}
+            </button>
+          </div>
+        )}
+        <DeliverDialog
+          open={delivering}
+          onOpenChange={setDelivering}
+          language={languageLabel(locale)}
+          approved={approved}
+          notApproved={counts.review}
+          unsavedKey={active && dirty ? active.key : null}
+          pending={deliver.isPending || edit.isPending}
+          error={deliver.error ? errorMessage(deliver.error, t) : null}
+          onConfirm={() => void confirmDeliver()}
+        />
 
-      <footer className={styles.footer}>
-        <span className="tabular">
-          {t('review.summary', { total: items.length, toReview: counts.review, approved, delivered })}
-        </span>
-        <span className={styles.hints}>{view === 'single' ? t('review.hintsSingle') : t('review.hints')}</span>
-      </footer>
-    </div>
+        {view === 'single' ? (
+          <div className={styles.panes}>
+            {emptyMessage ? (
+              <div className={styles.paneEmpty}>
+                <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>
+                {alsoDelivered}
+              </div>
+            ) : (
+              <KeyList items={visible} activeKey={activeKey} activeValue={value} onOpen={open} footer={alsoDelivered} />
+            )}
+            <section className={styles.middle} data-pane="editor" tabIndex={-1} aria-label={active ? t('review.cardLabel', { number: numbers.get(active.key) ?? 0, key: active.key }) : undefined}>
+              {active ? <StringEditor {...editorProps(active)} /> : <p className={ui.muted}>{t('review.selectString')}</p>}
+            </section>
+            <ContextPanel item={active} />
+          </div>
+        ) : (
+          <div className={styles.listLayout}>
+            <div className={styles.listScroll} data-pane="list" tabIndex={-1}>
+              <ul className={styles.list}>
+                <li className={`${reviewStyles.selectable} ${styles.head}`}>
+                  <span className={reviewStyles.check}>
+                    <input
+                      type="checkbox"
+                      ref={(box) => {
+                        if (box) box.indeterminate = selection.size > 0 && selection.size < selectableKeys.length
+                      }}
+                      checked={selectableKeys.length > 0 && selection.size === selectableKeys.length}
+                      disabled={selectableKeys.length === 0}
+                      onChange={toggleAll}
+                      aria-label={t('review.bulk.selectAll')}
+                    />
+                  </span>
+                  <span className={reviewStyles.headGrid} aria-hidden="true">
+                    <span>{t('review.columns.number')}</span>
+                    <span>{t('review.columns.key')}</span>
+                    <span>
+                      {t('review.columns.source')} · {sourceLang}
+                    </span>
+                    <span>
+                      {t('review.columns.target')} · {locale}
+                    </span>
+                    <span style={{ textAlign: 'end' }}>{t('review.columns.chars')}</span>
+                    <span>{t('review.columns.status')}</span>
+                  </span>
+                </li>
+                {visible.map((item) => (
+                  <li key={item.key}>
+                    {item.key === activeKey ? (
+                      <StringCard ref={cardRef} {...editorProps(item)} />
+                    ) : (
+                      <StringRow
+                        number={numbers.get(item.key) ?? 0}
+                        item={item}
+                        sourceLang={sourceLang}
+                        targetLang={locale}
+                        onOpen={open}
+                        selected={selection.has(item.key)}
+                        onSelect={toggleSelected}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {emptyMessage && <p className={`${styles.empty} ${ui.muted}`}>{emptyMessage}</p>}
+              {alsoDelivered}
+              {selection.size > 0 && (
+                <BulkBar
+                  count={selection.size}
+                  summary={selectionSummary}
+                  pending={bulk.approve.isPending || bulk.withdraw.isPending || edit.isPending}
+                  onApprove={() => void bulkApprove()}
+                  onWithdraw={() => void bulkWithdraw()}
+                  onClear={clearSelection}
+                />
+              )}
+            </div>
+            <ContextPanel item={active} />
+          </div>
+        )}
+
+        <footer className={styles.footer}>
+          <span className="tabular">
+            {t('review.summary', { total: items.length, toReview: counts.review, approved, delivered })}
+          </span>
+          <span className={styles.hints}>
+            {view === 'single' ? t('review.hintsSingle') : t('review.hints')} ·{' '}
+            <button type="button" className={styles.linkButton} onClick={showShortcuts}>
+              {t('shortcuts.all')} {displayKeys(shortcut('showShortcuts').keys[0])}
+            </button>
+          </span>
+        </footer>
+        {goingTo && <GoToDialog keys={items.map((item) => item.key)} onGo={goTo} onClose={() => setGoingTo(false)} />}
+      </div>
+    </ShowInvisiblesContext.Provider>
   )
 }

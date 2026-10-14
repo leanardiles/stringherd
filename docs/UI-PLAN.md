@@ -114,15 +114,14 @@ Phrase bindings from the [Phrase CAT editor documentation](https://support.phras
 | `Ctrl+Insert` | Copy source to target | Copy source to target | MVP |
 | `Ctrl+Space` | Insert selected CAT result | Insert selected suggestion (MVP: DeepL's original is suggestion 1) | MVP |
 | `Ctrl+1` … `Ctrl+9` | Insert CAT result N | Insert suggestion N | MVP |
-| `Ctrl+↑` / `Ctrl+↓` | Move in CAT results | Move in suggestions | MVP |
+| `Ctrl+↑` / `Ctrl+↓` | Move in CAT results | Select the previous / next suggestion | MVP |
 | `F8` | Insert tag | Insert the next placeholder from the source | MVP |
 | `Ctrl+Shift+F8` | Insert all tags | Insert all placeholders from the source | MVP |
 | `Ctrl+Home` / `Ctrl+End` | First / last segment | First / last string | MVP |
 | `Ctrl+G` | Go to segment | Go to string by number or key | MVP |
-| `Ctrl+Shift+F` | Filter by selected text | Filter by selected text | MVP |
-| `F9` | QA check | Run QA on the visible strings | MVP |
+| `Ctrl+Shift+F` | Filter by selected text | Search for the selected text | MVP |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo | Undo / redo | MVP |
-| `Ctrl+Shift+Space` | Insert non-breaking space | Insert non-breaking space (French: before `! ? : ;`) | MVP |
+| `Ctrl+Shift+Space` | Insert non-breaking space | Insert a non-breaking space (U+00A0), as Phrase does. A narrow one (U+202F) for strict French typography may become a project setting with QA profiles | MVP |
 | `Ctrl+Alt+←` / `Ctrl+Alt+→` | Switch active panel | Move focus between the panes | MVP |
 | `Alt+N` | Context note | Jump to the context panel | MVP |
 | `Ctrl+H` | Find and replace | Find and replace in targets | Next |
@@ -134,11 +133,15 @@ Phrase bindings from the [Phrase CAT editor documentation](https://support.phras
 | Shortcut | Action | Phase |
 |---|---|---|
 | `↑` / `↓` at the first / last line of the editor | Previous / next string | MVP |
-| `Alt+↑` / `Alt+↓` | Previous / next string that still needs review | MVP |
+| `Alt+↑` / `Alt+↓` | Previous / next string that still needs review (skips approved and delivered strings) | MVP |
 | `Esc` | Discard unsaved edit; close pop-up; in List view, close an unchanged card | MVP |
 | `+` / `-` / `0` (panel focused) | Zoom in / out / fit to screen | When screenshots exist |
 | `F` (panel focused) | Open screenshot at full size | When screenshots exist |
-| `Ctrl+/` | Show all shortcuts | MVP |
+| `Ctrl+/`, or `?` outside text fields | Show all shortcuts | MVP |
+
+Phrase's `F9` (run QA) is left out: Stringherd checks each string as you type.
+
+All shortcuts live in one list (`web/src/lib/shortcuts.ts`) that drives the key handling and the in-app reference; [SHORTCUTS.md](SHORTCUTS.md) mirrors it, and a test checks they match. Reviewers find them through tooltips on buttons, the footer hint line, the reference (`Ctrl+/`, `?`, the keyboard icon between the View toggle and the filters, and **Keyboard shortcuts** in the account menu), and SHORTCUTS.md. **Show non-printable characters** is a toolbar toggle, remembered per browser: `·` space, `°` non-breaking space, smaller `°` narrow non-breaking space, `→` tab, in the editor and in read-only text.
 
 Phrase also has split/join segments, lock, formatting (bold, italic) and tag editing. They are left out: UI strings are single keys, not document segments, and have no rich formatting.
 
@@ -238,7 +241,8 @@ Planned: over the character limit (error, locked, with character limits); French
 | 2. Project and language overview with progress | Done |
 | 3. Review screen: Single key and List views, edit, approve and next, withdraw, autosave on leave, DeepL suggestion and diff, filters, search, placeholder chips, character counter, status symbols, basic QA (placeholders, empty, same as source, outer spaces) | Done |
 | 4. Bulk approve and withdraw (list view) | Done |
-| 4b. Remaining MVP shortcuts, non-printable characters, French spacing check | Next |
+| 4b. Remaining MVP shortcuts, shortcuts reference, non-printable characters | Done |
+| 4c. French spacing check | Next |
 | 5. Backend additions: other languages in the review API, character limits | Planned |
 
 Behaviour decided while building step 3:

@@ -13,6 +13,9 @@ export default defineConfig({
     // only accepts that origin. strictPort fails loudly instead of drifting to 5181.
     port: 5180,
     strictPort: true,
+    // Tests read two files from the repository root: shared/qa-cases.json (also used by the
+    // server's tests) and docs/SHORTCUTS.md (kept in step with the shortcut list).
+    fs: { allow: ['.', '../shared', '../docs'] },
     proxy: {
       '/api': server,
       '/health': server,

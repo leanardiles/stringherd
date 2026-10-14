@@ -13,7 +13,7 @@ function formatDate(iso: string | null): string | null {
 export function ContextPanel({ item }: { item: ReviewString | null }) {
   const { t } = useTranslation()
   return (
-    <aside className={styles.pane} aria-label={t('review.context.details')}>
+    <aside className={styles.pane} aria-label={t('review.context.details')} data-pane="context" tabIndex={-1}>
       <section className={styles.section}>
         <h2 className={styles.heading}>{t('review.context.screenshot')}</h2>
         <div className={styles.empty}>

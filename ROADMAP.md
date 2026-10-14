@@ -38,7 +38,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 **Review interface** (design: [docs/UI-PLAN.md](docs/UI-PLAN.md))
 - Sign-in, project overview with progress per language
 - Single key view (key list, editor, context panel) and list view, toggled in the toolbar
-- Editor with placeholders as locked chips, DeepL's original as a suggestion with a word diff, approve and next, withdraw, autosave on leave, Phrase-style shortcuts
+- Editor with placeholders as locked chips, DeepL's original as a suggestion with a word diff, approve and next, withdraw, autosave on leave
+- Phrase-style keyboard shortcuts from one list that also drives the in-app reference (`Ctrl+/`, `?`, toolbar icon, account menu) and [docs/SHORTCUTS.md](docs/SHORTCUTS.md): placeholders (`F8`), non-breaking space, copy source, suggestions, go to string, pane focus; non-printable characters shown on request
 - Status symbols per string; quality checks, enforced by the server too: empty and placeholder mismatch block approval; same as source, outer spaces, numbers, ending punctuation, double spaces and unbalanced brackets or quotes warn. One shared set of cases tests the UI and the server
 - Bulk approve and withdraw in the list view: checkboxes, select all shown, Shift+click ranges, an action bar; strings with QA errors are skipped, reported and stay selected
 - The interface itself is translatable (react-i18next, pseudo-locale for testing), with a palette checked against WCAG AA
@@ -54,7 +55,6 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 Goal: a complete review tool someone else can run locally and use without opening the API docs. Ends with a `v1.0.0` tag.
 
 **Needed**
-- **Review screen, rest of the MVP**: `F8` to insert placeholders, `Ctrl+G` to go to a string, `Ctrl+Shift+Space` for a non-breaking space, show non-printable characters
 - **One process to run**: FastAPI serves the built UI, so Stringherd is a single server at a single address
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step
 - **`v1.0.0` tag and a changelog**

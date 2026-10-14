@@ -56,3 +56,29 @@ export function countCharacters(text: string): number {
     0,
   )
 }
+
+/**
+ * Placeholders and tags of the source that the translation lacks, in source order, counted
+ * one-for-one (a source with {{n}} twice needs it twice). F8 inserts the first of them.
+ */
+export function missingPlaceholders(source: string, target: string): string[] {
+  const available = findPlaceholders(target)
+  return findPlaceholders(source).filter((token) => {
+    const i = available.indexOf(token)
+    if (i === -1) return true
+    available.splice(i, 1)
+    return false
+  })
+}
+
+/** Characters that look like a space or nothing, shown as marks when "Show non-printable characters" is on. */
+export const INVISIBLES = /[   \t]/g
+
+export type InvisibleKind = 'space' | 'nbsp' | 'narrowNbsp' | 'tab'
+
+export function invisibleKind(char: string): InvisibleKind {
+  if (char === ' ') return 'nbsp'
+  if (char === ' ') return 'narrowNbsp'
+  if (char === '\t') return 'tab'
+  return 'space'
+}

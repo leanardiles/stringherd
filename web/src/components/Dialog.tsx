@@ -14,10 +14,12 @@ type DialogProps = {
   footer?: React.ReactNode
   /** Keep the dialog open on Esc and outside clicks, e.g. while a secret is shown. */
   modalStrict?: boolean
+  /** Wider, for reference content such as the shortcuts list. */
+  wide?: boolean
 }
 
 /** Accessible modal dialog: focus moves in and back, Esc closes, the page behind is inert. */
-export function Dialog({ open, onOpenChange, title, description, children, footer, modalStrict }: DialogProps) {
+export function Dialog({ open, onOpenChange, title, description, children, footer, modalStrict, wide }: DialogProps) {
   const { t } = useTranslation()
   const block = modalStrict ? (event: Event) => event.preventDefault() : undefined
   return (
@@ -25,7 +27,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={styles.overlay} />
         <RadixDialog.Content
-          className={styles.content}
+          className={`${styles.content} ${wide ? styles.wide : ''}`}
           onEscapeKeyDown={block}
           onPointerDownOutside={block}
           onInteractOutside={block}

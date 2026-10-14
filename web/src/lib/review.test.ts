@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReviewString } from '../api/client'
-import { countByFilter, displayStatus, isSelectable, keyRange, matchesFilter, neighbourKey, summarizeSelection } from './review'
+import { countByFilter, displayStatus, findString, isSelectable, keyRange, matchesFilter, neighbourKey, summarizeSelection } from './review'
 
 const base: ReviewString = {
   key: 'home.title', source_text: 'Home', source_file: null, value: 'Accueil', machine_translation: 'Accueil',
@@ -82,5 +82,17 @@ describe('selection', () => {
     ]
     const summary = summarizeSelection(items, new Set(['a', 'b', 'c']), (item) => item.value === '')
     expect(summary).toEqual({ approvable: ['a', 'b'], withErrors: 1, withdrawable: ['c'] })
+  })
+})
+
+describe('findString (Ctrl+G)', () => {
+  const keys = ['home.title', 'settings.title', 'settings.save']
+  it('takes a number, an exact key, or the first key containing the text', () => {
+    expect(findString(keys, '2')).toBe('settings.title')
+    expect(findString(keys, 'settings.save')).toBe('settings.save')
+    expect(findString(keys, 'SAVE')).toBe('settings.save')
+    expect(findString(keys, 'title')).toBe('home.title')
+    expect(findString(keys, '9')).toBeNull()
+    expect(findString(keys, ' ')).toBeNull()
   })
 })

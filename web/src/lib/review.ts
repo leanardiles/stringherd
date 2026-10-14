@@ -93,3 +93,13 @@ export function summarizeSelection(
     withdrawable: chosen.filter((item) => item.status === 'approved').map((item) => item.key),
   }
 }
+
+/** The string a Ctrl+G entry means: its number in the list, its exact key, or the first key containing it. */
+export function findString(keys: string[], query: string): string | null {
+  const text = query.trim()
+  if (!text) return null
+  if (/^\d+$/.test(text)) return keys[Number(text) - 1] ?? null
+  if (keys.includes(text)) return text
+  const needle = text.toLocaleLowerCase()
+  return keys.find((key) => key.toLocaleLowerCase().includes(needle)) ?? null
+}

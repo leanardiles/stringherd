@@ -396,6 +396,7 @@ The free Developer plan gives **1 million characters in total, one time** (not m
 stringherd/
 ├── docs/
 │   ├── DEVELOPMENT.md    this file
+│   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   └── UI-PLAN.md        review UI design decisions
 ├── server/               Python + FastAPI backend (own pyproject.toml)
 │   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, CLI, models, settings

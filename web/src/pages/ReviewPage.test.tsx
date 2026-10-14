@@ -11,7 +11,11 @@ vi.mock('../components/editor/TargetEditor', () => ({
     props: { value: string; onChange: (v: string) => void; ariaLabel: string },
     ref,
   ) {
-    useImperativeHandle(ref, () => ({ focus: () => {}, replaceAll: (text: string) => props.onChange(text) }))
+    useImperativeHandle(ref, () => ({
+      focus: () => {},
+      replaceAll: (text: string) => props.onChange(text),
+      insertText: (text: string) => props.onChange(props.value + text),
+    }))
     return <textarea aria-label={props.ariaLabel} value={props.value} onChange={(e) => props.onChange(e.target.value)} />
   }),
 }))
@@ -80,7 +84,7 @@ describe('review screen, list view', () => {
     expect(patches[0]).toEqual({ key: 'home.title', body: { approved: true } })
 
     await screen.findByRole('region', { name: 'String 2: dashboard.sets_other' })
-    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}')
+    await userEvent.keyboard('{Control>}{End}{/Control}')
     await screen.findByRole('region', { name: 'String 3: login.button' })
     await userEvent.keyboard('{Control>}{Shift>}{Enter}{/Shift}{/Control}')
     expect(patches[1]).toEqual({ key: 'login.button', body: { approved: false } })

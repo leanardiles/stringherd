@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countCharacters, findPlaceholders, splitPlaceholders } from './placeholders'
+import { countCharacters, findPlaceholders, invisibleKind, missingPlaceholders, splitPlaceholders } from './placeholders'
 
 describe('splitPlaceholders', () => {
   it('separates i18next placeholders from text', () => {
@@ -32,5 +32,23 @@ describe('countCharacters', () => {
     expect(countCharacters('séries')).toBe(6)
     expect(countCharacters('é')).toBe(1) // e + combining accent
     expect(countCharacters('👍🏽')).toBe(1)
+  })
+})
+
+describe('missingPlaceholders', () => {
+  it('lists what the translation lacks, in source order and one for one', () => {
+    expect(missingPlaceholders('{{a}} of {{b}}', 'de {{a}}')).toEqual(['{{b}}'])
+    expect(missingPlaceholders('{{n}} and {{n}}', '{{n}}')).toEqual(['{{n}}'])
+    expect(missingPlaceholders('Read <0>terms</0>', 'Lire')).toEqual(['<0>', '</0>'])
+    expect(missingPlaceholders('{{a}}', '{{a}}')).toEqual([])
+  })
+})
+
+describe('invisibleKind', () => {
+  it('tells the spaces apart', () => {
+    expect(invisibleKind(' ')).toBe('space')
+    expect(invisibleKind('\u00a0')).toBe('nbsp')
+    expect(invisibleKind('\u202f')).toBe('narrowNbsp')
+    expect(invisibleKind('\t')).toBe('tab')
   })
 })

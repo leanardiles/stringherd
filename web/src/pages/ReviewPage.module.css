@@ -199,3 +199,39 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Small icon buttons between the View toggle and the filters. */
+.tools {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 30px;
+  block-size: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.toolButton:hover {
+  border-color: var(--color-field-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.toolButton[aria-pressed='true'] {
+  border-color: var(--color-field-border);
+  background: var(--color-neutral-bg);
+  color: var(--color-text);
+}
+
+.middle:focus,
+.listScroll:focus {
+  outline: none;
+}

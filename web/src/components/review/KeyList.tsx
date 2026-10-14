@@ -26,7 +26,7 @@ export function KeyList({ items, activeKey, activeValue, onOpen, footer }: Props
   }, [activeKey])
 
   return (
-    <nav className={styles.pane} aria-label={t('review.keyList')}>
+    <nav className={styles.pane} aria-label={t('review.keyList')} data-pane="list">
       <ul className={styles.list}>
         {items.map((saved) => {
           const active = saved.key === activeKey

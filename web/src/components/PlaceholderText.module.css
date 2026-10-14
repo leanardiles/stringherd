@@ -9,3 +9,47 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* With marks on, keep every space (HTML would collapse double spaces) and show it. Only the
+   collapsing changes, so single-line list rows still don't wrap. */
+.preserve {
+  white-space-collapse: preserve;
+}
+
+.space,
+.nbsp,
+.narrowNbsp,
+.tab {
+  position: relative;
+}
+
+.space::after,
+.nbsp::after,
+.narrowNbsp::after,
+.tab::after {
+  position: absolute;
+  inset-inline: 0;
+  color: var(--color-field-border);
+  text-align: center;
+  pointer-events: none;
+}
+
+.space::after {
+  content: '·';
+}
+
+.nbsp::after {
+  content: '°';
+  color: var(--color-primary);
+}
+
+.narrowNbsp::after {
+  content: '°';
+  color: var(--color-primary);
+  font-size: 0.75em;
+}
+
+.tab::after {
+  content: '→';
+  text-align: start;
+}

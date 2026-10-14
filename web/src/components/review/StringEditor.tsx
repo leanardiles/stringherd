@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react'
+import { Copy, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewString } from '../../api/client'
 import { languageLabel } from '../../lib/languages'
@@ -6,6 +6,7 @@ import { countCharacters } from '../../lib/placeholders'
 import type { QaIssue } from '../../lib/qa'
 import { formatDateTime } from '../../lib/format'
 import { displayStatus } from '../../lib/review'
+import { displayKeys, shortcut } from '../../lib/shortcuts'
 import { TargetEditor, type TargetEditorHandle } from '../editor/TargetEditor'
 import { PlaceholderText } from '../PlaceholderText'
 import ui from '../ui.module.css'
@@ -28,10 +29,23 @@ export interface StringEditorProps {
   onWithdraw: () => void
   onDiscard: () => void
   onInsertSuggestion: (text: string) => void
+  /** Show spaces, non-breaking spaces and tabs as marks in the editor. */
+  showInvisibles: boolean
+  /** ↑ on the first line or ↓ on the last line of the editor. */
+  onEdge: (direction: 'up' | 'down') => boolean
+  /** Copy the source into the translation (Ctrl+Insert). */
+  onCopySource: () => void
+  /** The suggestion Ctrl+Space inserts, by position (0 = suggestion 1). */
+  selectedSuggestion: number
   /** Admins may unlock a delivered string. */
   canReopen: boolean
   reopening: boolean
   onReopen: () => void
+}
+
+/** The keys of a shortcut as shown on this computer, for tooltips. */
+function keysOf(id: Parameters<typeof shortcut>[0]): string {
+  return displayKeys(shortcut(id).keys[0])
 }
 
 function QaMessage({ issue }: { issue: QaIssue }) {
@@ -65,9 +79,22 @@ export function StringEditor(props: StringEditorProps) {
       </header>
 
       <div className={styles.block}>
-        <span className={styles.label} title={languageLabel(sourceLang)}>
-          {t('review.sourceLabel', { code: sourceLang.toUpperCase() })}
-        </span>
+        <div className={styles.labelRow}>
+          <span className={styles.label} title={languageLabel(sourceLang)}>
+            {t('review.sourceLabel', { code: sourceLang.toUpperCase() })}
+          </span>
+          {item.status !== 'delivered' && item.source_text && (
+            <button
+              type="button"
+              className={styles.labelAction}
+              onClick={props.onCopySource}
+              title={t('review.copySourceHint', { keys: keysOf('copySource') })}
+            >
+              <Copy size={12} aria-hidden="true" />
+              {t('review.copySource')}
+            </button>
+          )}
+        </div>
         <div className={styles.source}>
           <PlaceholderText text={item.source_text ?? ''} lang={sourceLang} />
         </div>
@@ -142,6 +169,8 @@ function EditableTarget(props: StringEditorProps) {
           ariaLabel={t('review.editorLabel', { language: languageLabel(targetLang) })}
           lang={targetLang}
           autoFocus
+          showInvisibles={props.showInvisibles}
+          onEdge={props.onEdge}
         />
       </div>
 
@@ -161,9 +190,10 @@ function EditableTarget(props: StringEditorProps) {
           <span className={styles.label}>{t('review.suggestions')}</span>
           <button
             type="button"
-            className={styles.suggestion}
+            className={`${styles.suggestion} ${props.selectedSuggestion === 0 ? styles.suggestionSelected : ''}`}
             onClick={() => props.onInsertSuggestion(deepl)}
             aria-label={t('review.insertSuggestion', { number: 1 })}
+            title={t('review.insertSuggestion', { number: 1 })}
           >
             <span className={`${styles.suggestionNumber} tabular`}>1</span>
             <span className={styles.suggestionSource}>{t('review.deepl')}</span>
@@ -189,12 +219,22 @@ function EditableTarget(props: StringEditorProps) {
           {t('review.approveNext')} <kbd className={ui.kbd}>Ctrl+Enter</kbd>
         </button>
         {item.status === 'approved' && !dirty && (
-          <button type="button" className={ui.secondary} onClick={props.onWithdraw}>
+          <button
+            type="button"
+            className={ui.secondary}
+            onClick={props.onWithdraw}
+            title={t('review.withdrawHint', { keys: keysOf('withdraw') })}
+          >
             {t('review.withdraw')}
           </button>
         )}
         {dirty && (
-          <button type="button" className={ui.secondary} onClick={props.onDiscard}>
+          <button
+            type="button"
+            className={ui.secondary}
+            onClick={props.onDiscard}
+            title={t('review.discardHint', { keys: keysOf('discard') })}
+          >
             {t('review.discard')} <kbd className={ui.kbd}>Esc</kbd>
           </button>
         )}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import type { User } from '../api/client'
 import { useLogout } from '../api/queries'
+import { useShowShortcuts } from './shortcuts/context'
 import ui from './ui.module.css'
 import styles from './UserMenu.module.css'
 
@@ -16,6 +17,7 @@ export function UserMenu({ user }: { user: User }) {
   const logout = useLogout()
   const navigate = useNavigate()
   const location = useLocation()
+  const showShortcuts = useShowShortcuts()
   const role = user.role === 'admin' ? t('user.role.admin') : t('user.role.reviewer')
 
   return (
@@ -34,6 +36,9 @@ export function UserMenu({ user }: { user: User }) {
             <span className={ui.pillNeutral}>{role}</span>
           </div>
           <DropdownMenu.Separator className={styles.separator} />
+          <DropdownMenu.Item className={styles.item} onSelect={showShortcuts}>
+            {t('user.shortcuts')}
+          </DropdownMenu.Item>
           <DropdownMenu.Item className={styles.item} onSelect={() => navigate('/password', { state: { from: location.pathname } })}>
             {t('user.changePassword')}
           </DropdownMenu.Item>
