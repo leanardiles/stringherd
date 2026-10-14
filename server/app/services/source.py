@@ -47,7 +47,7 @@ def _insert(db: Session):
 
 def store_source_strings(
     db: Session,
-    project_slug: str,
+    project: Project,
     locale: str,
     strings: dict[str, str],
     file: str | None = None,
@@ -60,9 +60,6 @@ def store_source_strings(
     """
     insert = _insert(db)
     summary = SourceUploadSummary()
-
-    db.execute(insert(Project).values(slug=project_slug).on_conflict_do_nothing(index_elements=["slug"]))
-    project = db.scalar(select(Project).where(Project.slug == project_slug))
 
     if project.source_locale is None:
         project.source_locale = locale

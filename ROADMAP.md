@@ -20,7 +20,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 **DeepL Sync TMS contract**
 - Push, export and project status endpoints, verified end to end against the real DeepL CLI (push, re-push, pull, auth errors)
 - API-key authentication accepting both forms DeepL Sync sends (`ApiKey` and `Bearer`)
-- Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; parallel pushes to a new project are handled atomically
+- Keys per project, stored as hashes, shown once, revocable; a key opens only its own project. A server-wide development key stays optional
+- Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; parallel pushes are handled atomically
 - Reviewer edits are protected: a push only reopens a translation when DeepL delivers something new (because the source changed), the same rule CAT tools follow when a source file is updated
 - Export of approved translations only
 
@@ -31,6 +32,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 **People**
 - Admin and reviewer roles, email and password sign-in (Argon2 hashes, server-side sessions in a secure cookie), assignments per project and language, a `create-admin` command, no self-signup
 - Review API: list, edit, approve, withdraw, bulk approve; each approval records who made it
+- Temporary passwords (generated or chosen by the admin) that must be changed at first sign-in; admin password reset
+- Project administration API: projects created before the first push, target languages, API keys, a setup snippet with the `.deepl-sync.yaml` block and commands ([docs/ADMIN-PLAN.md](docs/ADMIN-PLAN.md))
 
 **Review interface** (design: [docs/UI-PLAN.md](docs/UI-PLAN.md))
 - Sign-in, project overview with progress per language
@@ -49,7 +52,7 @@ Goal: a complete review tool someone else can run locally and use without openin
 
 **Needed**
 - **Review screen, rest of the MVP**: bulk approve (checkboxes and an action bar), `F8` to insert placeholders, `Ctrl+G` to go to a string, `Ctrl+Shift+Space` for a non-breaking space, show non-printable characters
-- **Admin screens**: create reviewers and assign projects and languages from the UI
+- **Admin screens**: projects with their languages, API keys and setup page; people with temporary passwords and assignments; change password. The API is done
 - **QA enforced on the server**: the API refuses to approve a translation with a broken placeholder or empty text, as the UI already does
 - **One process to run**: FastAPI serves the built UI, so Stringherd is a single server at a single address
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step
@@ -78,8 +81,7 @@ Goal: anyone can open Stringherd in the browser and try it, with nothing to inst
 
 Goal: Stringherd on a live repository that is not mine, with me reviewing English to Spanish. The repository is not chosen yet; its stack (framework, i18n library, file format, number of locale files) will decide part of this list.
 
-- **Per-project API keys**, created in the UI, instead of one key for the whole server
-- **Setup page per project**: a ready-made `.deepl-sync.yaml` and GitHub workflow, plus the two repository secrets to add; about 15 minutes of copy and paste for the team
+- **GitHub workflow on the setup page**, next to the `.deepl-sync.yaml` block, plus the two repository secrets to add; about 15 minutes of copy and paste for the team
 - **Existing translations policy** when onboarding, per locale: adopt as approved, adopt for review, or retranslate (needed because the first sync without a lockfile overwrites existing translations)
 - **Source upload for the pilot's file format**, if it is not JSON
 - **Pilot notes**: what was hard to set up, what reviewers missed, what broke; feeds the next milestones

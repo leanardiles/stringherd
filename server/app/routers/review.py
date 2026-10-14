@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Project, Translation, TranslationKey, TranslationStatus, User
-from app.permissions import can_review, reviewable_locales
+from app.permissions import can_review, projects_visible_to, reviewable_locales
 from app.schemas import (
     LOCALE_PATTERN,
     BulkApprove,
@@ -62,7 +62,7 @@ def _to_review_string(key: TranslationKey, translation: Translation) -> ReviewSt
 def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
     """Projects and languages the signed-in user can review, with progress counts."""
     result: list[ReviewProject] = []
-    for project in db.scalars(select(Project).order_by(Project.slug)):
+    for project in projects_visible_to(db, user):
         counts: dict[str, dict[str, int]] = {}
         rows = db.execute(
             select(Translation.locale, Translation.status, func.count())
@@ -74,12 +74,14 @@ def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
             counts.setdefault(locale, {})[TranslationStatus(row_status).value] = count
 
         allowed = reviewable_locales(db, user, project)
-        locales = sorted(counts) if allowed is None else sorted(allowed)
+        # Target languages count even before their first push, so assigned reviewers see them.
+        locales = sorted(set(project.target_locales) | set(counts)) if allowed is None else sorted(allowed)
         if not locales:
             continue
         result.append(
             ReviewProject(
                 project_id=project.slug,
+                name=project.name,
                 source_locale=project.source_locale,
                 locales=[
                     ReviewLocale(

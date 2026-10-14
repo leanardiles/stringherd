@@ -59,7 +59,7 @@ All items live in a 1Password vault named `Stringherd`:
 |---|---|---|---|
 | `DeepL API` (API Credential) | `credential` | `DEEPL_API_KEY` | DeepL CLI |
 | `Stringherd Supabase` | `url` | `DATABASE_URL` | Server (Supabase Session pooler URI) |
-| `Stringherd TMS` (API Credential) | `credential` | `TMS_API_KEY` | Server (checks requests) and DeepL CLI (sends it) |
+| `Stringherd TMS` (API Credential) | `credential` | `TMS_API_KEY` | Development key: the server accepts it for every project, and the DeepL CLI sends it. Optional; projects also have their own keys (see [Projects and API keys](#projects-and-api-keys)) |
 | `Stringherd Admin` (Login) | `password` | (none) | Your own sign-in to Stringherd; read once by `create-admin` |
 
 ### Setup
@@ -128,7 +128,7 @@ Port **8100** avoids clashing with apps that use 8000 (such as the FitJournal ba
 
 ### Users and sign-in
 
-Machines (DeepL Sync, the upload script) use the TMS key. People sign in with email and password. There is no self-signup: the first admin is created from the command line, and admins create everyone else.
+Machines (DeepL Sync, the upload script) use API keys. People sign in with email and password. There is no self-signup: the first admin is created from the command line, and admins create everyone else.
 
 Create the first admin, reading the password straight from 1Password so it never appears in your shell history:
 
@@ -144,11 +144,13 @@ op read "op://Stringherd/Stringherd Admin/password" | \
   op run --env-file=../.env.op -- python -m app.cli set-password --email you@example.com
 ```
 
-Then, in `/docs`: call `POST /api/auth/login`. The browser keeps the session cookie, so the other endpoints work from the same page. Create reviewers with `POST /api/admin/users` and give them a language with `POST /api/admin/users/{id}/assignments`.
+Then, in `/docs`: call `POST /api/auth/login`. The browser keeps the session cookie, so the other endpoints work from the same page. Create reviewers with `POST /api/admin/users` and give them a language with `POST /api/admin/users/{id}/assignments` (the language must be one of the project's target languages).
+
+Passwords set by an admin are temporary. Leave `password` out of `POST /api/admin/users` and Stringherd generates one, returned once as `temporary_password`. At first sign-in the user must choose their own with `POST /api/auth/password`; until then every other endpoint answers `403 Choose a new password before continuing.` An admin can issue a new temporary password with `POST /api/admin/users/{id}/reset-password`. Passwords set with `set-password` on the command line are not temporary.
 
 | Role | Can do |
 |---|---|
-| `admin` | Manage users and assignments; review any project and language |
+| `admin` | Manage projects, their languages and API keys; manage users and assignments; review any project and language |
 | `reviewer` | Review only the project and language pairs assigned to them |
 
 Whether admins may review is decided in one place, `can_review` in `app/permissions.py`.
@@ -159,8 +161,20 @@ Settings (environment variables, optional):
 |---|---|---|
 | `SESSION_DAYS` | `7` | How long a sign-in lasts |
 | `COOKIE_SECURE` | `false` | Set to `true` when Stringherd is served over HTTPS, so the browser only sends the cookie over HTTPS |
+| `PUBLIC_URL` | (none) | The address repositories use to reach Stringherd, shown on each project's setup page. Without it, the setup page uses the address of the admin's browser |
+| `TMS_API_KEY` | (none) | Development key that opens every project. Leave it unset on a shared server, so only project keys work |
 
 Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash.
+
+### Projects and API keys
+
+A project must exist before DeepL Sync pushes to it; a push to an unknown project answers `404 Project 'x' not found`. Its id is the `tms.project_id` in the repository's `.deepl-sync.yaml`. As an admin, in `/docs`:
+
+1. `POST /api/admin/projects` with `{"project_id": "my-app", "name": "My App", "source_locale": "en", "target_locales": ["fr", "es"]}`.
+2. `POST /api/admin/projects/my-app/keys` with `{"label": "My laptop"}`. The response holds the key (`shp_...`) **once**: save it in 1Password right away. Stringherd stores only its hash.
+3. `GET /api/admin/projects/my-app/setup` returns the `.deepl-sync.yaml` block and the commands for the repository.
+
+The repository then sends that key as `TMS_API_KEY`. A project key opens only its own project (`403` for another one); revoke it with `DELETE /api/admin/projects/my-app/keys/{id}`. The server-wide `TMS_API_KEY` keeps working for every existing project, which is how FitJournal is set up locally. Design and rules: [ADMIN-PLAN.md](ADMIN-PLAN.md).
 
 ### Uploading source strings
 
@@ -409,5 +423,8 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
 | `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
 | pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |
+| `404 Project 'x' not found` on push or upload | The project does not exist in Stringherd yet, or `project_id` has a typo | Create it with `POST /api/admin/projects`, using the same id as `tms.project_id` |
+| `403 This key belongs to project ...` | The key was issued for another project | Use that project's key, or issue one for this project |
+| `403 Choose a new password before continuing.` | The account still has a temporary password | Call `POST /api/auth/password` with the temporary and the new password |
 | `401 Not signed in.` in `/docs` | No session cookie, or it expired | Call `POST /api/auth/login` first, on the same host you use for `/docs` (`127.0.0.1` and `localhost` keep separate cookies) |
 | `op run`: `exec: "deepl": executable file not found` | `deepl` defined as a shell function; `op` only finds real executables | Use `npx deepl` inside this repo, or add `stringherd/node_modules/.bin` to `PATH` to call `deepl` from another project |

@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -13,17 +13,70 @@ class TranslationStatus(StrEnum):
 
 
 class Project(Base):
-    """One localized codebase. `slug` is the project_id used by DeepL Sync."""
+    """One localized codebase. `slug` is the project_id used by DeepL Sync.
+
+    Projects are created by an admin before the first push, and slugs are unique across the
+    whole server, so a repository's .deepl-sync.yaml keeps working if organizations are added.
+    """
 
     __tablename__ = "projects"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(200))
     # Locale of the source strings (e.g. "en"), set by the first source upload.
     source_locale: Mapped[str | None] = mapped_column(String(35))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     keys: Mapped[list["TranslationKey"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    locales: Mapped[list["ProjectLocale"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="ProjectLocale.locale"
+    )
+    api_keys: Mapped[list["ProjectApiKey"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="ProjectApiKey.created_at"
+    )
+
+    @property
+    def target_locales(self) -> list[str]:
+        return [entry.locale for entry in self.locales]
+
+
+class ProjectLocale(Base):
+    """A target language of a project. Added by an admin, or automatically when DeepL Sync
+    pushes a language the project does not list yet."""
+
+    __tablename__ = "project_locales"
+    __table_args__ = (UniqueConstraint("project_id", "locale"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    locale: Mapped[str] = mapped_column(String(35))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    project: Mapped[Project] = relationship(back_populates="locales")
+
+
+class ProjectApiKey(Base):
+    """A machine key for one project (DeepL Sync, CI, upload script).
+
+    Only the SHA-256 hash is stored; the full key is shown once when created. Keys are long
+    random strings, so a fast hash is enough (unlike passwords, they cannot be guessed).
+    """
+
+    __tablename__ = "project_api_keys"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    label: Mapped[str] = mapped_column(String(100))
+    prefix: Mapped[str] = mapped_column(String(16))  # first characters, to recognise the key in lists
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    project: Mapped[Project] = relationship(back_populates="api_keys")
+    created_by: Mapped["User | None"] = relationship()
 
 
 class TranslationKey(Base):
@@ -108,6 +161,9 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(String(255))  # Argon2; never the password itself
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Set for temporary passwords (new users, resets): the user must choose a new one before
+    # anything else works.
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

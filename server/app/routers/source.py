@@ -6,10 +6,10 @@ needs both, so the project's own CI (or a script) uploads the source strings her
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import require_api_key
+from app.auth import MachineProject
 from app.db import get_db
 from app.schemas import SourceUpload, SourceUploadResult
 from app.services.source import (
@@ -18,14 +18,13 @@ from app.services.source import (
     store_source_strings,
 )
 
-router = APIRouter(prefix="/api/projects", tags=["stringherd extensions"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/api/projects", tags=["stringherd extensions"])
 
 DbSession = Annotated[Session, Depends(get_db)]
-ProjectSlug = Annotated[str, Path(alias="projectId", pattern=r"^[A-Za-z0-9._-]{1,100}$")]
 
 
 @router.put("/{projectId}/source", response_model=SourceUploadResult)
-def upload_source(project_slug: ProjectSlug, body: SourceUpload, db: DbSession) -> SourceUploadResult:
+def upload_source(project: MachineProject, body: SourceUpload, db: DbSession) -> SourceUploadResult:
     """Upload a full snapshot of source strings for one catalog file.
 
     Send every source string each time: Stringherd compares with what it has and reports
@@ -35,7 +34,7 @@ def upload_source(project_slug: ProjectSlug, body: SourceUpload, db: DbSession) 
     try:
         summary = store_source_strings(
             db,
-            project_slug=project_slug,
+            project=project,
             locale=body.locale,
             strings=body.strings,
             file=body.file,
@@ -62,7 +61,7 @@ def upload_source(project_slug: ProjectSlug, body: SourceUpload, db: DbSession) 
         ) from exc
 
     return SourceUploadResult(
-        project_id=project_slug,
+        project_id=project.slug,
         locale=body.locale,
         file=body.file,
         created=summary.created,

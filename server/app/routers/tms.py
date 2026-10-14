@@ -11,9 +11,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from app.auth import require_api_key
+from app.auth import MachineProject
 from app.db import get_db
-from app.models import Project, Translation, TranslationKey, TranslationStatus
+from app.models import Translation, TranslationKey, TranslationStatus
 from app.schemas import (
     LOCALE_PATTERN,
     MAX_VALUE_BYTES,
@@ -22,11 +22,12 @@ from app.schemas import (
     PushResult,
     PushTranslation,
 )
+from app.services.projects import ensure_locale
 
-router = APIRouter(prefix="/api/projects", tags=["tms contract"], dependencies=[Depends(require_api_key)])
+# Every endpoint takes a MachineProject: the key must belong to the project in the address.
+router = APIRouter(prefix="/api/projects", tags=["tms contract"])
 
 DbSession = Annotated[Session, Depends(get_db)]
-ProjectSlug = Annotated[str, Path(alias="projectId", pattern=r"^[A-Za-z0-9._-]{1,100}$")]
 
 
 def _insert(db: Session):
@@ -34,16 +35,9 @@ def _insert(db: Session):
     return pg_insert if db.get_bind().dialect.name == "postgresql" else sqlite_insert
 
 
-def _get_project(db: Session, slug: str) -> Project:
-    project = db.scalar(select(Project).where(Project.slug == slug))
-    if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{slug}' not found.")
-    return project
-
-
 @router.put("/{projectId}/keys/{keyPath:path}", response_model=PushResult)
 def push_translation(
-    project_slug: ProjectSlug,
+    project: MachineProject,
     key_path: Annotated[str, Path(alias="keyPath", max_length=500)],
     body: PushTranslation,
     db: DbSession,
@@ -70,13 +64,13 @@ def push_translation(
         )
 
     # deepl sync push sends up to 10 requests in parallel, so several may try to create the
-    # same project or key at once. INSERT ... ON CONFLICT DO NOTHING makes creation atomic:
-    # exactly one request inserts the row, the others find it.
+    # same key at once. INSERT ... ON CONFLICT DO NOTHING makes creation atomic: exactly one
+    # request inserts the row, the others find it.
     insert = _insert(db)
+    project_id = project.id
 
-    # The first push to a new project_id creates it, so no setup step is needed.
-    db.execute(insert(Project).values(slug=project_slug).on_conflict_do_nothing(index_elements=["slug"]))
-    project_id = db.scalar(select(Project.id).where(Project.slug == project_slug))
+    # A language the project does not list yet (added to .deepl-sync.yaml) becomes a target language.
+    ensure_locale(db, project, body.locale)
 
     db.execute(
         insert(TranslationKey)
@@ -123,7 +117,7 @@ def push_translation(
 
 @router.get("/{projectId}/keys/export")
 def export_translations(
-    project_slug: ProjectSlug,
+    project: MachineProject,
     db: DbSession,
     locale: Annotated[str, Query(pattern=LOCALE_PATTERN, max_length=35)],
     format: Annotated[str, Query()] = "json",
@@ -131,7 +125,6 @@ def export_translations(
     """Return approved translations for one locale as a flat `{key: value}` object, for `deepl sync pull`."""
     if format != "json":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only format=json is supported.")
-    project = _get_project(db, project_slug)
     rows = db.execute(
         select(TranslationKey.key_path, Translation.value)
         .join(Translation, Translation.key_id == TranslationKey.id)
@@ -146,9 +139,8 @@ def export_translations(
 
 
 @router.get("/{projectId}", response_model=ProjectStatus)
-def project_status(project_slug: ProjectSlug, db: DbSession) -> ProjectStatus:
+def project_status(project: MachineProject, db: DbSession) -> ProjectStatus:
     """Key count and per-locale review progress. Reserved in the contract; used by Stringherd's UI."""
-    project = _get_project(db, project_slug)
     key_count = db.scalar(select(func.count()).select_from(TranslationKey).where(TranslationKey.project_id == project.id))
     rows = db.execute(
         select(Translation.locale, Translation.status, func.count())

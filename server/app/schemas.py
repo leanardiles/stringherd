@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -113,6 +114,8 @@ class UserOut(BaseModel):
     name: str
     role: str
     is_active: bool
+    must_change_password: bool
+    last_login_at: datetime | None
     assignments: list[AssignmentOut]
 
 
@@ -120,7 +123,27 @@ class UserCreate(BaseModel):
     email: EmailStr
     name: str = Field(min_length=1, max_length=200)
     role: str = Field(default="reviewer", pattern=ROLE_PATTERN)
-    password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=1024, description="Temporary password")
+    password: str | None = Field(
+        default=None,
+        min_length=MIN_PASSWORD_LENGTH,
+        max_length=1024,
+        description="Temporary password. Leave out to have Stringherd generate one.",
+    )
+
+
+class UserCreated(UserOut):
+    """The new user, plus the temporary password when Stringherd generated it (shown once)."""
+
+    temporary_password: str | None
+
+
+class TemporaryPassword(BaseModel):
+    temporary_password: str
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=1024)
+    new_password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=1024)
 
 
 class UserUpdate(BaseModel):
@@ -146,6 +169,7 @@ class ReviewLocale(BaseModel):
 
 class ReviewProject(BaseModel):
     project_id: str
+    name: str
     source_locale: str | None
     locales: list[ReviewLocale]
 
@@ -191,3 +215,88 @@ class BulkApproveResult(BaseModel):
     approved: int
     already_approved: int
     not_found: list[str]
+
+
+# ---------- Projects (administration) ----------
+
+SLUG_PATTERN = r"^[A-Za-z0-9._-]{1,100}$"
+
+
+class ProjectCreate(BaseModel):
+    project_id: str = Field(pattern=SLUG_PATTERN, examples=["fitjournal"], description="The project_id in .deepl-sync.yaml")
+    name: str = Field(min_length=1, max_length=200, examples=["FitJournal"])
+    source_locale: str = Field(pattern=LOCALE_PATTERN, max_length=35, examples=["en"])
+    target_locales: list[str] = Field(default_factory=list, max_length=100, examples=[["fr", "es"]])
+
+    @field_validator("target_locales")
+    @classmethod
+    def check_locales(cls, value: list[str]) -> list[str]:
+        for locale in value:
+            if not re.fullmatch(LOCALE_PATTERN, locale) or len(locale) > 35:
+                raise ValueError(f"'{locale}' is not a valid language code.")
+        return list(dict.fromkeys(value))
+
+
+class ProjectUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    source_locale: str | None = Field(default=None, pattern=LOCALE_PATTERN, max_length=35)
+
+
+class LocaleIn(BaseModel):
+    locale: str = Field(pattern=LOCALE_PATTERN, max_length=35, examples=["es"])
+
+
+class ReviewerRef(BaseModel):
+    id: int
+    name: str
+
+
+class ProjectLocaleOut(BaseModel):
+    locale: str
+    total: int
+    approved: int
+    reviewers: list[ReviewerRef]
+
+
+class ApiKeyOut(BaseModel):
+    id: int
+    label: str
+    prefix: str
+    created_at: datetime | None
+    created_by: str | None
+    last_used_at: datetime | None
+    revoked_at: datetime | None
+
+
+class ApiKeyCreate(BaseModel):
+    label: str = Field(default="Default", min_length=1, max_length=100, examples=["GitHub Actions"])
+
+
+class ApiKeyIssued(ApiKeyOut):
+    """The new key. `key` is shown only in this response; Stringherd stores just its hash."""
+
+    key: str
+
+
+class ProjectAdminOut(BaseModel):
+    project_id: str
+    name: str
+    source_locale: str | None
+    target_locales: list[str]
+    strings: int
+    locales: list[ProjectLocaleOut]
+    active_keys: int
+    created_at: datetime | None
+
+
+class ProjectAdminDetail(ProjectAdminOut):
+    api_keys: list[ApiKeyOut]
+
+
+class ProjectSetup(BaseModel):
+    """What a repository needs to connect to this project, ready to copy."""
+
+    server_url: str
+    project_id: str
+    deepl_sync_yaml: str
+    commands: str

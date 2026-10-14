@@ -1,4 +1,4 @@
-"""User administration: create users, change roles, assign projects and languages. Admins only."""
+"""People administration: create users, change roles, reset passwords, assign projects and languages. Admins only."""
 
 from typing import Annotated
 
@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import Project, ReviewerAssignment, User, UserRole
 from app.routers.auth import user_out
-from app.schemas import AssignmentIn, UserCreate, UserOut, UserUpdate
-from app.security import AdminUser, end_all_sessions, hash_password
+from app.schemas import AssignmentIn, TemporaryPassword, UserCreate, UserCreated, UserOut, UserUpdate
+from app.security import AdminUser, end_all_sessions, generate_temporary_password, hash_password
 
 router = APIRouter(prefix="/api/admin", tags=["administration"])
 
@@ -30,15 +30,21 @@ def list_users(admin: AdminUser, db: DbSession) -> list[UserOut]:
     return [user_out(u) for u in db.scalars(select(User).order_by(User.name))]
 
 
-@router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def create_user(body: UserCreate, admin: AdminUser, db: DbSession) -> UserOut:
-    """Create a user with a temporary password the admin shares with them."""
+@router.post("/users", response_model=UserCreated, status_code=status.HTTP_201_CREATED)
+def create_user(body: UserCreate, admin: AdminUser, db: DbSession) -> UserCreated:
+    """Create a user with a temporary password, which they must change at first sign-in.
+
+    Leave `password` out to have Stringherd generate one; it is returned once, in
+    `temporary_password`, for the admin to pass on.
+    """
+    generated = generate_temporary_password() if body.password is None else None
     user = User(
         email=body.email.lower(),
         name=body.name,
         role=UserRole(body.role),
-        password_hash=hash_password(body.password),
+        password_hash=hash_password(body.password or generated),
         is_active=True,
+        must_change_password=True,
     )
     db.add(user)
     try:
@@ -47,12 +53,16 @@ def create_user(body: UserCreate, admin: AdminUser, db: DbSession) -> UserOut:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists.")
     db.refresh(user)
-    return user_out(user)
+    return UserCreated(**user_out(user).model_dump(), temporary_password=generated)
 
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def update_user(user_id: Annotated[int, Path()], body: UserUpdate, admin: AdminUser, db: DbSession) -> UserOut:
-    """Change name, role, active state or password. A password change or deactivation signs the user out."""
+    """Change name, role, active state or password.
+
+    A password set here is temporary: the user must change it at next sign-in. A password
+    change or deactivation signs the user out everywhere.
+    """
     user = _get_user(db, user_id)
     if user.id == admin.id and (body.role == "reviewer" or body.is_active is False):
         # Prevents locking yourself (and possibly everyone) out of administration.
@@ -67,10 +77,30 @@ def update_user(user_id: Annotated[int, Path()], body: UserUpdate, admin: AdminU
             end_all_sessions(db, user.id)
     if body.password is not None:
         user.password_hash = hash_password(body.password)
+        user.must_change_password = user.id != admin.id
         end_all_sessions(db, user.id)
     db.commit()
     db.refresh(user)
     return user_out(user)
+
+
+@router.post("/users/{user_id}/reset-password", response_model=TemporaryPassword)
+def reset_password(user_id: Annotated[int, Path()], admin: AdminUser, db: DbSession) -> TemporaryPassword:
+    """Replace a user's password with a generated temporary one, shown once.
+
+    The user is signed out everywhere and must choose a new password at next sign-in.
+    """
+    user = _get_user(db, user_id)
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Use Change password to set your own password."
+        )
+    temporary = generate_temporary_password()
+    user.password_hash = hash_password(temporary)
+    user.must_change_password = True
+    end_all_sessions(db, user.id)
+    db.commit()
+    return TemporaryPassword(temporary_password=temporary)
 
 
 @router.post("/users/{user_id}/assignments", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -80,6 +110,11 @@ def add_assignment(user_id: Annotated[int, Path()], body: AssignmentIn, admin: A
     project = db.scalar(select(Project).where(Project.slug == body.project_id))
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{body.project_id}' not found.")
+    if body.locale not in project.target_locales:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"'{body.locale}' is not a target language of '{project.slug}'. Add the language to the project first.",
+        )
     exists = db.scalar(
         select(ReviewerAssignment.id).where(
             ReviewerAssignment.user_id == user.id,

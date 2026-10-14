@@ -1,7 +1,7 @@
 """Sign-in for people: password hashing, sessions and the current-user dependency.
 
-Machines (DeepL Sync, CI scripts) authenticate with the TMS key in app/auth.py instead.
-The two are deliberately separate: the TMS key never goes to a browser, and a person's
+Machines (DeepL Sync, CI scripts) authenticate with project API keys in app/auth.py instead.
+The two are deliberately separate: an API key never goes to a browser, and a person's
 session never grants the machine endpoints.
 """
 
@@ -90,17 +90,33 @@ def end_session(db: Session, token: str) -> None:
 
 
 def end_all_sessions(db: Session, user_id: int) -> None:
-    """Sign a user out everywhere, e.g. after a password change or deactivation."""
+    """Sign a user out everywhere, e.g. after a password reset or deactivation."""
     db.execute(delete(UserSession).where(UserSession.user_id == user_id))
+
+
+def end_other_sessions(db: Session, user_id: int, keep_token: str) -> None:
+    """Sign a user out of every other browser, keeping the one making the request."""
+    db.execute(
+        delete(UserSession).where(UserSession.user_id == user_id, UserSession.token_hash != _hash_token(keep_token))
+    )
+
+
+def generate_temporary_password() -> str:
+    """A random password for a new user or a reset. The user must replace it at first sign-in."""
+    return secrets.token_urlsafe(12)  # 16 characters, about 96 bits
 
 
 # ---------- Dependencies ----------
 
-def current_user(
+def signed_in_user(
     db: Annotated[Session, Depends(get_db)],
     stringherd_session: Annotated[str | None, Cookie()] = None,
 ) -> User:
-    """The signed-in user, or 401. Expired sessions and deactivated users are rejected."""
+    """The signed-in user, or 401, even if they still have to change a temporary password.
+
+    Only the endpoints that let such a user finish signing in use this directly (who am I,
+    change password). Everything else uses current_user.
+    """
     unauthenticated = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not signed in.")
     if not stringherd_session:
         raise unauthenticated
@@ -110,6 +126,18 @@ def current_user(
     if not session.user.is_active:
         raise unauthenticated
     return session.user
+
+
+SignedInUser = Annotated[User, Depends(signed_in_user)]
+
+PASSWORD_CHANGE_REQUIRED = "Choose a new password before continuing."
+
+
+def current_user(user: SignedInUser) -> User:
+    """The signed-in user, or 401; 403 while they still have a temporary password."""
+    if user.must_change_password:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=PASSWORD_CHANGE_REQUIRED)
+    return user
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

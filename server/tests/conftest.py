@@ -15,7 +15,8 @@ from app import models  # noqa: E402,F401
 from app.db import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
-AUTH = {"Authorization": "ApiKey test-key"}
+AUTH = {"Authorization": "ApiKey test-key"}  # the server-wide development key
+KNOWN_PROJECTS = ("demo-app", "fitjournal")
 
 
 @pytest.fixture
@@ -28,7 +29,14 @@ def db_session_factory():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    yield sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    # Projects must exist before a push. These are the ones the tests push to; "nope" stays unknown.
+    from app.models import Project
+
+    with factory() as session:
+        session.add_all([Project(slug=slug, name=slug.title()) for slug in KNOWN_PROJECTS])
+        session.commit()
+    yield factory
     engine.dispose()
 
 

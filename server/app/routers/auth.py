@@ -8,9 +8,18 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.schemas import AssignmentOut, LoginRequest, UserOut
-from app.security import SESSION_COOKIE, CurrentUser, authenticate, create_session, end_session
 from app.models import User
+from app.schemas import AssignmentOut, LoginRequest, PasswordChange, UserOut
+from app.security import (
+    SESSION_COOKIE,
+    SignedInUser,
+    authenticate,
+    create_session,
+    end_other_sessions,
+    end_session,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["sign-in"])
 
@@ -24,6 +33,8 @@ def user_out(user: User) -> UserOut:
         name=user.name,
         role=user.role.value if hasattr(user.role, "value") else user.role,
         is_active=user.is_active,
+        must_change_password=user.must_change_password,
+        last_login_at=user.last_login_at,
         assignments=[AssignmentOut(project_id=a.project.slug, locale=a.locale) for a in user.assignments],
     )
 
@@ -60,6 +71,33 @@ def logout(
 
 
 @router.get("/me", response_model=UserOut)
-def me(user: CurrentUser) -> UserOut:
-    """The signed-in user and their assignments."""
+def me(user: SignedInUser) -> UserOut:
+    """The signed-in user and their assignments.
+
+    Works while a temporary password is still in place, so the UI can see
+    `must_change_password` and show the change-password page.
+    """
+    return user_out(user)
+
+
+@router.post("/password", response_model=UserOut)
+def change_password(
+    body: PasswordChange,
+    user: SignedInUser,
+    db: DbSession,
+    stringherd_session: Annotated[str | None, Cookie()] = None,
+) -> UserOut:
+    """Replace your password. Required after a temporary one; signs out your other browsers."""
+    if not verify_password(user.password_hash, body.current_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect.")
+    if body.new_password == body.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="The new password must differ from the current one."
+        )
+    user.password_hash = hash_password(body.new_password)
+    user.must_change_password = False
+    if stringherd_session:
+        end_other_sessions(db, user.id, keep_token=stringherd_session)
+    db.commit()
+    db.refresh(user)
     return user_out(user)

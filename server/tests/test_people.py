@@ -197,9 +197,7 @@ def test_can_review_rules(make_user, db_session_factory):
     admin_id = make_user("admin@example.com", role="admin")
     rev_id = make_user("rev@example.com")
     with db_session_factory() as session:
-        project = Project(slug="fitjournal")
-        session.add(project)
-        session.flush()
+        project = session.scalar(select(Project).where(Project.slug == "fitjournal"))
         session.add(ReviewerAssignment(user_id=rev_id, project_id=project.id, locale="fr"))
         session.commit()
         admin, reviewer = session.get(User, admin_id), session.get(User, rev_id)

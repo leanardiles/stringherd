@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.routers import admin, auth, review, source, tms
+from app.routers import admin, admin_projects, auth, review, source, tms
 
 app = FastAPI(
     title="Stringherd",
@@ -19,6 +19,7 @@ app.include_router(tms.router)
 app.include_router(source.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(admin_projects.router)
 app.include_router(review.router)
 
 

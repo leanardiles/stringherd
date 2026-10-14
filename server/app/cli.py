@@ -48,6 +48,7 @@ def set_password(email: str, password: str) -> str:
         if user is None:
             return f"No user with email {email}."
         user.password_hash = hash_password(password)
+        user.must_change_password = False  # set by the server operator, not temporary
         end_all_sessions(db, user.id)
         db.commit()
     return f"Password updated for {email}; existing sessions signed out."

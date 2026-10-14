@@ -46,3 +46,22 @@ def reviewable_locales(db: Session, user: User, project: Project) -> set[str] | 
             )
         )
     )
+
+
+def can_manage_project(user: User, project: Project) -> bool:
+    """Create projects, change their languages, issue and revoke keys."""
+    return is_admin(user)
+
+
+def projects_visible_to(db: Session, user: User) -> list[Project]:
+    """Projects a user can see: all for admins, assigned ones for reviewers.
+
+    Every "which projects" question goes through here, so an organization filter can be
+    added in one place later.
+    """
+    query = select(Project).order_by(Project.name)
+    if not is_admin(user):
+        query = query.where(
+            Project.id.in_(select(ReviewerAssignment.project_id).where(ReviewerAssignment.user_id == user.id))
+        )
+    return list(db.scalars(query))

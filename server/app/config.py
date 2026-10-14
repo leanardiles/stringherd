@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     database_url: str
+    # Optional server-wide development key that opens every project. Leave unset on a shared or
+    # hosted server: projects then accept only their own keys, created in Stringherd.
     tms_api_key: str | None = None
 
     # Browser sessions for people (reviewers and admins). Machines use tms_api_key instead.
@@ -17,6 +19,10 @@ class Settings(BaseSettings):
     # Send the session cookie only over HTTPS. Keep False for http://localhost; set
     # COOKIE_SECURE=true when Stringherd is served over HTTPS (e.g. through the tunnel).
     cookie_secure: bool = False
+
+    # The address repositories use to reach this server, shown on each project's setup page
+    # (e.g. https://stringherd.example.com). Defaults to the address the admin's browser used.
+    public_url: str | None = None
 
     @field_validator("database_url")
     @classmethod
