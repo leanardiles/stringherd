@@ -8,8 +8,8 @@ v1 has a single organization: everyone on a server works for the same team.
 
 | Role | Can do |
 |---|---|
-| `admin` | Manage projects, their languages and API keys; manage people and their assignments; review any project and language |
-| `reviewer` | Review only the project and language pairs assigned to them |
+| `admin` | Manage projects, their languages and API keys; manage people and their assignments; review and deliver any project and language; reopen delivered strings |
+| `reviewer` | Review and deliver only the project and language pairs assigned to them |
 
 The first admin is created from the command line (`python -m app.cli create-admin`). Admins create everyone else; there is no self-signup.
 

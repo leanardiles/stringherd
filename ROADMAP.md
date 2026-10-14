@@ -23,7 +23,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Keys per project, stored as hashes, shown once, revocable; a key opens only its own project. A server-wide development key stays optional
 - Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; parallel pushes are handled atomically
 - Reviewer edits are protected: a push only reopens a translation when DeepL delivers something new (because the source changed), the same rule CAT tools follow when a source file is updated
-- Export of approved translations only
+- Export of delivered translations only
 
 **Source strings**
 - Source upload: one request carries all source strings of a catalog (with file and commit); detects new, changed and removed keys and sends approved translations back to review when their source changes
@@ -41,8 +41,10 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Editor with placeholders as locked chips, DeepL's original as a suggestion with a word diff, approve and next, withdraw, autosave on leave, Phrase-style shortcuts
 - Status symbols per string; basic QA (placeholder mismatch and empty translation block approval; same as source and outer spaces warn)
 - The interface itself is translatable (react-i18next, pseudo-locale for testing), with a palette checked against WCAG AA
+- Admin screens: projects with their languages, API keys (shown once, revocable) and setup steps; people with roles, temporary passwords, deactivation and language assignments; change password, required after a temporary one
+- Deliver: approved strings become pullable only when the reviewer delivers the language, so approved strings can still change during a session. Delivered strings leave the working list, stay searchable read-only under Delivered, and are locked; an admin can reopen one, and the code keeps the delivered text until the next Deliver. A source change or a new machine translation sends a delivered string back to review
 
-**Verified end to end on FitJournal**: English source, French machine translation by DeepL, review and edits in Stringherd, `deepl sync pull` writes the approved strings into the repository and the app shows them.
+**Verified end to end on FitJournal**: English source, French machine translation by DeepL, review and edits in Stringherd, `deepl sync pull` writes the reviewed strings into the repository and the app shows them.
 
 ---
 
@@ -52,7 +54,6 @@ Goal: a complete review tool someone else can run locally and use without openin
 
 **Needed**
 - **Review screen, rest of the MVP**: bulk approve (checkboxes and an action bar), `F8` to insert placeholders, `Ctrl+G` to go to a string, `Ctrl+Shift+Space` for a non-breaking space, show non-printable characters
-- **Admin screens**: projects with their languages, API keys and setup page; people with temporary passwords and assignments; change password. The API is done
 - **QA enforced on the server**: the API refuses to approve a translation with a broken placeholder or empty text, as the UI already does
 - **One process to run**: FastAPI serves the built UI, so Stringherd is a single server at a single address
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step
@@ -82,6 +83,7 @@ Goal: anyone can open Stringherd in the browser and try it, with nothing to inst
 Goal: Stringherd on a live repository that is not mine, with me reviewing English to Spanish. The repository is not chosen yet; its stack (framework, i18n library, file format, number of locale files) will decide part of this list.
 
 - **GitHub workflow on the setup page**, next to the `.deepl-sync.yaml` block, plus the two repository secrets to add; about 15 minutes of copy and paste for the team
+- **Deliver opens a pull request**: Deliver also starts the repository's workflow, which runs `deepl sync pull` and opens or updates a pull request with the delivered strings. Developers merge it; the merge is the release
 - **Existing translations policy** when onboarding, per locale: adopt as approved, adopt for review, or retranslate (needed because the first sync without a lockfile overwrites existing translations)
 - **Source upload for the pilot's file format**, if it is not JSON
 - **Pilot notes**: what was hard to set up, what reviewers missed, what broke; feeds the next milestones
@@ -105,11 +107,12 @@ Goal: reviewers see where each string appears in the app, without changes to the
 
 - **GitHub App with zero-config onboarding**: connect a repository from the Stringherd UI; Stringherd reads the source strings directly (no upload script), opens a setup pull request with `.deepl-sync.yaml` and the workflow, and sends approved translations back as pull requests
 - **Adding and releasing languages**: add a language from Stringherd (setup pull request); keep it hidden until review is complete; release it with one deliberate step
-- **Workflows per locale and path**: MT only, MT + review, MT + review + sign-off, configured as ordered rules
+- **Workflows per locale and path**: MT only, MT + review, MT + review + sign-off, configured as ordered rules. With sign-off, the reviewer's Deliver sends the strings to an admin, and only the admin's sign-off makes them pullable
 - **Source change handling**: show old and new source next to the previous translation; option to carry over translations when only punctuation or typos changed
 - **More quality checks**: length expansion warnings, French spacing before `! ? : ;`, glossary terms not used
 - **Glossary**: import (TBX, CSV), term highlighting, consistency checks, sync to DeepL glossaries
 - **Translation memory** with fuzzy matching across projects, each match shown with the screenshot of its original context
+- **Translation memory lookup**: reviewers search how a term or string was translated before (concordance search across delivered strings), and see the same string in the project's other languages next to each result. Grows out of the read-only Delivered view in the review screen
 - **Regional variants as deltas**: e.g. `es-AR` stores only what differs from `es`; a variant review pass marks each string as "same as base" or provides an override
 - **Visual QA**: capture the translated build and flag text that overflows or gets cut off
 - **Audit log**: full history of who changed and approved what (today only the latest approver is kept)

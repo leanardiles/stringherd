@@ -2,9 +2,9 @@
 
 **Open-source review server for [DeepL Sync](https://github.com/DeepL/deepl-cli/blob/main/docs/SYNC.md).**
 
-DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the approved versions go back into your code.
+DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts and the review API are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, and basic QA checks; bulk approve and more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
+> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, and basic QA checks; bulk approve and more shortcuts are next. Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
 
 ---
 
@@ -20,9 +20,10 @@ deepl sync                 machine-translates new or changed strings (DeepL API)
 deepl sync push  ───────►  Stringherd       stores each translation as "machine translated"
                               │
                               ▼
-                           Linguists review, edit and approve
+                           Linguists review, edit and approve,
+                           then Deliver the language
                               │
-deepl sync pull  ◄───────  only approved translations are exported
+deepl sync pull  ◄───────  only delivered translations are exported
    │
    ▼
 Your repo: reviewed translations land in the locale files
@@ -37,10 +38,10 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | DeepL Sync TMS contract: push, export and project status endpoints |
 | ✅ Done | API-key authentication (`ApiKey` and `Bearer`, as sent by DeepL Sync), with keys per project, stored hashed and revocable |
 | ✅ Done | Idempotent, concurrency-safe push: re-pushing unchanged strings keeps their approval; only a genuinely new machine translation goes back to review, so a reviewer's edit is never overwritten by a re-push |
-| ✅ Done | Export of approved translations only |
+| ✅ Done | Deliver: approved strings become pullable only when the reviewer delivers the language; delivered strings are locked, and an admin can reopen one to fix it |
 | ✅ Done | Source upload: one request per catalog, change detection, approvals reset when the source changes |
 | ✅ Done | Reviewer accounts: admins and reviewers, sign-in with a secure session cookie, temporary passwords changed at first sign-in, reviewers assigned per project and language |
-| ✅ Done | Project administration API: projects and their languages, API keys, a setup snippet per project; admin screens next |
+| ✅ Done | Admin screens: projects and their languages, API keys shown once, setup steps per project, people with temporary passwords and language assignments |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
 | 🚧 In progress | Review interface: sign-in, project overview and review screen done (single key and list views, DeepL suggestion with diff, approve and next, status symbols, placeholder QA checks, keyboard shortcuts); bulk approve next |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
@@ -58,7 +59,7 @@ Stringherd implements the [DeepL Sync TMS contract](https://github.com/DeepL/dee
 | Method | Path | Purpose |
 |---|---|---|
 | `PUT` | `/api/projects/{projectId}/keys/{keyPath}` | Receive a translation. Body: `{"locale": "fr", "value": "Enregistrer"}` |
-| `GET` | `/api/projects/{projectId}/keys/export?format=json&locale=fr` | Approved translations as a flat `{"key": "value"}` object |
+| `GET` | `/api/projects/{projectId}/keys/export?format=json&locale=fr` | Delivered translations as a flat `{"key": "value"}` object |
 | `GET` | `/api/projects/{projectId}` | Key count and review progress per locale |
 
 Plus one **Stringherd extension**, because the contract never sends the source text:
@@ -81,6 +82,8 @@ People sign in with email and password and get a session cookie (`HttpOnly`, `Sa
 | `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, DeepL's original, status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
 | `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}` |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}` |
+| `POST` | `/api/review/projects/{projectId}/locales/{locale}/deliver` | Deliver the language: its approved strings become what `deepl sync pull` exports, and are locked |
+| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}/reopen` | Unlock a delivered string so it can be corrected (admins). The code keeps the delivered text until the next Deliver |
 
 Admins manage people under `/api/admin/users` (create with a temporary password, update, deactivate, reset password, assign project and language) and projects under `/api/admin/projects` (languages, API keys, setup snippet; see [docs/ADMIN-PLAN.md](docs/ADMIN-PLAN.md)). Reviewers only see and change the languages they are assigned to; admins can review any language.
 
@@ -88,7 +91,7 @@ And `GET /health` (server and database status), with interactive docs at `/docs`
 
 ## Using it with a project
 
-In Stringherd, an admin creates the project and an API key for it (`POST /api/admin/projects`, then `POST /api/admin/projects/{projectId}/keys`). In the project being localized, point DeepL Sync at Stringherd in `.deepl-sync.yaml`, using the same project id:
+In Stringherd, an admin creates the project under **Projects**, then an API key on the project's page, which also shows the block and commands below with the project's values filled in. In the project being localized, point DeepL Sync at Stringherd in `.deepl-sync.yaml`, using the same project id:
 
 ```yaml
 tms:
@@ -105,7 +108,8 @@ deepl sync --flag-for-review                    # machine-translate
 deepl sync push                                 # send translations to Stringherd for review
 node path/to/stringherd/scripts/upload-source.mjs \
   --project my-app --file locales/en/common.json # send the source strings
-deepl sync pull                                 # bring approved translations back
+# review in Stringherd, then click Deliver for the language
+deepl sync pull                                 # bring delivered translations back
 ```
 
 ## Notes on the DeepL Sync contract

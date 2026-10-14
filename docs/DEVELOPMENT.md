@@ -150,8 +150,8 @@ Passwords set by an admin are temporary: Stringherd generates one and shows it o
 
 | Role | Can do |
 |---|---|
-| `admin` | Manage projects, their languages and API keys; manage users and assignments; review any project and language |
-| `reviewer` | Review only the project and language pairs assigned to them |
+| `admin` | Manage projects, their languages and API keys; manage users and assignments; review and deliver any project and language; reopen delivered strings |
+| `reviewer` | Review and deliver only the project and language pairs assigned to them |
 
 Whether admins may review is decided in one place, `can_review` in `app/permissions.py`.
 
@@ -177,6 +177,14 @@ A project must exist before DeepL Sync pushes to it; a push to an unknown projec
 The same steps work in `/docs` with `POST /api/admin/projects`, `POST /api/admin/projects/{projectId}/keys` and `GET /api/admin/projects/{projectId}/setup`.
 
 The repository then sends that key as `TMS_API_KEY`. A project key opens only its own project (`403` for another one); revoke it on the project's page. The server-wide `TMS_API_KEY` keeps working for every existing project, which is how FitJournal is set up locally. Design and rules: [ADMIN-PLAN.md](ADMIN-PLAN.md).
+
+### Delivering reviewed strings
+
+`deepl sync pull` exports only **delivered** strings. Approving a string is not enough: the reviewer clicks **Deliver** in the review screen when done with a session, and only then does the next pull bring that language's approved strings into the code. Until then, approved strings can still be changed.
+
+Delivered strings leave the reviewer's working list and are locked. They stay searchable, read-only, under the **Delivered** filter. An admin can **Reopen** one to fix it; the code keeps the delivered text until the language is delivered again. A changed source string, or a new machine translation from DeepL, sends a delivered string back to review and drops its delivered text, so a pull never writes a translation of the old source.
+
+Strings approved before Deliver existed were marked as delivered by the migration, so the first pull after upgrading returns the same as before.
 
 ### Uploading source strings
 
@@ -248,8 +256,8 @@ The DeepL CLI provides `deepl sync`, the engine on the other side of Stringherd'
 Source-language files in the repo
   -> deepl sync         translates new or changed strings via the DeepL API
   -> deepl sync push    sends them to Stringherd for review
-  -> linguists review in Stringherd
-  -> deepl sync pull    writes approved translations back to the repo
+  -> linguists review in Stringherd, then Deliver the language
+  -> deepl sync pull    writes delivered translations back to the repo
 ```
 
 It is installed **locally in the project** (not globally with `-g`) so the version is pinned. Local machines and CI run the same version, which matters because the CLI writes `.deepl-sync.lock`.
@@ -428,5 +436,7 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | `404 Project 'x' not found` on push or upload | The project does not exist in Stringherd yet, or `project_id` has a typo | Create it under **Projects**, using the same id as `tms.project_id` |
 | `403 This key belongs to project ...` | The key was issued for another project | Use that project's key, or issue one for this project |
 | `403 Choose a new password before continuing.` | The account still has a temporary password | Sign in to the review UI and choose a new password (or call `POST /api/auth/password`) |
+| `deepl sync pull` brings back nothing, or not the latest edits | Strings are approved but not delivered yet | Click **Deliver** for the language in the review screen, then pull again |
+| `409 This string is delivered and locked.` | The string was delivered | An admin opens it in the review screen (Delivered filter) and clicks **Reopen** |
 | `401 Not signed in.` in `/docs` | No session cookie, or it expired | Call `POST /api/auth/login` first, on the same host you use for `/docs` (`127.0.0.1` and `localhost` keep separate cookies) |
 | `op run`: `exec: "deepl": executable file not found` | `deepl` defined as a shell function; `op` only finds real executables | Use `npx deepl` inside this repo, or add `stringherd/node_modules/.bin` to `PATH` to call `deepl` from another project |
