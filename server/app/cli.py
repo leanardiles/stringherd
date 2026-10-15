@@ -2,9 +2,11 @@
 
     python -m app.cli create-admin --email you@example.com --name "Your Name"
     python -m app.cli set-password --email you@example.com
+    python -m app.cli seed-demo
 
 The password is read from standard input when piped (e.g. from 1Password with `op read`),
-otherwise prompted for twice without echo.
+otherwise prompted for twice without echo. seed-demo needs no password: it fills an empty
+database with the Trailhead demo project and prints the demo sign-ins.
 """
 
 import argparse
@@ -13,6 +15,7 @@ import sys
 
 from sqlalchemy import select
 
+from app import demo
 from app.db import SessionLocal
 from app.models import User, UserRole
 from app.schemas import MIN_PASSWORD_LENGTH
@@ -54,6 +57,19 @@ def set_password(email: str, password: str) -> str:
     return f"Password updated for {email}; existing sessions signed out."
 
 
+def seed_demo() -> str:
+    with SessionLocal() as db:
+        try:
+            summary = demo.seed_demo(db)
+        except demo.DatabaseNotEmptyError:
+            return "The database already has users or projects; seed-demo only fills an empty one. Nothing changed."
+    languages = ", ".join(summary.languages)
+    return (
+        f"Demo project Trailhead created: {summary.strings} strings in {languages}.\n"
+        f"Sign in as {demo.ADMIN_EMAIL} or {demo.REVIEWER_EMAIL}, password {demo.DEMO_PASSWORD}"
+    )
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Stringherd administration")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -65,7 +81,12 @@ def main(argv: list[str] | None = None) -> None:
     reset = commands.add_parser("set-password", help="Set a user's password")
     reset.add_argument("--email", required=True)
 
+    commands.add_parser("seed-demo", help="Fill an empty database with the Trailhead demo project")
+
     args = parser.parse_args(argv)
+    if args.command == "seed-demo":
+        print(seed_demo())
+        return
     password = _read_password()
     if args.command == "create-admin":
         print(create_admin(args.email, args.name, password))

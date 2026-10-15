@@ -167,6 +167,19 @@ Settings (environment variables, optional):
 
 Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash.
 
+### Demo data
+
+`seed-demo` fills an **empty** database with a demo project, Trailhead, a small fictional hiking app: 22 English strings translated into French and Latin American Spanish (`es-419`). It is what the Docker setup loads on its first start, and what the README walkthrough shows.
+
+```bash
+python -m app.cli seed-demo     # against a local database; add op run for one from .env.op
+```
+
+- **People**: `admin@trailhead.example` and `reviewer@trailhead.example`, both with the password `trailhead-demo`, printed by the command. The `.example` domain is reserved and can never belong to anyone, so these addresses never reach a real inbox. Use the demo only on your own computer.
+- **French** has a review session behind it: 4 strings delivered, 3 approved since (one edited by the reviewer, so the editor shows a word diff), the rest to review. One string misses its `{{name}}` placeholder, so it cannot be approved; two carry quality warnings.
+- **Spanish** has just arrived from DeepL: all 22 strings to review.
+- It refuses to run when any user or project exists, so it never mixes with real data; running it again changes nothing. The data lives in `server/app/demo.py` and goes through the same functions as real data (project creation, source upload, Deliver).
+
 ### Projects and API keys
 
 A project must exist before DeepL Sync pushes to it; a push to an unknown project answers `404 Project 'x' not found`. Its id is the `tms.project_id` in the repository's `.deepl-sync.yaml`. As an admin, open **Projects** in the top bar:
