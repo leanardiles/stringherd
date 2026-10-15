@@ -1,0 +1,44 @@
+# Try Stringherd locally with the Trailhead demo project:
+#
+#   docker compose up --build        then open http://localhost:8200
+#
+# Sign in as admin@trailhead.example or reviewer@trailhead.example, password trailhead-demo.
+# For local trial only: the demo password is public, so Stringherd only listens on this
+# computer, and the database is not reachable from outside the containers at all.
+# Port 8200 on this computer, so it runs next to a development server on 8100.
+
+name: stringherd
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: stringherd
+      POSTGRES_PASSWORD: stringherd-local
+      POSTGRES_DB: stringherd
+    volumes:
+      # Kept outside the containers: the data survives `docker compose down` and rebuilds.
+      # `docker compose down -v` deletes it, for a fresh demo on the next start.
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Postgres needs a few seconds before it accepts connections; the app waits for this.
+      test: ["CMD-SHELL", "pg_isready -U stringherd -d stringherd"]
+      interval: 2s
+      retries: 30
+
+  app:
+    build: .
+    environment:
+      # "db" is the database service's name on the network compose creates for the two.
+      DATABASE_URL: postgresql://stringherd:stringherd-local@db:5432/stringherd
+      # Load the demo project into the empty database on the first start (docker/start.sh).
+      STRINGHERD_SEED_DEMO: "true"
+    ports:
+      # This computer only (127.0.0.1), port 8200, to the server's port 8100 in the container.
+      - "127.0.0.1:8200:8100"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

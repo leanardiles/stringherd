@@ -49,6 +49,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 **Running it**
 - One server at one address: the server also serves the built UI (`npm run build:web`), so reloads and bookmarks open the right page; bundles are cached for a year and the page itself is revalidated; API routes always take priority. Without a build it runs the API only
+- Docker for local trial and self-hosting: `docker compose up` starts Stringherd with its own Postgres and the Trailhead demo project (`seed-demo`) on port 8200, with nothing else to install. Two-stage image running as an ordinary user, migrations on every start, demo data only on request, an allow-list of what goes into a build
 
 **Verified end to end on FitJournal**: English source, French machine translation by DeepL, review and edits in Stringherd, `deepl sync pull` writes the reviewed strings into the repository and the app shows them.
 
@@ -59,7 +60,6 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 Goal: a complete review tool someone else can run locally and use without opening the API docs. Ends with a `v1.0.0` tag.
 
 **Needed**
-- **Try it with Docker**: a Dockerfile (builds the UI, runs the one server) and a `docker-compose.yml` with its own Postgres and the demo project, so `docker compose up` is all it takes to try Stringherd locally, with no Supabase or 1Password. For local trial and self-hosting; the hosted demo does not use it
 - **FitJournal French in production**: review the whole French catalog with the local server, deliver, pull on a branch, merge and deploy, so French goes live on fit-journal.com. Only `fr` is a target, so `es`, `nl` and `es-AR` stay untouched. What feels wrong while reviewing becomes a fix before the tag
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step, using the FitJournal French flow and the demo project
 - **`v1.0.0` tag and a changelog**

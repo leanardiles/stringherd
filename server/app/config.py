@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +47,18 @@ class Settings(BaseSettings):
         return value
 
 
+MISSING_DATABASE_URL = (
+    "DATABASE_URL is not set: Stringherd needs the address of its Postgres database. "
+    "Locally, run the command through op run (see docs/DEVELOPMENT.md); in Docker, docker-compose.yml sets it."
+)
+
+
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError as error:
+        # The usual first-run mistake; one sentence instead of a validation traceback.
+        if any(e["loc"] == ("database_url",) and e["type"] == "missing" for e in error.errors()):
+            raise SystemExit(MISSING_DATABASE_URL) from None
+        raise

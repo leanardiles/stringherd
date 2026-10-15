@@ -44,6 +44,7 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Admin screens: projects and their languages, API keys shown once, setup steps per project, people with temporary passwords and language assignments |
 | ✅ Done | Review API: list strings with source and machine translation, edit, approve, bulk approve; records who approved each string |
 | ✅ Done | Quality checks: empty and placeholder errors block approval in the review screen and on the server; warnings for same as source, spacing, numbers, ending punctuation, double spaces, unbalanced brackets and quotes |
+| ✅ Done | Try it with one command: Docker Compose with its own database and a demo project |
 | ✅ Done | Review interface: sign-in, project overview, review screen with single key and list views, DeepL suggestion with diff, approve and next, status symbols, QA checks, bulk approve and withdraw, Deliver, Phrase-style keyboard shortcuts with an in-app reference ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)), non-printable characters |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
@@ -52,6 +53,21 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | 📋 Planned | GitHub App: connect a repository from the UI; Stringherd opens the setup PR |
 
 See the **[roadmap](ROADMAP.md)** for what's next and in which order.
+
+## Try it with Docker
+
+With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running, from the repository root:
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost:8200** and sign in as `reviewer@trailhead.example` (or `admin@trailhead.example`), password `trailhead-demo`. A demo project, Trailhead, is waiting: a small fictional hiking app with French partly reviewed and delivered, and Spanish just arrived from DeepL. Nothing else to install, and no DeepL key needed.
+
+- `Ctrl+C` stops it; `docker compose up` starts it again with your changes kept.
+- `docker compose down -v` deletes the demo data, for a fresh start next time.
+
+Runs on your computer only (`127.0.0.1`); the demo password is public, so do not expose it. Details, and how it is built: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#running-stringherd-with-docker).
 
 ## API
 

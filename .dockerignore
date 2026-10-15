@@ -1,0 +1,20 @@
+# What Docker may copy into a build (the build context). Everything stays out unless
+# listed below, so a new private file (notes, secrets, a local script) never ends up in
+# an image. Docker does not read .gitignore.
+*
+
+# What the Dockerfile copies:
+!web/
+!shared/
+!server/pyproject.toml
+!server/app/
+!server/alembic.ini
+!server/migrations/
+!docker/start.sh
+
+# ...and within those, never these. The order matters: the last matching line wins.
+# node_modules and dist are built inside the image, for Linux.
+web/node_modules/
+web/dist/
+**/__pycache__/
+**/.env*

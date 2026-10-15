@@ -248,6 +248,16 @@ Then open `http://localhost:5180`. The backend server must be running on port 81
 
 Run `npm run api:types` after changing an endpoint or schema in the backend, with the server running. A field the UI uses that changed or disappeared then shows up as a type error.
 
+### Translating the interface
+
+All interface text lives in `src/locales/en/common.json` and is used through `t('…')`; nothing visible is hard-coded. Plurals use i18next keys with `_one` / `_other`. Numbers, dates and language names come from `Intl`. Product names (Stringherd) stay out of the catalog.
+
+To check for hard-coded text and layouts that break with longer languages, open the UI with `?lang=pseudo` (development only): every translated text appears accented and about 35% longer, like `[Ŕéṽîéŵ ~~~]`. Anything still in plain English is not going through the catalog.
+
+### Colours
+
+The palette is defined once in `src/styles/tokens.css`; components use the variables, never hex values. `src/styles/contrast.test.ts` checks every text and control colour pair against WCAG 2.1 AA, so a colour change that hurts readability fails the tests.
+
 ---
 
 ## Running Stringherd as one server
@@ -270,7 +280,7 @@ Then open `http://localhost:8100`. After pulling UI changes, run `npm run build:
 | Changing UI code | The development setup: Vite on 5180 and the server on 8100 ([Review UI](#review-ui)). Each save shows up in the browser at once; a build takes 10 to 20 seconds |
 | Changing only backend code | Either; the one server is simpler |
 | Checking the real build before a release | One server |
-| Trying Stringherd, demos, screenshots, self-hosting | One server |
+| Trying Stringherd, demos, screenshots, self-hosting | Docker ([below](#running-stringherd-with-docker)), or one server against your own database |
 
 If `web/dist/` exists while you use the development setup, port 8100 serves that older build. Work on 5180.
 
@@ -285,15 +295,54 @@ If `web/dist/` exists while you use the development setup, port 8100 serves that
 
 `WEB_DIST` points the server to another build folder. `WEB_DIST=` (empty) turns the UI off, for hosts that serve `web/dist` themselves from a CDN (the plan for Vercel, see the [roadmap](../ROADMAP.md)).
 
-### Translating the interface
+---
 
-All interface text lives in `src/locales/en/common.json` and is used through `t('…')`; nothing visible is hard-coded. Plurals use i18next keys with `_one` / `_other`. Numbers, dates and language names come from `Intl`. Product names (Stringherd) stay out of the catalog.
+## Running Stringherd with Docker
 
-To check for hard-coded text and layouts that break with longer languages, open the UI with `?lang=pseudo` (development only): every translated text appears accented and about 35% longer, like `[Ŕéṽîéŵ ~~~]`. Anything still in plain English is not going through the catalog.
+The quickest way to try Stringherd, and the way to self-host it: one command starts Stringherd with its own Postgres database and the Trailhead demo project ([Demo data](#demo-data)). No Python, Node, Supabase, 1Password or DeepL key is needed, only [Docker Desktop](https://www.docker.com/products/docker-desktop/) (no Docker account needed).
 
-### Colours
+From the repository root:
 
-The palette is defined once in `src/styles/tokens.css`; components use the variables, never hex values. `src/styles/contrast.test.ts` checks every text and control colour pair against WCAG 2.1 AA, so a colour change that hurts readability fails the tests.
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8200` and sign in as `reviewer@trailhead.example` or `admin@trailhead.example`, password `trailhead-demo`.
+
+Port **8200** on purpose: the development server keeps 8100, so both run side by side, each with its own database. `localhost:8100` is development (Supabase), `localhost:8200` is the Docker demo.
+
+### Commands
+
+Run them from the repository root.
+
+| Command | What it does |
+|---|---|
+| `docker compose up --build` | Builds the image if the code changed, starts the database and Stringherd, shows their logs. Ctrl+C stops both |
+| `docker compose up` | Starts again without rebuilding; your data is still there |
+| `docker compose up -d` | The same, in the background; follow the logs with `docker compose logs -f app` |
+| `docker compose down` | Stops and removes the containers. The data stays, in a Docker volume |
+| `docker compose down -v` | Also deletes the data. The next start creates a fresh demo |
+
+**When to use which**:
+- After pulling or changing code: `docker compose up --build`. Unchanged steps come from Docker's cache, so a rebuild usually takes seconds.
+- To start the demo over (after trying things out, or when `server/app/demo.py` changed): `docker compose down -v`, then `docker compose up --build`. A changed demo only appears in an empty database, since `seed-demo` never touches one that has data.
+
+### What a start looks like
+
+1. The first time only, Docker downloads the Node, Python and Postgres base images (a few hundred MB) and builds the image: `npm ci`, `npm run build`, `pip install`.
+2. `db-1` ends with `database system is ready to accept connections`; Stringherd waits for this (the health check in `docker-compose.yml`).
+3. `app-1` runs the migrations (`Running upgrade ...` lines, only for what is new), creates the demo on the first start (`Demo project Trailhead created`, later `Nothing changed`), then shows `Uvicorn running on http://0.0.0.0:8100`. That is the port inside the container; the browser uses 8200.
+
+### How it is built
+
+| File | Role |
+|---|---|
+| `Dockerfile` | Two stages: Node builds the UI, then a slim Python image installs the server and takes only the built UI across. Runs as an ordinary user, not root |
+| `docker/start.sh` | What the container runs: migrations, the demo data when `STRINGHERD_SEED_DEMO=true`, then the server. Stops at the first failure, so the server never starts on a half-migrated database |
+| `docker-compose.yml` | The database and Stringherd together: a volume for the data, a health check so Stringherd waits for Postgres, the port on `127.0.0.1` only |
+| `.dockerignore` | An allow-list of what Docker may copy into a build: only what the Dockerfile uses. Secrets, `node_modules`, `.venv`, `.git` and private documents stay out, including files added later |
+
+**For local trial only as configured.** The demo password is public, so Stringherd only listens on this computer (`127.0.0.1`), and the database has no port outside the containers. The image itself has no secrets and no demo data unless `STRINGHERD_SEED_DEMO=true`, so it can also run against a real database; hosting it publicly would need HTTPS, `COOKIE_SECURE=true` and real accounts. The hosted demo runs on Vercel instead (see the [roadmap](../ROADMAP.md)).
 
 ---
 
@@ -450,7 +499,7 @@ stringherd/
 │   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   └── UI-PLAN.md        review UI design decisions
 ├── server/               Python + FastAPI backend (own pyproject.toml)
-│   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), CLI, models, settings
+│   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), demo data (demo.py), CLI, models, settings
 │   ├── migrations/       Alembic database migrations
 │   └── tests/            pytest suite (in-memory SQLite, no network)
 ├── web/                  review UI: React + Vite + TypeScript (own package.json)
@@ -458,15 +507,20 @@ stringherd/
 │   └── dist/             the built UI (npm run build:web), served by the server; not committed
 ├── shared/
 │   └── qa-cases.json     quality check cases tested by both the server and the UI
+├── docker/
+│   └── start.sh          what the Stringherd container runs: migrations, demo data, server
 ├── scripts/
 │   └── upload-source.mjs source string upload (Node, no dependencies)
 ├── vendor/
 │   ├── deepl-cli-2.0.0.tgz
 │   └── README.md         provenance of the vendored CLI
+├── .dockerignore         what Docker may copy into a build (an allow-list)
 ├── .env.op               1Password secret references (committed)
 ├── .gitattributes        LF line endings for all text files
 ├── .gitignore
 ├── CLAUDE.md             instructions for coding sessions
+├── Dockerfile            the Stringherd image: builds the UI, runs the server
+├── docker-compose.yml    Stringherd and its database, with the demo project, on port 8200
 ├── package.json          JS tooling root (DeepL CLI, npm run build:web)
 ├── package-lock.json
 └── README.md
@@ -486,6 +540,11 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | `rm` or `chmod` not recognized during build | npm runs scripts in `cmd.exe` on Windows | Use `npx tsc` instead of `npm run build` |
 | Git says another git process is running | Stale `.git/index.lock` | Make sure no git process is running, then delete `.git/index.lock` |
 | `localhost:8100` says the review UI is not built | No `web/dist/` yet | Run `npm run build:web` from the repository root, then reload |
+| `DATABASE_URL is not set` | A command run without `op run` | Run it through `op run --env-file=../.env.op -- ...` |
+| Docker: `error during connect` or `Cannot connect to the Docker daemon` | Docker Desktop is not running | Start Docker Desktop and wait until it says it is running |
+| Docker: `port is already allocated` for 8200 | Another program, or an earlier Stringherd container, uses 8200 | `docker compose down`, or change the left number in `127.0.0.1:8200:8100` in `docker-compose.yml` |
+| Docker: the demo does not show a change to `demo.py` | The demo is only created in an empty database | `docker compose down -v`, then `docker compose up --build` |
+| Docker: the app exits right after `Running upgrade` or with a database error | The database was not ready, or its data is from an incompatible version | `docker compose logs db`; for a demo, reset with `docker compose down -v` |
 | `/health` reports `database: unreachable` | Supabase project paused after 7 days of inactivity | Resume the project in the Supabase dashboard |
 | `password authentication failed for user "postgres"` | Password in the `url` field does not match Supabase (often leftover `[ ]` from the placeholder) | Rebuild the URL from the 1Password password field |
 | pytest: `import file mismatch` | Stale `__pycache__` after renaming a test file | `rm -rf tests/__pycache__ .pytest_cache` |
