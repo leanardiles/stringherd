@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/leanardiles/stringherd#readme",
   "author": "Leandro Ardiles",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@deepl/cli": "file:vendor/deepl-cli-2.0.0.tgz"
   }

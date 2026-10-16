@@ -8,6 +8,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 |---|---|
 | ✅ Foundation | DeepL Sync contract, reviewer accounts, review screen; full loop verified on a real app |
 | 🚧 v1 (local) | A complete review tool someone else can run and use without the API docs |
+| 📋 v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated |
 | 📋 Hosted demo | A public instance anyone can try in the browser |
 | 📋 FitJournal in production | My own app localized end to end through Stringherd, including existing translations and a regional variant |
 | 📋 Pilot | Stringherd on a live repository that is not mine, reviewing English to Spanish |
@@ -50,8 +51,9 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 **Running it**
 - One server at one address: the server also serves the built UI (`npm run build:web`), so reloads and bookmarks open the right page; bundles are cached for a year and the page itself is revalidated; API routes always take priority. Without a build it runs the API only
 - Docker for local trial and self-hosting: `docker compose up` starts Stringherd with its own Postgres and the Trailhead demo project (`seed-demo`) on port 8200, with nothing else to install. Two-stage image running as an ordinary user, migrations on every start, demo data only on request, an allow-list of what goes into a build
+- `reset-language`, an operator's command to start a language's review over: back to DeepL's machine translation, every string to review, nothing pullable until the next Deliver
 
-**Verified end to end on FitJournal**: English source, French machine translation by DeepL, review and edits in Stringherd, `deepl sync pull` writes the reviewed strings into the repository and the app shows them.
+**In production on FitJournal**: French went through Stringherd and is live on fit-journal.com (October 2026). English source and DeepL's French pushed to Stringherd, all 240 strings bulk approved and delivered, `deepl sync pull` on a branch (the French file unchanged, the lockfile recording the pull), merged and deployed. Earlier, the same loop with reviewer edits was verified locally.
 
 ---
 
@@ -60,7 +62,6 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 Goal: a complete review tool someone else can run locally and use without opening the API docs. Ends with a `v1.0.0` tag.
 
 **Needed**
-- **FitJournal French in production**: review the whole French catalog with the local server, deliver, pull on a branch, merge and deploy, so French goes live on fit-journal.com. Only `fr` is a target, so `es`, `nl` and `es-AR` stay untouched. What feels wrong while reviewing becomes a fix before the tag
 - **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step, using the FitJournal French flow and the demo project
 - **`v1.0.0` tag and a changelog**
 
@@ -69,6 +70,16 @@ Goal: a complete review tool someone else can run locally and use without openin
 - **Character limits** (hard limits; placeholders count as one character)
 - **Translation memory** suggestions from approved strings
 - **Bulk actions in the single key view**: a "Show translations" option adds the target text to each row of the key list, so it can be scanned and multi-selected like the list view
+
+---
+
+## 📋 v1.1: Existing translations
+
+Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
+
+- **FitJournal's Spanish renamed to `es-419`** first (a change in FitJournal, in progress), so the language code matches DeepL's Latin American Spanish
+- **Import, chosen per language** before the first sync: machine-translate from scratch, keep them marked as reviewed, or keep them for review (status Existing). Imported text counts as delivered at once, so the lockfile protects the files during the review, and a `deepl sync` cannot overwrite them
+- **Proven on FitJournal**: `es-419` kept for review (my native language, so a real review), `nl` kept as reviewed. `es-AR` stays a hand-kept override file until regional variants
 
 ---
 
@@ -87,12 +98,10 @@ Goal: anyone can open Stringherd in the browser and try it, with nothing to inst
 
 ## 📋 FitJournal in production
 
-Goal: a source change in FitJournal flows through DeepL, review in Stringherd, Deliver and a pull request to a merge, with me only reviewing and merging. Every feature a pilot needs is built and proven here first, on my own repository, where a mistake costs only me. Runs on the hosted demo server. Design for languages: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md).
+Goal: a source change in FitJournal flows through DeepL, review in Stringherd, Deliver and a pull request to a merge, with me only reviewing and merging. French (v1) and Spanish and Dutch (v1.1) are in Stringherd by then; this milestone automates the loop. Every feature a pilot needs is built and proven here first, on my own repository, where a mistake costs only me. Runs on the hosted demo server. Design for languages: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md).
 
-- **FitJournal's Spanish renamed to `es-419`** first (a change in FitJournal), so the language code matches DeepL's Latin American Spanish
 - **GitHub workflow** that runs `deepl sync` and the source upload on every push to the source files, shown on the setup page next to the `.deepl-sync.yaml` block, with the two repository secrets to add
 - **Deliver opens a pull request**: Deliver also starts the repository's workflow, which runs `deepl sync pull` and opens or updates a pull request with the delivered strings. Developers merge it; the merge is the release
-- **Existing translations**, chosen per language before the first sync: machine-translate from scratch, keep them marked as reviewed, or keep them for review (status Existing). Imported text counts as delivered at once, so the lockfile protects the files during the review. Proven on FitJournal's `es-419` and `nl`
 - **Send back to review**: an admin returns a language or a selection of delivered strings to the reviewer's list without new machine translation; the code keeps the delivered text until the next Deliver
 - **Hand edits in the repository**: a translation edited in a target file is detected (new text with an unchanged source), shown to the reviewer with a diff and kept, restored or edited; the workflow pushes before it pulls so nothing is reverted silently. Fixes today's behavior, where a push labels the edit as machine translation and can overwrite a reviewer's unfinished correction
 - **Regional variant `es-AR`** from the delivered `es-419`: the reviewer confirms or amends each string, and a Stringherd script writes only the overrides. Low priority; may move to Later
@@ -157,7 +166,8 @@ These come from the DeepL Sync contract or CLI as of version 2.0.0:
 - **Push does not include source text**, hence the separate source upload.
 - **The first sync overwrites existing translations** when there is no lockfile. Use the adoption flow (push, approve, pull) before the first sync on a project that already has translations; the planned import makes this a choice per language.
 - **A target locale is also the DeepL language**, with no mapping between them: a repository's language codes must be DeepL's (`es-419` for Latin American Spanish). Varieties DeepL lacks, such as `es-AR`, are planned as Stringherd variants.
-- **On Windows**, target path resolution needs `target_path_pattern` on the bucket, and the CLI warns about file permissions on every run (Unix permission checks that Windows does not use).
+- **A pull records no review status in the lockfile.** The export carries only text, so the CLI writes the pulled strings without `review_status` rather than guess; the lockfile cannot say a string was reviewed in Stringherd.
+- **On Windows**, target path resolution needs `target_path_pattern` on the bucket, and the CLI warns about file permissions on every run (Unix permission checks that Windows does not use). The warnings are harmless: Windows protects the files with its own permissions.
 - **The CLI is not published on npm**; Stringherd vendors a build from source (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)).
 
 ## Not planned

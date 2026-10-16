@@ -3,6 +3,7 @@ name = "stringherd-server"
 version = "0.1.0"
 description = "Stringherd backend: TMS contract for DeepL Sync, review workflows, TM and glossary."
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -21,7 +22,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]  # 77: license as an SPDX expression
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

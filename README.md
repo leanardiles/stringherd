@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: early development.** The DeepL Sync TMS contract is implemented and verified against the real DeepL CLI. Reviewer accounts, the review API and the admin screens (projects, API keys, people) are in place. The review interface is being built: sign-in, the project overview and the review screen work, with a single key view and a list view, approve and next, quality checks enforced by the server, bulk approve and withdraw in the list view, and Phrase-style keyboard shortcuts ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)). Its design is in [docs/UI-PLAN.md](docs/UI-PLAN.md).
+> **Status: v1 nearly complete, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Next: keeping existing translations when a language joins, then a hosted demo ([roadmap](ROADMAP.md)).
 
 ---
 
@@ -137,7 +137,8 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 - **Push does not send the source text**, only key, locale and translation. A review interface needs the source, so Stringherd needs another way to obtain it.
 - **Keys have no file dimension.** Two locale files that share key names cannot be told apart by the TMS.
 - **The first sync overwrites existing translations.** Without a lockfile, every key counts as missing. Existing translations can be adopted safely by pushing them, approving them and pulling them back, which records them in the lockfile.
-- **On Windows, target path resolution fails** for paths like `locales\en\common.json`. Setting `target_path_pattern` on the bucket works around it.
+- **A pull records no review status in the lockfile.** The export carries only text, so DeepL Sync cannot tell a reviewed string from a machine translation, and writes the pulled strings without `review_status`.
+- **On Windows, target path resolution fails** for paths like `locales\en\common.json`. Setting `target_path_pattern` on the bucket works around it. The CLI also warns on every run that its config files are readable by other users: a Unix permission check that does not apply to Windows, so the warnings are harmless.
 
 ## Tech stack
 
@@ -163,5 +164,9 @@ cd web && npm install && npm test                  # review UI
 To run Stringherd itself, build the UI once with `npm run build:web`, start the server, and open `http://localhost:8100`: the server serves the UI and the API at one address ([details](docs/DEVELOPMENT.md#running-stringherd-as-one-server)).
 
 ---
+
+## License
+
+[MIT](LICENSE). The DeepL CLI vendored in `vendor/` is also MIT-licensed, by DeepL SE; its license is inside the package.
 
 Stringherd is an independent project. It is not affiliated with, or endorsed by, DeepL SE. DeepL is a trademark of DeepL SE.
