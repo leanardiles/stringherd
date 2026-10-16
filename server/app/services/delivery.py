@@ -153,3 +153,59 @@ def last_deliveries(db: Session, project: Project) -> dict[str, datetime]:
         .group_by(Delivery.locale)
     ).all()
     return {locale: at for locale, at in rows}
+
+
+@dataclass
+class LanguageReset:
+    """What resetting a language changes (or would change)."""
+
+    total: int  # strings of the language
+    delivered: int
+    approved: int
+    edited: int  # text differs from DeepL's last machine translation
+    already_machine: int  # to review with DeepL's text already: nothing to change
+    without_original: list[str]  # no DeepL text on record: left as they are
+
+    @property
+    def changing(self) -> int:
+        return self.total - self.already_machine - len(self.without_original)
+
+
+def reset_language(db: Session, project: Project, locale: str, *, apply: bool) -> LanguageReset:
+    """Put a language back to DeepL's machine translation, every string to review.
+
+    An operator's tool (python -m app.cli reset-language), for starting a review over: edits are
+    undone, approvals removed and delivered text cleared, so nothing is pullable until the next
+    Deliver and the repository keeps what it has. Past deliveries stay recorded. With
+    apply=False it only reports what would change.
+    """
+    rows = db.execute(
+        select(Translation, TranslationKey.key_path)
+        .join(TranslationKey, Translation.key_id == TranslationKey.id)
+        .where(TranslationKey.project_id == project.id, Translation.locale == locale)
+        .order_by(TranslationKey.key_path)
+    ).all()
+    summary = LanguageReset(total=len(rows), delivered=0, approved=0, edited=0, already_machine=0, without_original=[])
+    for translation, key_path in rows:
+        if translation.pushed_value is None:
+            summary.without_original.append(key_path)
+            continue
+        summary.delivered += translation.status == TranslationStatus.DELIVERED
+        summary.approved += translation.status == TranslationStatus.APPROVED
+        summary.edited += translation.value != translation.pushed_value
+        if (
+            translation.status == TranslationStatus.MACHINE_TRANSLATED
+            and translation.value == translation.pushed_value
+            and translation.delivered_value is None
+        ):
+            summary.already_machine += 1
+            continue
+        if apply:
+            translation.value = translation.pushed_value
+            translation.status = TranslationStatus.MACHINE_TRANSLATED
+            translation.approved_at = None
+            translation.approved_by_id = None
+            clear_delivery(translation)
+    if apply:
+        db.commit()
+    return summary

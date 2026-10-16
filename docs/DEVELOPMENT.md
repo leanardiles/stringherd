@@ -200,6 +200,15 @@ Delivered strings leave the reviewer's working list and are locked. They stay se
 
 Strings approved before Deliver existed were marked as delivered by the migration, so the first pull after upgrading returns the same as before.
 
+To start a language's review over, `reset-language` puts it back to DeepL's machine translation: edits are undone, approvals removed, delivered text cleared, and every string is to review again. It first shows what will change and asks you to type the language code; `--dry-run` only shows it.
+
+```bash
+op run --env-file=../.env.op -- python -m app.cli reset-language --project fitjournal --locale fr --dry-run
+op run --env-file=../.env.op -- python -m app.cli reset-language --project fitjournal --locale fr
+```
+
+Nothing is pullable afterwards until the next Deliver, so the repository keeps what it has. Past deliveries stay recorded, and other languages are not touched. Strings with no DeepL text on record (pushed before Stringherd kept it) are listed and left as they are.
+
 ### Uploading source strings
 
 DeepL Sync push sends translations but never the source text, so the source strings are uploaded separately with `scripts/upload-source.mjs`. Run it from the root of the project being localized:
