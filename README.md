@@ -8,6 +8,21 @@ DeepL's CLI machine-translates the locale files in your repository. Stringherd i
 
 ---
 
+## Try it with Docker
+
+With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running, from the repository root:
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost:8200** and sign in as `reviewer@trailhead.example` (or `admin@trailhead.example`), password `trailhead-demo`. A demo project, Trailhead, is waiting: a small fictional hiking app with French partly reviewed and delivered, and Spanish just arrived from DeepL. Nothing else to install, and no DeepL key needed.
+
+- `Ctrl+C` stops it; `docker compose up` starts it again with your changes kept.
+- `docker compose down -v` deletes the demo data, for a fresh start next time.
+
+Runs on your computer only (`127.0.0.1`); the demo password is public, so do not expose it. Details, and how it is built: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#running-stringherd-with-docker).
+
 ## How it works
 
 ```
@@ -54,59 +69,6 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 
 See the **[roadmap](ROADMAP.md)** for what's next and in which order.
 
-## Try it with Docker
-
-With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running, from the repository root:
-
-```bash
-docker compose up --build
-```
-
-Then open **http://localhost:8200** and sign in as `reviewer@trailhead.example` (or `admin@trailhead.example`), password `trailhead-demo`. A demo project, Trailhead, is waiting: a small fictional hiking app with French partly reviewed and delivered, and Spanish just arrived from DeepL. Nothing else to install, and no DeepL key needed.
-
-- `Ctrl+C` stops it; `docker compose up` starts it again with your changes kept.
-- `docker compose down -v` deletes the demo data, for a fresh start next time.
-
-Runs on your computer only (`127.0.0.1`); the demo password is public, so do not expose it. Details, and how it is built: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#running-stringherd-with-docker).
-
-## API
-
-Stringherd implements the [DeepL Sync TMS contract](https://github.com/DeepL/deepl-cli/blob/main/docs/SYNC.md):
-
-| Method | Path | Purpose |
-|---|---|---|
-| `PUT` | `/api/projects/{projectId}/keys/{keyPath}` | Receive a translation. Body: `{"locale": "fr", "value": "Enregistrer"}` |
-| `GET` | `/api/projects/{projectId}/keys/export?format=json&locale=fr` | Delivered translations as a flat `{"key": "value"}` object |
-| `GET` | `/api/projects/{projectId}` | Key count and review progress per locale |
-
-Plus one **Stringherd extension**, because the contract never sends the source text:
-
-| Method | Path | Purpose |
-|---|---|---|
-| `PUT` | `/api/projects/{projectId}/source` | Upload a full snapshot of source strings for one catalog file. Stringherd reports what was created, updated, unchanged or removed, and sends approved translations back to review when their source changed |
-
-### Review API (for people)
-
-People sign in with email and password and get a session cookie (`HttpOnly`, `SameSite=Lax`). API keys are for machines only and do not open these endpoints.
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/auth/login` | Sign in. Body: `{"email": "...", "password": "..."}` |
-| `POST` | `/api/auth/logout` | Sign out (ends the session on the server) |
-| `GET` | `/api/auth/me` | The signed-in user, with their assignments |
-| `POST` | `/api/auth/password` | Change your password (required after a temporary one) |
-| `GET` | `/api/review/projects` | Projects and languages the user may review, with progress |
-| `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, DeepL's original, status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
-| `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}`. Approving a string with a QA error answers `422` with the reason |
-| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}`. Strings with a QA error are skipped and listed with their issues |
-| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/withdraw` | Withdraw several approvals. Body: `{"keys": [...]}`. Only approved strings change; delivered ones are locked |
-| `POST` | `/api/review/projects/{projectId}/locales/{locale}/deliver` | Deliver the language: its approved strings become what `deepl sync pull` exports, and are locked |
-| `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}/reopen` | Unlock a delivered string so it can be corrected (admins). The code keeps the delivered text until the next Deliver |
-
-Admins manage people under `/api/admin/users` (create with a temporary password, update, deactivate, reset password, assign project and language) and projects under `/api/admin/projects` (languages, API keys, setup snippet; see [docs/ADMIN-PLAN.md](docs/ADMIN-PLAN.md)). Reviewers only see and change the languages they are assigned to; admins can review any language.
-
-And `GET /health` (server and database status), with interactive docs at `/docs`.
-
 ## Using it with a project
 
 In Stringherd, an admin creates the project under **Projects**, then an API key on the project's page, which also shows the block and commands below with the project's values filled in. In the project being localized, point DeepL Sync at Stringherd in `.deepl-sync.yaml`, using the same project id:
@@ -140,6 +102,19 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 - **A pull records no review status in the lockfile.** The export carries only text, so DeepL Sync cannot tell a reviewed string from a machine translation, and writes the pulled strings without `review_status`.
 - **On Windows, target path resolution fails** for paths like `locales\en\common.json`. Setting `target_path_pattern` on the bucket works around it. The CLI also warns on every run that its config files are readable by other users: a Unix permission check that does not apply to Windows, so the warnings are harmless.
 
+## Documentation
+
+| Document | What's in it |
+|---|---|
+| [docs/API.md](docs/API.md) | Every endpoint: the DeepL Sync contract, the source upload, the review and admin API |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, running the server and the UI, Docker, tests, migrations, commands, troubleshooting |
+| [docs/SHORTCUTS.md](docs/SHORTCUTS.md) | Keyboard shortcuts of the review screen |
+| [docs/UI-PLAN.md](docs/UI-PLAN.md) | Design decisions for the review interface |
+| [docs/ADMIN-PLAN.md](docs/ADMIN-PLAN.md) | Design of the admin screens: projects, keys, people |
+| [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) | Plan for existing translations, regional variants and hand edits |
+| [docs/SCREENSHOTS-PLAN.md](docs/SCREENSHOTS-PLAN.md) | Plan for automatic screenshots as reviewer context (v2) |
+| [ROADMAP.md](ROADMAP.md) | Milestones, what is done and what comes next, known limitations |
+
 ## Tech stack
 
 | Layer | Choice |
@@ -162,8 +137,6 @@ cd web && npm install && npm test                  # review UI
 ```
 
 To run Stringherd itself, build the UI once with `npm run build:web`, start the server, and open `http://localhost:8100`: the server serves the UI and the API at one address ([details](docs/DEVELOPMENT.md#running-stringherd-as-one-server)).
-
----
 
 ## License
 
