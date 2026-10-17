@@ -1,6 +1,6 @@
 {
   "name": "stringherd",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Translation review server for software projects. DeepL translates your app's text; Stringherd lets people review and approve those translations before they go back into your codebase.",
   "type": "commonjs",

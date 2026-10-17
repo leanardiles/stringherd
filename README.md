@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: v1 nearly complete, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Next: keeping existing translations when a language joins, then a hosted demo ([roadmap](ROADMAP.md)).
+> **Status: v1.0.0, released 17 October 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Next: keeping existing translations when a language joins (v1.1), then a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
 
 ![The review screen: a French string edited by a reviewer, with the word diff against DeepL's suggestion](docs/images/03-edited.png)
 
@@ -178,6 +178,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 | [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) | Plan for existing translations, regional variants and hand edits |
 | [docs/SCREENSHOTS-PLAN.md](docs/SCREENSHOTS-PLAN.md) | Plan for automatic screenshots as reviewer context (v2) |
 | [ROADMAP.md](ROADMAP.md) | Milestones, what is done and what comes next, known limitations |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release |
 
 ## Tech stack
 

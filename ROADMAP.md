@@ -7,8 +7,8 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 | Milestone | Goal |
 |---|---|
 | ✅ Foundation | DeepL Sync contract, reviewer accounts, review screen; full loop verified on a real app |
-| 🚧 v1 (local) | A complete review tool someone else can run and use without the API docs |
-| 📋 v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated |
+| ✅ v1 (local) | A complete review tool someone else can run and use without the API docs. Released as 1.0.0 |
+| 🚧 v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated |
 | 📋 Hosted demo | A public instance anyone can try in the browser |
 | 📋 FitJournal in production | My own app localized end to end through Stringherd, including existing translations and a regional variant |
 | 📋 Pilot | Stringherd on a live repository that is not mine, reviewing English to Spanish |
@@ -57,15 +57,14 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 ---
 
-## 🚧 v1 (local)
+## ✅ v1 (local)
 
-Goal: a complete review tool someone else can run locally and use without opening the API docs. Ends with a `v1.0.0` tag.
+Goal: a complete review tool someone else can run locally and use without opening the API docs. Released as **1.0.0** on 17 October 2026; what is in it: [CHANGELOG.md](CHANGELOG.md).
 
-**Needed**
-- **README walkthrough**: screenshots or a short recording of Stringherd itself, and the DeepL Sync loop step by step, using the FitJournal French flow and the demo project
+- **README walkthrough**: screenshots of the demo, and the DeepL Sync loop step by step using the FitJournal French run. The screenshots are captured by a script (`npm run screenshots`)
 - **`v1.0.0` tag and a changelog**
 
-**In v1 if time allows, otherwise v1.x**
+**Moved to v1.x**
 - **Other languages as reference** in the context panel
 - **Character limits** (hard limits; placeholders count as one character)
 - **Translation memory** suggestions from approved strings
@@ -73,13 +72,13 @@ Goal: a complete review tool someone else can run locally and use without openin
 
 ---
 
-## 📋 v1.1: Existing translations
+## 🚧 v1.1: Existing translations
 
-Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
+Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations); working plan: [docs/IMPORT-PLAN.md](docs/IMPORT-PLAN.md).
 
 - **FitJournal's Spanish renamed to `es-419`** first (a change in FitJournal, in progress), so the language code matches DeepL's Latin American Spanish
-- **Import, chosen per language** before the first sync: machine-translate from scratch, keep them marked as reviewed, or keep them for review (status Existing). Imported text counts as delivered at once, so the lockfile protects the files during the review, and a `deepl sync` cannot overwrite them
-- **Proven on FitJournal**: `es-419` kept for review (my native language, so a real review), `nl` kept as reviewed. `es-AR` stays a hand-kept override file until regional variants
+- **Import, chosen per language** before the first sync: machine-translate from scratch, keep them marked as reviewed, or keep them for review (marked as coming from the repository). Imported text counts as delivered at once, so the lockfile protects the files during the review, and a `deepl sync` cannot overwrite them
+- **Proven on FitJournal**: `nl` first, trying every answer on a branch; then `es-419` kept for review (my native language, so a real review). `es-AR` stays a hand-kept override file until regional variants
 
 ---
 
