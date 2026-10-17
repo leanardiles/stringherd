@@ -353,6 +353,19 @@ Run them from the repository root.
 
 **For local trial only as configured.** The demo password is public, so Stringherd only listens on this computer (`127.0.0.1`), and the database has no port outside the containers. The image itself has no secrets and no demo data unless `STRINGHERD_SEED_DEMO=true`, so it can also run against a real database; hosting it publicly would need HTTPS, `COOKIE_SECURE=true` and real accounts. The hosted demo runs on Vercel instead (see the [roadmap](../ROADMAP.md)).
 
+### README screenshots
+
+The screenshots in `docs/images/` come from the Docker demo, captured by `scripts/screenshots.mjs` (Playwright): it signs in as the demo reviewer and admin, opens each screen at 1440 by 900 (at twice the pixels, so they stay sharp) and saves them. It only looks, it never approves or delivers, so it can run any number of times.
+
+```bash
+npm install                          # once, from the repository root: installs Playwright
+npx playwright install chromium      # once: the browser Playwright drives
+docker compose down -v && docker compose up --build -d   # a fresh demo, so the screens match the README
+npm run screenshots                  # writes docs/images/01-projects.png ... 08-setup.png
+```
+
+Run it again after a UI change and commit the images that changed. Options: `--url` (default `http://localhost:8200`), `--out` (default `docs/images`), `--chromium` (a browser already installed, instead of Playwright's own).
+
 ---
 
 ## DeepL CLI
@@ -508,6 +521,7 @@ stringherd/
 │   ├── DEVELOPMENT.md    this file
 │   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   ├── UI-PLAN.md        review UI design decisions
+│   ├── images/           README screenshots (npm run screenshots)
 │   └── *-PLAN.md         design plans: admin screens, languages, screenshots
 ├── server/               Python + FastAPI backend (own pyproject.toml)
 │   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), demo data (demo.py), CLI, models, settings
@@ -521,7 +535,8 @@ stringherd/
 ├── docker/
 │   └── start.sh          what the Stringherd container runs: migrations, demo data, server
 ├── scripts/
-│   └── upload-source.mjs source string upload (Node, no dependencies)
+│   ├── upload-source.mjs source string upload (Node, no dependencies)
+│   └── screenshots.mjs   README screenshots from the Docker demo (Playwright)
 ├── vendor/
 │   ├── deepl-cli-2.0.0.tgz
 │   └── README.md         provenance of the vendored CLI

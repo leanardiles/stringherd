@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "deepl:usage": "op run --env-file=.env.op -- deepl usage",
-    "build:web": "npm --prefix web run build"
+    "build:web": "npm --prefix web run build",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   "author": "Leandro Ardiles",
   "license": "MIT",
   "devDependencies": {
-    "@deepl/cli": "file:vendor/deepl-cli-2.0.0.tgz"
+    "@deepl/cli": "file:vendor/deepl-cli-2.0.0.tgz",
+    "playwright": "^1.64.1"
   }
 }
