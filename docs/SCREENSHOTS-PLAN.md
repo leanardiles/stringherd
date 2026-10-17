@@ -1,6 +1,6 @@
 # Screenshots Plan
 
-Working plan for automatic screenshots: showing reviewers where each string appears in the app. Updated as we brainstorm; nothing here is built yet. Related: [UI-PLAN.md](UI-PLAN.md) (the side panel that shows screenshots) and the [roadmap](../ROADMAP.md).
+Working plan for automatic screenshots: showing reviewers where each string appears in the app (v2). Not to be confused with the README screenshots of Stringherd itself, which `npm run screenshots` captures. Updated as we brainstorm; nothing here is built yet. Related: [UI-PLAN.md](UI-PLAN.md) (the side panel that shows screenshots) and the [roadmap](../ROADMAP.md).
 
 ---
 

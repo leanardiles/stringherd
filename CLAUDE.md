@@ -1,1 +1,1 @@
-Read docs/PROPOSAL.md for project context before making changes, so every coding session starts with the full picture.
+If docs/PROPOSAL.md is present (it is private and not committed), read it for project context before making changes, so every coding session starts with the full picture. Then ROADMAP.md for where the project stands.

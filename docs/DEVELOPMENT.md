@@ -522,7 +522,7 @@ stringherd/
 │   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   ├── UI-PLAN.md        review UI design decisions
 │   ├── images/           README screenshots (npm run screenshots)
-│   └── *-PLAN.md         design plans: admin screens, languages, screenshots
+│   └── *-PLAN.md         design plans: admin screens, languages, screenshots, and the import being built
 ├── server/               Python + FastAPI backend (own pyproject.toml)
 │   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), demo data (demo.py), CLI, models, settings
 │   ├── migrations/       Alembic database migrations
@@ -544,15 +544,18 @@ stringherd/
 ├── .env.op               1Password secret references (committed)
 ├── .gitattributes        LF line endings for all text files
 ├── .gitignore
+├── CHANGELOG.md          what changed in each release
 ├── CLAUDE.md             instructions for coding sessions
 ├── Dockerfile            the Stringherd image: builds the UI, runs the server
 ├── docker-compose.yml    Stringherd and its database, with the demo project, on port 8200
+├── LICENSE               MIT
 ├── package.json          JS tooling root (DeepL CLI, npm run build:web)
 ├── package-lock.json
-└── README.md
+├── README.md
+└── ROADMAP.md            milestones, what comes next, known limitations
 ```
 
-The demo target is a separate repository (FitJournal), localized through DeepL Sync.
+The demo project, Trailhead, is created by `server/app/demo.py`. The first real project is a separate repository, FitJournal, localized through DeepL Sync.
 
 ---
 
@@ -567,7 +570,7 @@ The demo target is a separate repository (FitJournal), localized through DeepL S
 | Git says another git process is running | Stale `.git/index.lock` | Make sure no git process is running, then delete `.git/index.lock` |
 | `localhost:8100` says the review UI is not built | No `web/dist/` yet | Run `npm run build:web` from the repository root, then reload |
 | `DATABASE_URL is not set` | A command run without `op run` | Run it through `op run --env-file=../.env.op -- ...` |
-| Docker: `error during connect` or `Cannot connect to the Docker daemon` | Docker Desktop is not running | Start Docker Desktop and wait until it says it is running |
+| Docker: `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine` (Windows), `error during connect` or `Cannot connect to the Docker daemon` | Docker Desktop is not running | Open Docker Desktop and wait until it says the engine is running; no sign-in needed |
 | Docker: `port is already allocated` for 8200 | Another program, or an earlier Stringherd container, uses 8200 | `docker compose down`, or change the left number in `127.0.0.1:8200:8100` in `docker-compose.yml` |
 | Docker: the demo does not show a change to `demo.py` | The demo is only created in an empty database | `docker compose down -v`, then `docker compose up --build` |
 | Docker: the app exits right after `Running upgrade` or with a database error | The database was not ready, or its data is from an incompatible version | `docker compose logs db`; for a demo, reset with `docker compose down -v` |

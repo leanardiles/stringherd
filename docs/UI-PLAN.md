@@ -1,6 +1,6 @@
 # Review UI Plan
 
-Working plan for Stringherd's review interface. Updated as we brainstorm; see Build status for what exists. Once a section is implemented, it moves into the README and this file keeps only what is still open.
+Design decisions for Stringherd's review interface, with the reasons behind them, and what is still open. What is built is listed in the [README](../README.md#features) and the [roadmap](../ROADMAP.md); every keyboard shortcut is in [SHORTCUTS.md](SHORTCUTS.md).
 
 References studied: Phrase TMS (CAT web editor), Phrase Strings (software strings editor) and Lokalise (key editor). Notes in [Reference notes](#reference-notes).
 
@@ -104,46 +104,13 @@ Sections appear only when they have content, in this order:
 
 ## Keyboard shortcuts
 
-Phrase bindings from the [Phrase CAT editor documentation](https://support.phrase.com/hc/en-us/articles/5709700557468) (Windows; `Cmd` replaces `Ctrl` on macOS). Web pages can take over almost every shortcut except `Ctrl+N`, `Ctrl+T` and `Ctrl+W`, which browsers reserve.
+Every shortcut, with what it does, is in [SHORTCUTS.md](SHORTCUTS.md). It mirrors `web/src/lib/shortcuts.ts`, the one list that drives the key handling and the in-app reference, and a test checks that they match. The principles behind the list:
 
-### Same as Phrase
-| Shortcut | Phrase action | Stringherd action | Phase |
-|---|---|---|---|
-| `Ctrl+Enter` | Confirm | Approve and go to the next string to review | MVP |
-| `Ctrl+Shift+Enter` | Unconfirm | Withdraw approval | MVP |
-| `Ctrl+Insert` | Copy source to target | Copy source to target | MVP |
-| `Ctrl+Space` | Insert selected CAT result | Insert selected suggestion (MVP: DeepL's original is suggestion 1) | MVP |
-| `Ctrl+1` … `Ctrl+9` | Insert CAT result N | Insert suggestion N | MVP |
-| `Ctrl+↑` / `Ctrl+↓` | Move in CAT results | Select the previous / next suggestion | MVP |
-| `F8` | Insert tag | Insert the next placeholder from the source | MVP |
-| `Ctrl+Shift+F8` | Insert all tags | Insert all placeholders from the source | MVP |
-| `Ctrl+Home` / `Ctrl+End` | First / last segment | First / last string | MVP |
-| `Ctrl+G` | Go to segment | Go to string by number or key | MVP |
-| `Ctrl+Shift+F` | Filter by selected text | Search for the selected text | MVP |
-| `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo | Undo / redo | MVP |
-| `Ctrl+Shift+Space` | Insert non-breaking space | Insert a non-breaking space (U+00A0), as Phrase does. A narrow one (U+202F) for strict French typography may become a project setting with QA profiles | MVP |
-| `Ctrl+Alt+←` / `Ctrl+Alt+→` | Switch active panel | Move focus between the panes | MVP |
-| `Alt+N` | Context note | Jump to the context panel | MVP |
-| `Ctrl+H` | Find and replace | Find and replace in targets | Next |
-| `Ctrl+K` / `Ctrl+Shift+K` | Search TM/TB / exact | Search TM and glossary / exact | Next |
-| `Ctrl+M` / `Ctrl+Shift+M` | Open comments / new comment | Same (needs comments) | Later |
-| `Alt+T` | Add term | Add glossary term | Later |
-
-### Stringherd additions
-| Shortcut | Action | Phase |
-|---|---|---|
-| `↑` / `↓` at the first / last line of the editor | Previous / next string | MVP |
-| `Alt+↑` / `Alt+↓` | Previous / next string that still needs review (skips approved and delivered strings) | MVP |
-| `Esc` | Discard unsaved edit; close pop-up; in List view, close an unchanged card | MVP |
-| `+` / `-` / `0` (panel focused) | Zoom in / out / fit to screen | When screenshots exist |
-| `F` (panel focused) | Open screenshot at full size | When screenshots exist |
-| `Ctrl+/`, or `?` outside text fields | Show all shortcuts | MVP |
-
-Phrase's `F9` (run QA) is left out: Stringherd checks each string as you type.
-
-All shortcuts live in one list (`web/src/lib/shortcuts.ts`) that drives the key handling and the in-app reference; [SHORTCUTS.md](SHORTCUTS.md) mirrors it, and a test checks they match. Reviewers find them through tooltips on buttons, the footer hint line, the reference (`Ctrl+/`, `?`, the keyboard icon between the View toggle and the filters, and **Keyboard shortcuts** in the account menu), and SHORTCUTS.md. **Show non-printable characters** is a toolbar toggle, remembered per browser: `·` space, `°` non-breaking space, smaller `°` narrow non-breaking space, `→` tab, in the editor and in read-only text.
-
-Phrase also has split/join segments, lock, formatting (bold, italic) and tag editing. They are left out: UI strings are single keys, not document segments, and have no rich formatting.
+- **Phrase's bindings** ([Phrase CAT editor documentation](https://support.phrase.com/hc/en-us/articles/5709700557468)) wherever Phrase has the same action, so linguists keep what they know. `Cmd` replaces `Ctrl` on macOS. Web pages can take over almost every shortcut except `Ctrl+N`, `Ctrl+T` and `Ctrl+W`, which browsers reserve.
+- **Stringherd additions** only where Phrase has no equivalent: moving between strings with the arrow keys at the editor's edges, `Alt+↑` / `Alt+↓` to the previous or next string still to review, `Esc` to discard or close, `Ctrl+/` or `?` for the reference. Zoom and full size for screenshots come with screenshots.
+- **Left out on purpose**: `F9` (run QA), since Stringherd checks each string as you type; split and join segments, lock, formatting and tag editing, since UI strings are single keys with no rich formatting. Find and replace, TM and glossary search and comments arrive with those features.
+- **Easy to find**: tooltips on buttons, the footer hint line, the reference (`Ctrl+/`, `?`, the keyboard icon in the toolbar, **Keyboard shortcuts** in the account menu).
+- A narrow non-breaking space (U+202F) for strict French typography may become a project setting with QA profiles; `Ctrl+Shift+Space` inserts the ordinary one (U+00A0), as Phrase does.
 
 ---
 
@@ -198,7 +165,7 @@ Errors block approval, in the browser and on the server; warnings only inform. O
 | Double spaces in the translation, not in the source | Warning | No |
 | Unbalanced brackets or quotes (when the source is balanced) | Warning | No |
 
-Planned: over the character limit (error, locked, with character limits); French spacing before `! ? : ;` (warning, French only). Later, admins set each unlocked check to error, warning or off per project and language (QA profiles, see the roadmap); locked checks stay errors because they break the app.
+Planned: over the character limit (error, locked, with character limits). Later, with the other checks in the roadmap: French spacing before `! ? : ;` (warning, French only). Admins will also set each unlocked check to error, warning or off per project and language (QA profiles, see the roadmap); locked checks stay errors because they break the app.
 
 ---
 
@@ -233,32 +200,12 @@ Planned: over the character limit (error, locked, with character limits); French
 
 ---
 
-## Build status
+## Behaviour decided while building
 
-| Step | Status |
-|---|---|
-| 1. Scaffold, sign-in, account menu | Done |
-| 2. Project and language overview with progress | Done |
-| 3. Review screen: Single key and List views, edit, approve and next, withdraw, autosave on leave, DeepL suggestion and diff, filters, search, placeholder chips, character counter, status symbols, basic QA (placeholders, empty, same as source, outer spaces) | Done |
-| 4. Bulk approve and withdraw (list view) | Done |
-| 4b. Remaining MVP shortcuts, shortcuts reference, non-printable characters | Done |
-| 4c. French spacing check | Next |
-| 5. Backend additions: other languages in the review API, character limits | Planned |
-
-Behaviour decided while building step 3:
 - `Ctrl+Enter` approves and opens the next string in the visible list (Phrase's default: next segment).
 - Leaving a string with unsaved changes saves them, unapproved, as CAT tools do; `Esc` discards changes.
 - QA errors block approval in the browser and on the server; bulk approve approves what passes and reports the rest.
 - All strings of a language are loaded once and filtered in the browser; filters, search, view and the open string live in the URL.
-
----
-
-## Phases
-| Phase | Scope |
-|---|---|
-| MVP | Sign-in screen, project and language picker, string list with expanding card, edit / approve / bulk approve, filters and search, DeepL suggestion and diff, other languages, QA, character counter (limits once the backend supports them), shortcuts marked MVP, admin screens for projects, API keys and people |
-| Next | TM suggestions, context descriptions, find and replace, character limit editing |
-| Later | Screenshots in the side panel, glossary, comments, history of changes, focus view |
 
 ---
 

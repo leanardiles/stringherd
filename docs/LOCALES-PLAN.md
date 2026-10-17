@@ -1,6 +1,6 @@
 # Languages plan
 
-How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document: nothing here is built yet. It is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case, and is updated as decisions are made.
+How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document, updated as decisions are made. Existing translations are being built for **v1.1** (working plan: [IMPORT-PLAN.md](IMPORT-PLAN.md)); the rest is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case.
 
 ---
 
@@ -22,7 +22,7 @@ These facts, checked against the DeepL CLI 2.0.0, shape every decision below.
 
 ## Language codes match DeepL's
 
-Decision: each language in a repository uses the DeepL code for the variety it contains. For FitJournal this means renaming `es` (Latin American Spanish) to `es-419` before Spanish goes into Stringherd, since project languages, the lockfile and file paths all key on the code. The change is in FitJournal:
+Decision: each language in a repository uses the DeepL code for the variety it contains. For FitJournal this meant renaming `es` (Latin American Spanish) to `es-419` before Spanish goes into Stringherd, since project languages, the lockfile and file paths all key on the code. **Done in October 2026**; the checklist it followed:
 
 - **Web app**: rename `locales/es` to `locales/es-419`; update the resource key and `LOCALE_OPTIONS`; fallbacks `es-AR` to `es-419` to `en`, and `es` to `es-419` to `en`, so a browser set to `es-MX` or `es-CL` still gets Latin American Spanish instead of English.
 - **Backend**: rename `locales/es`; reverse the chain so `es` and `es-AR` fall back to `es-419`; the Accept-Language handling that reduces `es-CL` to `es` must land on the same text.
@@ -32,18 +32,12 @@ Decision: each language in a repository uses the DeepL code for the variety it c
 
 ## Existing translations
 
-When a language already has translations in the repository, the admin chooses per language, on the project page, before the first sync:
+When a language already has translations in the repository, the admin chooses, before the first sync, between three answers: translate again with DeepL, keep them for review, or keep them as reviewed. The details (the admin's steps, the data, the reviewer screen, the test on FitJournal) are in [IMPORT-PLAN.md](IMPORT-PLAN.md) while v1.1 is built; what lasts moves back here when it is done.
 
-| Choice | What happens |
-|---|---|
-| **Machine-translate from scratch** | Nothing is imported. The next `deepl sync` translates every key, overwriting the files; the strings arrive for review as machine translations. Costs DeepL characters for the whole language |
-| **Keep, marked as reviewed** | Import: Stringherd asks for one `deepl sync push` for that language and stores what arrives as delivered, recorded as imported from the repository with the date. Then `deepl sync pull` writes the same text back and records it in the lockfile. No review work; the repository does not change |
-| **Keep, for review** | The same import, and every string also goes to the reviewer's list with its own status, **Existing** (not MT). The reviewer approves or edits and delivers |
-
-- **The existing text is the delivered text from the moment of import**, also when it is still to be reviewed. The export returns it, so the lockfile protects the files and a `deepl sync` in CI cannot overwrite them during the review. The repository changes only when the reviewer delivers an edit. This builds on what Stringherd already does: the delivered text is kept apart from the reviewer's working text.
-- **Keys the existing files lack** go through DeepL as usual and arrive as machine translations. FitJournal's Spanish has 239 of 240 keys.
-- **Ending the import**: pushes come one key per request with no end signal, so the admin ends it in Stringherd, which shows how many strings arrived for each file.
-- **FitJournal**: `es-419` imported for review (I review it); `nl` imported, marked as reviewed or for review when a Dutch reviewer is available.
+- **Imported text counts as delivered from the start**, also when it is still to be reviewed. The export returns it, so the first pull records it in the lockfile and a `deepl sync` cannot overwrite the files during a review. The repository changes only when a reviewer delivers an edit.
+- **Each string records where its text came from** (DeepL or the repository), apart from its review status, so the reviewer sees the right label and diff.
+- **Keys the existing files lack** go through DeepL as usual. FitJournal's Spanish and Dutch have 239 of 240 keys.
+- **FitJournal**: `nl` first, trying every answer on a branch; then `es-419`, kept for review.
 
 ---
 
