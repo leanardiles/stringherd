@@ -6,6 +6,8 @@ DeepL's CLI machine-translates the locale files in your repository. Stringherd i
 
 > **Status: v1 nearly complete, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Next: keeping existing translations when a language joins, then a hosted demo ([roadmap](ROADMAP.md)).
 
+![The review screen: a French string edited by a reviewer, with the word diff against DeepL's suggestion](docs/images/03-edited.png)
+
 ---
 
 ## Try it with Docker
@@ -22,6 +24,23 @@ Then open **http://localhost:8200** and sign in as `reviewer@trailhead.example` 
 - `docker compose down -v` deletes the demo data, for a fresh start next time.
 
 Runs on your computer only (`127.0.0.1`); the demo password is public, so do not expose it. Details, and how it is built: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#running-stringherd-with-docker).
+
+### What to look at
+
+<table>
+<tr>
+<td width="50%"><a href="docs/images/01-projects.png"><img src="docs/images/01-projects.png" alt="Projects page with Trailhead's languages and review progress"></a><br><sub>Your projects and languages, with review progress.</sub></td>
+<td width="50%"><a href="docs/images/02-list.png"><img src="docs/images/02-list.png" alt="French strings in the list view with statuses and quality warnings"></a><br><sub>Open French and switch to <b>List</b>: status, quality warnings and character counts for every string.</sub></td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/images/04-qa-error.png"><img src="docs/images/04-qa-error.png" alt="A translation missing a placeholder, with approval blocked"></a><br><sub>Open <code>auth.welcome</code>: DeepL dropped <code>{{name}}</code>, so the quality check blocks approval until it is fixed.</sub></td>
+<td width="50%"><a href="docs/images/05-bulk.png"><img src="docs/images/05-bulk.png" alt="All strings selected for bulk approval"></a><br><sub>Select all and approve: strings with errors are skipped and listed.</sub></td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/images/07-shortcuts.png"><img src="docs/images/07-shortcuts.png" alt="The keyboard shortcuts reference"></a><br><sub>Press <code>Ctrl+/</code> for the Phrase-style keyboard shortcuts.</sub></td>
+<td width="50%"></td>
+</tr>
+</table>
 
 ## How it works
 
@@ -71,26 +90,71 @@ See the **[roadmap](ROADMAP.md)** for what's next and in which order.
 
 ## Using it with a project
 
-In Stringherd, an admin creates the project under **Projects**, then an API key on the project's page, which also shows the block and commands below with the project's values filled in. In the project being localized, point DeepL Sync at Stringherd in `.deepl-sync.yaml`, using the same project id:
+The full loop, as it ran for [FitJournal](https://fit-journal.com)'s French in October 2026: 240 strings from DeepL, reviewed in Stringherd, delivered and live. The commands run in the project being localized. `deepl` is the DeepL CLI; it reads the DeepL key from `DEEPL_API_KEY` and the project's Stringherd key from `TMS_API_KEY` (FitJournal passes both with `op run`; any way of setting environment variables works).
+
+### 1. Set up the project in Stringherd
+
+An admin creates the project under **Projects**, adds its languages, creates an API key and assigns reviewers. The project's page shows the setup with its own values filled in.
+
+In the project being localized, `.deepl-sync.yaml` points DeepL Sync at Stringherd, with the same project id:
 
 ```yaml
 tms:
   enabled: true
   server: http://localhost:8100
-  project_id: my-app
+  project_id: fitjournal
 ```
 
-Then, with the project's key in `TMS_API_KEY` for the CLI and the upload script:
+Once per computer, approve the destination:
 
 ```bash
-deepl config set tms.allowedServers localhost   # one-time: approve the destination
-deepl sync --flag-for-review                    # machine-translate
-deepl sync push                                 # send translations to Stringherd for review
-node path/to/stringherd/scripts/upload-source.mjs \
-  --project my-app --file locales/en/common.json # send the source strings
-# review in Stringherd, then click Deliver for the language
-deepl sync pull                                 # bring delivered translations back
+deepl config set tms.allowedServers localhost
 ```
+
+<a href="docs/images/08-setup.png"><img src="docs/images/08-setup.png" width="640" alt="A project's admin page: languages, API keys and setup steps"></a>
+
+### 2. Machine-translate
+
+```bash
+deepl sync
+```
+
+DeepL translates the new and changed strings and writes them into the locale files; the lockfile (`.deepl-sync.lock`) records what was translated. A language that already has translations in the repository needs care: the first sync overwrites them (see [the notes below](#notes-on-the-deepl-sync-contract)).
+
+### 3. Send them for review
+
+```bash
+deepl sync push
+node path/to/stringherd/scripts/upload-source.mjs \
+  --project fitjournal --file web-react/src/i18n/locales/en/common.json
+```
+
+```
+Pushed 240 translations to TMS at http://localhost:8100
+```
+
+The push sends each translation, but not the English it came from, so the upload script sends the source strings. On later runs it reports only what changed (`unchanged: 240` when nothing did), and sends back to review any approved string whose English changed.
+
+### 4. Review and Deliver
+
+Reviewers work through the strings in the review screen, then click **Deliver** for the language. Approved strings wait until then, so a review in progress never reaches the code.
+
+<a href="docs/images/06-deliver.png"><img src="docs/images/06-deliver.png" width="640" alt="The Deliver dialog, listing what the next pull will bring"></a>
+
+### 5. Bring them back
+
+```bash
+deepl sync pull
+git diff
+```
+
+The pull writes the delivered translations into the locale files and records them in the lockfile. From there it is an ordinary change: review the diff, commit, merge and deploy.
+
+### On Windows
+
+- **The `deepl` command:** `npm install` in Stringherd's repository installs the DeepL CLI it is tested with (vendored in `vendor/`). To use it from another project in Git Bash, add it to the PATH: `export PATH="/c/path/to/stringherd/node_modules/.bin:$PATH"`.
+- **Permission warnings:** the CLI warns on every run that its config files are readable by other users. It is a Unix permission check that does not apply to Windows; the warnings are harmless.
+- **Target paths:** path resolution fails for source paths like `locales\en\common.json`. Setting `target_path_pattern` on the bucket works around it, for example `target_path_pattern: "web-react/src/i18n/locales/{locale}/{basename}"`.
 
 ## Notes on the DeepL Sync contract
 
@@ -100,7 +164,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 - **Keys have no file dimension.** Two locale files that share key names cannot be told apart by the TMS.
 - **The first sync overwrites existing translations.** Without a lockfile, every key counts as missing. Existing translations can be adopted safely by pushing them, approving them and pulling them back, which records them in the lockfile.
 - **A pull records no review status in the lockfile.** The export carries only text, so DeepL Sync cannot tell a reviewed string from a machine translation, and writes the pulled strings without `review_status`.
-- **On Windows, target path resolution fails** for paths like `locales\en\common.json`. Setting `target_path_pattern` on the bucket works around it. The CLI also warns on every run that its config files are readable by other users: a Unix permission check that does not apply to Windows, so the warnings are harmless.
+- **On Windows**, target path resolution needs a workaround ([above](#on-windows)).
 
 ## Documentation
 
