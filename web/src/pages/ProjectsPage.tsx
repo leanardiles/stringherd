@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { ApiError, type ReviewLocale } from '../api/client'
 import { useMe, useReviewProjects } from '../api/queries'
 import { ProgressBar } from '../components/ProgressBar'
+import { LanguageName } from '../components/LanguageName'
 import { LoadError, Loading } from '../components/StatusMessage'
 import ui from '../components/ui.module.css'
 import { formatDate } from '../lib/format'
@@ -17,7 +18,9 @@ function LocaleRow({ projectId, locale }: { projectId: string; locale: ReviewLoc
 
   return (
     <li className={styles.locale}>
-      <span className={styles.language}>{language}</span>
+      <span className={styles.language}>
+        <LanguageName code={locale.locale} />
+      </span>
       <div className={styles.progress}>
         <ProgressBar value={locale.delivered} max={locale.total} label={t('projects.progress', { percent })} />
         <span className={`${ui.muted} tabular`}>

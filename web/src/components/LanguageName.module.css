@@ -1,0 +1,10 @@
+.language {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.region {
+  color: var(--color-text-secondary);
+  font-size: 0.875em;
+  font-weight: normal;
+}

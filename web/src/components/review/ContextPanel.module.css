@@ -49,8 +49,9 @@
   overflow-wrap: anywhere;
 }
 
+/* Long values (keys, paths) wrap where they can, and anywhere only as a last resort. */
 .wrap {
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .hint {

@@ -304,7 +304,7 @@ def setup(project_slug: ProjectSlug, request: Request, admin: AdminUser, db: DbS
         f"node upload-source.mjs --server {server_url} --project {project.slug} \\\n"
         f"  --locale {source} --file path/to/{source}/common.json\n"
         "\n"
-        "# After review: bring approved translations back into the repository\n"
+        "# After Deliver in Stringherd: bring the delivered translations into the repository\n"
         "deepl sync pull\n"
     )
     return ProjectSetup(

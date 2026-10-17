@@ -1,8 +1,24 @@
 import { ImageOff } from 'lucide-react'
+import { Fragment, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReviewString } from '../../api/client'
 import { formattingLocale } from '../../i18n'
 import styles from './ContextPanel.module.css'
+
+/** A file path with a line-break opportunity after each slash, so it wraps between folders. */
+function breakAfterSlashes(path: string): ReactNode {
+  const parts = path.split('/')
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        <>
+          /<wbr />
+        </>
+      )}
+    </Fragment>
+  ))
+}
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null
@@ -30,7 +46,7 @@ export function ContextPanel({ item }: { item: ReviewString | null }) {
             {item.source_file && (
               <>
                 <dt>{t('review.context.file')}</dt>
-                <dd className={`mono ${styles.wrap}`}>{item.source_file}</dd>
+                <dd className={`mono ${styles.wrap}`}>{breakAfterSlashes(item.source_file)}</dd>
               </>
             )}
             {item.updated_at && (

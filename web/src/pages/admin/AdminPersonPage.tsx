@@ -15,6 +15,7 @@ import {
 import { CopyField } from '../../components/admin/CopyBlock'
 import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { UserStatus } from '../../components/admin/UserStatus'
+import { LanguageName } from '../../components/LanguageName'
 import { LoadError, Loading, NotFound } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'
 import { errorMessage } from '../../lib/errors'
@@ -194,7 +195,9 @@ function LanguagesSection({ user }: { user: User }) {
                         {project}
                       </Link>
                     </td>
-                    <td>{language}</td>
+                    <td>
+                      <LanguageName code={assignment.locale} />
+                    </td>
                     <td className={styles.actionCell}>
                       <button
                         type="button"

@@ -82,7 +82,7 @@ describe('project administration', () => {
     await userEvent.type(within(dialog).getByLabelText('Name'), 'My Shop')
     expect(within(dialog).getByLabelText('Project ID')).toHaveValue('my-shop')
     await userEvent.type(within(dialog).getByLabelText('Target languages'), 'fr, es-AR')
-    expect(within(dialog).getByText('French (fr), Spanish (Argentina) (es-AR)')).toBeInTheDocument()
+    expect(within(dialog).getByText('French (fr), Spanish (es-AR) · Argentina')).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create project' }))
 
     await vi.waitFor(() => expect(router.state.location.pathname).toBe('/admin/projects/my-shop'))

@@ -301,7 +301,7 @@
         "removeTitle": "Remove {{language}}?",
         "removeBody": "Reviewers assigned to this language lose the assignment. You can add the language again later.",
         "removeConfirm": "Remove language",
-        "locked": "Has translations, so it stays",
+        "locked": "Can't be removed: it has translations",
         "toDeliver": "{{count, number}} approved, waiting for Deliver",
         "lastDelivered": "Last delivered {{date}}",
         "neverDelivered": "Not delivered yet"

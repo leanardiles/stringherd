@@ -15,6 +15,7 @@ import {
 import { CodeBlock, CopyField } from '../../components/admin/CopyBlock'
 import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { ProgressBar } from '../../components/ProgressBar'
+import { LanguageName } from '../../components/LanguageName'
 import { LoadError, Loading, NotFound } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'
 import { errorMessage } from '../../lib/errors'
@@ -153,7 +154,7 @@ function LanguageRow({ locale, onRemove }: { locale: ProjectLocaleAdmin; onRemov
   return (
     <tr>
       <th scope="row" className={styles.rowHeader}>
-        {language}
+        <LanguageName code={locale.locale} />
       </th>
       <td>
         {locale.total > 0 ? (
