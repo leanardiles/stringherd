@@ -10,14 +10,30 @@ INDEX = "<!doctype html><title>Stringherd</title><div id=root></div>"
 
 
 @pytest.fixture
-def dist(tmp_path, monkeypatch):
+def use_build():
+    """Point the server at another UI build for one test, and back afterwards.
+
+    Not monkeypatch: since pytest 9 it cannot restore an attribute of Starlette's State
+    (app.state), so the swapped build leaked into the following tests.
+    """
+    original = app.state.web_dist
+
+    def use(path):
+        app.state.web_dist = path
+
+    yield use
+    app.state.web_dist = original
+
+
+@pytest.fixture
+def dist(tmp_path, use_build):
     """A small stand-in for web/dist, swapped in for the real one."""
     (tmp_path / "index.html").write_text(INDEX)
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "index-a1b2c3.js").write_text("console.log('ui')")
     (tmp_path / "favicon.svg").write_text("<svg/>")
     (tmp_path.parent / "secret.txt").write_text("outside the build")
-    monkeypatch.setattr(app.state, "web_dist", tmp_path)
+    use_build(tmp_path)
     return tmp_path
 
 
@@ -90,8 +106,8 @@ def test_nothing_outside_the_build_is_served(client, dist):
     assert ui_response(dist, "/../secret.txt").path == dist.resolve() / "index.html"
 
 
-def test_without_a_build_the_api_runs_and_the_ui_explains(client, tmp_path, monkeypatch):
-    monkeypatch.setattr(app.state, "web_dist", tmp_path / "missing")
+def test_without_a_build_the_api_runs_and_the_ui_explains(client, tmp_path, use_build):
+    use_build(tmp_path / "missing")
     response = client.get("/review/fitjournal/fr")
     assert response.status_code == 404
     assert "the review UI is not built" in response.text
@@ -99,8 +115,8 @@ def test_without_a_build_the_api_runs_and_the_ui_explains(client, tmp_path, monk
     assert client.get("/health").status_code == 200
 
 
-def test_ui_can_be_turned_off(client, monkeypatch):
-    monkeypatch.setattr(app.state, "web_dist", None)
+def test_ui_can_be_turned_off(client, use_build):
+    use_build(None)
     assert "not built" in client.get("/").text
 
 
