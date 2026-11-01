@@ -23,9 +23,9 @@ vi.mock('../components/editor/TargetEditor', () => ({
 afterEach(() => vi.unstubAllGlobals())
 
 const STRINGS: ReviewString[] = [
-  { key: 'home.title', source_text: 'Home', source_file: 'en/common.json', value: 'Accueil', machine_translation: 'Accueil', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
-  { key: 'dashboard.sets_other', source_text: '{{count}} sets', source_file: 'en/common.json', value: '{{count}} définit', machine_translation: '{{count}} définit', status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
-  { key: 'login.button', source_text: 'Sign in', source_file: 'en/common.json', value: 'Connexion', machine_translation: 'Connexion', status: 'approved', updated_at: null, approved_at: null, approved_by: 'Marie Dubois', delivered_value: null, delivered_at: null, delivered_by: null },
+  { key: 'home.title', source_text: 'Home', source_file: 'en/common.json', value: 'Accueil', machine_translation: 'Accueil', status: 'machine_translated', origin: 'deepl', imported_at: null, updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
+  { key: 'dashboard.sets_other', source_text: '{{count}} sets', source_file: 'en/common.json', value: '{{count}} définit', machine_translation: '{{count}} définit', status: 'machine_translated', origin: 'deepl', imported_at: null, updated_at: null, approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null },
+  { key: 'login.button', source_text: 'Sign in', source_file: 'en/common.json', value: 'Connexion', machine_translation: 'Connexion', status: 'approved', origin: 'deepl', imported_at: null, updated_at: null, approved_at: null, approved_by: 'Marie Dubois', delivered_value: null, delivered_at: null, delivered_by: null },
 ]
 
 function setup(path = '/review/fitjournal/fr?view=list') {

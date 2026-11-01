@@ -77,6 +77,7 @@ def test_list_shows_progress_and_reviewers(admin, client, make_user):
         "delivered": 0,
         "last_delivered_at": None,
         "reviewers": [{"id": rev_id, "name": "Marie"}],
+        "existing_translations": None,
     }
 
 

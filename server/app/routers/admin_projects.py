@@ -29,6 +29,9 @@ from app.schemas import (
     ApiKeyCreate,
     ApiKeyIssued,
     ApiKeyOut,
+    ImportedFile,
+    ImportModeUpdate,
+    LanguageImport,
     LocaleIn,
     ProjectAdminDetail,
     ProjectAdminOut,
@@ -40,6 +43,15 @@ from app.schemas import (
 )
 from app.security import AdminUser
 from app.services.delivery import last_deliveries
+from app.services.imports import (
+    LanguageHasStringsError,
+    NoImportOpenError,
+    NothingImportedError,
+    finish_import,
+    import_counts,
+    set_import_mode,
+    source_characters,
+)
 from app.services.projects import (
     ProjectExistsError,
     create_project,
@@ -104,6 +116,7 @@ def _project_out(db: Session, project: Project) -> ProjectAdminOut:
 
     delivered_at = last_deliveries(db, project)
     strings = db.scalar(select(func.count()).where(TranslationKey.project_id == project.id)) or 0
+    imports = _imports(db, project)
     return ProjectAdminOut(
         project_id=project.slug,
         name=project.name,
@@ -118,12 +131,48 @@ def _project_out(db: Session, project: Project) -> ProjectAdminOut:
                 delivered=counts.get(locale, {}).get("delivered", 0),
                 last_delivered_at=delivered_at.get(locale),
                 reviewers=reviewers.get(locale, []),
+                existing_translations=imports.get(locale),
             )
             for locale in project.target_locales
         ],
         active_keys=sum(1 for key in project.api_keys if key.revoked_at is None),
         created_at=project.created_at,
     )
+
+
+def _imports(db: Session, project: Project) -> dict[str, LanguageImport]:
+    """The existing-translations answer of each language that has one, with its progress."""
+    languages = [language for language in project.locales if language.import_mode is not None]
+    if not languages:
+        return {}
+    counts = import_counts(db, project)
+    characters = (
+        source_characters(db, project) if any(lang.import_mode == "retranslate" for lang in languages) else None
+    )
+    return {
+        language.locale: LanguageImport(
+            mode=language.import_mode,
+            started_at=language.import_started_at,
+            finished_at=language.import_finished_at,
+            importing=language.importing,
+            imported=counts.strings.get(language.locale, 0),
+            files=[
+                ImportedFile(file=file, strings=strings)
+                for file, strings in sorted(counts.files.get(language.locale, {}).items(), key=lambda f: f[0] or "")
+            ],
+            estimated_characters=characters if language.import_mode == "retranslate" else None,
+        )
+        for language in languages
+    }
+
+
+def _language(project: Project, locale: str) -> ProjectLocale:
+    language = next((entry for entry in project.locales if entry.locale == locale), None)
+    if language is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"'{locale}' is not a target language of '{project.slug}'."
+        )
+    return language
 
 
 def _project_detail(db: Session, project: Project) -> ProjectAdminDetail:
@@ -197,13 +246,63 @@ def update_project(
 
 @router.post("/{projectId}/locales", response_model=ProjectAdminDetail, status_code=status.HTTP_201_CREATED)
 def add_locale(project_slug: ProjectSlug, body: LocaleIn, admin: AdminUser, db: DbSession) -> ProjectAdminDetail:
-    """Add a target language, so reviewers can be assigned to it before the first push."""
+    """Add a target language, so reviewers can be assigned to it before the first push.
+
+    `import_mode` answers what to do with translations the repository already has for it: with
+    `review` or `reviewed`, an import opens at once and the next pushes for the language are
+    stored as the repository's text (see Finish import).
+    """
     project = _managed_project(db, admin, project_slug)
     if body.locale == project.source_locale:
         raise _invalid(f"'{body.locale}' is the source language of '{project.slug}'.")
     if body.locale in project.target_locales:
         raise _conflict(f"'{body.locale}' is already a target language of '{project.slug}'.")
-    project.locales.append(ProjectLocale(locale=body.locale))
+    language = ProjectLocale(locale=body.locale)
+    project.locales.append(language)
+    if body.import_mode is not None:
+        set_import_mode(db, project, language, body.import_mode)  # a new language has no strings
+    db.commit()
+    db.refresh(project)
+    return _project_detail(db, project)
+
+
+@router.patch("/{projectId}/locales/{locale}", response_model=ProjectAdminDetail)
+def update_locale(
+    project_slug: ProjectSlug, locale: Locale, body: ImportModeUpdate, admin: AdminUser, db: DbSession
+) -> ProjectAdminDetail:
+    """Change the answer for a language's existing translations, as long as it has no strings yet."""
+    project = _managed_project(db, admin, project_slug)
+    language = _language(project, locale)
+    try:
+        set_import_mode(db, project, language, body.import_mode)
+    except LanguageHasStringsError:
+        raise _conflict(
+            f"'{locale}' already has strings, which arrived under the current answer; it can no longer change."
+        ) from None
+    db.commit()
+    db.refresh(project)
+    return _project_detail(db, project)
+
+
+@router.post("/{projectId}/locales/{locale}/import/finish", response_model=ProjectAdminDetail)
+def finish_locale_import(
+    project_slug: ProjectSlug, locale: Locale, admin: AdminUser, db: DbSession
+) -> ProjectAdminDetail:
+    """Close a language's import: from now on, its pushes are DeepL's translations again.
+
+    Run `deepl sync pull` for the language afterwards: it writes the same text back and records
+    every key in the lockfile, so the next `deepl sync` only translates what is missing.
+    """
+    project = _managed_project(db, admin, project_slug)
+    language = _language(project, locale)
+    try:
+        finish_import(db, project, language)
+    except NoImportOpenError:
+        raise _conflict(f"'{locale}' has no import in progress.") from None
+    except NothingImportedError:
+        raise _conflict(
+            f"No strings have arrived for '{locale}' yet. Run deepl sync push --locale {locale} first."
+        ) from None
     db.commit()
     db.refresh(project)
     return _project_detail(db, project)
@@ -216,11 +315,7 @@ def remove_locale(project_slug: ProjectSlug, locale: Locale, admin: AdminUser, d
     Languages with translations stay, so nothing reviewed is lost by accident.
     """
     project = _managed_project(db, admin, project_slug)
-    entry = next((e for e in project.locales if e.locale == locale), None)
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"'{locale}' is not a target language of '{project.slug}'."
-        )
+    entry = _language(project, locale)
     translations = db.scalar(
         select(func.count())
         .select_from(Translation)

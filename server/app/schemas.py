@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.models import ImportMode
+
 # Same limit DeepL Sync enforces when pulling, so an oversized value fails at push time
 # with a clear message instead of breaking a later pull.
 MAX_VALUE_BYTES = 64 * 1024
@@ -182,8 +184,10 @@ class ReviewString(BaseModel):
     source_text: str | None
     source_file: str | None
     value: str
-    machine_translation: str | None  # what DeepL last delivered (pushed_value)
+    machine_translation: str | None  # the text that arrived through the push (pushed_value); see origin
     status: str  # machine_translated, approved or delivered
+    origin: str  # deepl, or repository for a string imported from the repository
+    imported_at: datetime | None
     updated_at: datetime | None
     approved_at: datetime | None
     approved_by: str | None  # name of the approver
@@ -279,6 +283,31 @@ class ProjectUpdate(BaseModel):
 
 class LocaleIn(BaseModel):
     locale: str = Field(pattern=LOCALE_PATTERN, max_length=35, examples=["es"])
+    # What to do with translations the repository already has for this language; none = it has none.
+    import_mode: ImportMode | None = None
+
+
+class ImportModeUpdate(BaseModel):
+    """Change the answer for a language's existing translations, while it has no strings."""
+
+    import_mode: ImportMode | None
+
+
+class ImportedFile(BaseModel):
+    file: str | None  # the source file the keys came from; None for keys never uploaded
+    strings: int
+
+
+class LanguageImport(BaseModel):
+    """A language's existing translations: the admin's answer and how the import is going."""
+
+    mode: ImportMode
+    started_at: datetime | None
+    finished_at: datetime | None
+    importing: bool  # pushes for this language are stored as imports
+    imported: int  # strings imported from the repository so far
+    files: list[ImportedFile]
+    estimated_characters: int | None  # retranslate: about what DeepL bills for the language
 
 
 class ReviewerRef(BaseModel):
@@ -293,6 +322,7 @@ class ProjectLocaleOut(BaseModel):
     delivered: int
     last_delivered_at: datetime | None
     reviewers: list[ReviewerRef]
+    existing_translations: LanguageImport | None = None
 
 
 class ApiKeyOut(BaseModel):

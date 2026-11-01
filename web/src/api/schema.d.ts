@@ -23,6 +23,10 @@ export interface paths {
          *       its status are kept, so a re-push never undoes review work;
          *     - anything else: DeepL produced a new translation (the source changed), so the value is
          *       replaced and goes back to `machine_translated` for review, with nothing delivered.
+         *
+         *     While the language has an open import (the admin chose to keep its existing
+         *     translations), the pushed text is the repository's own: it is stored as imported and
+         *     delivered at once (services/imports.py).
          */
         put: operations["push_translation_api_projects__projectId__keys__keyPath__put"];
         post?: never;
@@ -348,6 +352,10 @@ export interface paths {
         /**
          * Add Locale
          * @description Add a target language, so reviewers can be assigned to it before the first push.
+         *
+         *     `import_mode` answers what to do with translations the repository already has for it: with
+         *     `review` or `reviewed`, an import opens at once and the next pushes for the language are
+         *     stored as the repository's text (see Finish import).
          */
         post: operations["add_locale_api_admin_projects__projectId__locales_post"];
         delete?: never;
@@ -373,6 +381,33 @@ export interface paths {
          *     Languages with translations stay, so nothing reviewed is lost by accident.
          */
         delete: operations["remove_locale_api_admin_projects__projectId__locales__locale__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Locale
+         * @description Change the answer for a language's existing translations, as long as it has no strings yet.
+         */
+        patch: operations["update_locale_api_admin_projects__projectId__locales__locale__patch"];
+        trace?: never;
+    };
+    "/api/admin/projects/{projectId}/locales/{locale}/import/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish Locale Import
+         * @description Close a language's import: from now on, its pushes are DeepL's translations again.
+         *
+         *     Run `deepl sync pull` for the language afterwards: it writes the same text back and records
+         *     every key in the lockfile, so the next `deepl sync` only translates what is missing.
+         */
+        post: operations["finish_locale_import_api_admin_projects__projectId__locales__locale__import_finish_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -747,6 +782,46 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * ImportMode
+         * @description The admin's answer when a language that already has translations in the repository
+         *     joins a project. No answer (None) means the language had none: DeepL translates it.
+         * @enum {string}
+         */
+        ImportMode: "retranslate" | "review" | "reviewed";
+        /**
+         * ImportModeUpdate
+         * @description Change the answer for a language's existing translations, while it has no strings.
+         */
+        ImportModeUpdate: {
+            import_mode: components["schemas"]["ImportMode"] | null;
+        };
+        /** ImportedFile */
+        ImportedFile: {
+            /** File */
+            file: string | null;
+            /** Strings */
+            strings: number;
+        };
+        /**
+         * LanguageImport
+         * @description A language's existing translations: the admin's answer and how the import is going.
+         */
+        LanguageImport: {
+            mode: components["schemas"]["ImportMode"];
+            /** Started At */
+            started_at: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Importing */
+            importing: boolean;
+            /** Imported */
+            imported: number;
+            /** Files */
+            files: components["schemas"]["ImportedFile"][];
+            /** Estimated Characters */
+            estimated_characters: number | null;
+        };
         /** LocaleCounts */
         LocaleCounts: {
             /**
@@ -772,6 +847,7 @@ export interface components {
              * @example es
              */
             locale: string;
+            import_mode?: components["schemas"]["ImportMode"] | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -871,6 +947,7 @@ export interface components {
             last_delivered_at: string | null;
             /** Reviewers */
             reviewers: components["schemas"]["ReviewerRef"][];
+            existing_translations?: components["schemas"]["LanguageImport"] | null;
         };
         /**
          * ProjectSetup
@@ -990,6 +1067,10 @@ export interface components {
             machine_translation: string | null;
             /** Status */
             status: string;
+            /** Origin */
+            origin: string;
+            /** Imported At */
+            imported_at: string | null;
             /** Updated At */
             updated_at: string | null;
             /** Approved At */
@@ -1830,6 +1911,78 @@ export interface operations {
         };
     };
     remove_locale_api_admin_projects__projectId__locales__locale__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_locale_api_admin_projects__projectId__locales__locale__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                locale: string;
+            };
+            cookie?: {
+                stringherd_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportModeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAdminDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_locale_import_api_admin_projects__projectId__locales__locale__import_finish_post: {
         parameters: {
             query?: never;
             header?: never;

@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from app.models import Delivery, Project, Translation, TranslationKey, TranslationStatus, User
+from app.models import Delivery, Project, TextOrigin, Translation, TranslationKey, TranslationStatus, User
 
 
 class NothingToDeliverError(Exception):
@@ -109,7 +109,12 @@ def is_known_text(translation: Translation, value: str) -> bool:
 
 
 def reset_for_new_text(translation: Translation) -> None:
-    """DeepL sent a new translation (the source changed): back to review, nothing delivered."""
+    """DeepL sent a new translation (the source changed): back to review, nothing delivered.
+
+    The text is DeepL's now, also for a string that was imported from the repository.
+    """
+    translation.origin = TextOrigin.DEEPL
+    translation.imported_at = None
     translation.status = TranslationStatus.MACHINE_TRANSLATED
     translation.approved_at = None
     translation.approved_by_id = None
@@ -165,6 +170,7 @@ class LanguageReset:
     edited: int  # text differs from DeepL's last machine translation
     already_machine: int  # to review with DeepL's text already: nothing to change
     without_original: list[str]  # no DeepL text on record: left as they are
+    imported: int = 0  # of those changing, imported from the repository: back to the repository's text
 
     @property
     def changing(self) -> int:
@@ -172,7 +178,9 @@ class LanguageReset:
 
 
 def reset_language(db: Session, project: Project, locale: str, *, apply: bool) -> LanguageReset:
-    """Put a language back to DeepL's machine translation, every string to review.
+    """Put a language back to the text it arrived with, every string to review.
+
+    That is DeepL's machine translation, or the repository's text for imported strings.
 
     An operator's tool (python -m app.cli reset-language), for starting a review over: edits are
     undone, approvals removed and delivered text cleared, so nothing is pullable until the next
@@ -200,6 +208,7 @@ def reset_language(db: Session, project: Project, locale: str, *, apply: bool) -
         ):
             summary.already_machine += 1
             continue
+        summary.imported += translation.origin == TextOrigin.REPOSITORY
         if apply:
             translation.value = translation.pushed_value
             translation.status = TranslationStatus.MACHINE_TRANSLATED

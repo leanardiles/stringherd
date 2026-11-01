@@ -23,6 +23,7 @@ from app.schemas import (
     PushTranslation,
 )
 from app.services.delivery import is_known_text, reset_for_new_text
+from app.services.imports import import_text, importing_mode
 from app.services.projects import ensure_locale
 
 # Every endpoint takes a MachineProject: the key must belong to the project in the address.
@@ -52,6 +53,10 @@ def push_translation(
       its status are kept, so a re-push never undoes review work;
     - anything else: DeepL produced a new translation (the source changed), so the value is
       replaced and goes back to `machine_translated` for review, with nothing delivered.
+
+    While the language has an open import (the admin chose to keep its existing
+    translations), the pushed text is the repository's own: it is stored as imported and
+    delivered at once (services/imports.py).
     """
     if "/" in key_path:
         raise HTTPException(
@@ -97,7 +102,13 @@ def push_translation(
     translation = db.scalar(select(Translation).where(Translation.key_id == key_id, Translation.locale == body.locale))
 
     changed = True
-    if inserted_id is None:
+    import_mode = importing_mode(db, project, body.locale)
+    if import_mode is not None:
+        if inserted_id is not None or not is_known_text(translation, body.value):
+            import_text(translation, body.value, import_mode)
+        else:
+            changed = False
+    elif inserted_id is None:
         # The translation already existed.
         if is_known_text(translation, body.value):
             changed = False

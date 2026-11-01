@@ -4,12 +4,15 @@
     python -m app.cli set-password --email you@example.com
     python -m app.cli seed-demo
     python -m app.cli reset-language --project fitjournal --locale fr [--dry-run]
+    python -m app.cli remove-language --project fitjournal --locale nl [--dry-run]
 
 The password is read from standard input when piped (e.g. from 1Password with `op read`),
 otherwise prompted for twice without echo. seed-demo needs no password: it fills an empty
 database with the Trailhead demo project and prints the demo sign-ins. reset-language puts one
 language of a project back to DeepL's machine translation, every string to review; it shows what
-will change and asks to type the language code before changing anything.
+will change and asks to type the language code before changing anything. remove-language
+removes a language from a project with its translations, assignments and delivery history, after
+the same kind of confirmation.
 """
 
 import argparse
@@ -25,6 +28,7 @@ from app.schemas import MIN_PASSWORD_LENGTH
 from app.security import end_all_sessions, hash_password
 from app.services.delivery import reset_language as reset_language_service
 from app.services.projects import get_project
+from app.services.projects import remove_language as remove_language_service
 
 
 def _read_password() -> str:
@@ -96,8 +100,8 @@ def reset_language(
                 + ", ".join(plan.without_original)
             )
         lines.append(
-            f"Reset: {plan.changing} strings go back to DeepL's text, to review. Nothing is pullable until "
-            "the next Deliver, so the repository keeps what it has."
+            f"Reset: {plan.changing} strings go back to {_arrived_with(plan)}, to review. Nothing is pullable "
+            "until the next Deliver, so the repository keeps what it has."
         )
         print("\n".join(lines))
         if dry_run:
@@ -107,7 +111,42 @@ def reset_language(
         if confirm(f"Type {locale} to reset: ").strip() != locale:
             return "Nothing changed."
         done = reset_language_service(db, project, locale, apply=True)
-    return f"Done: {done.changing} strings of {locale} are back to DeepL's text, to review."
+    return f"Done: {done.changing} strings of {locale} are back to {_arrived_with(done)}, to review."
+
+
+def _arrived_with(plan) -> str:
+    """DeepL's text, or for imported strings the repository's: the text each string arrived with."""
+    if not plan.imported:
+        return "DeepL's text"
+    return f"the text they arrived with ({plan.imported} imported from the repository)"
+
+
+def remove_language(slug: str, locale: str, *, dry_run: bool, confirm=input, session_factory=SessionLocal) -> str:
+    with session_factory() as db:
+        project = get_project(db, slug)
+        if project is None:
+            return f"No project {slug}. Nothing changed."
+        plan = remove_language_service(db, project, locale, apply=False)
+        if not plan.listed and not plan.strings:
+            return f"Project {slug} has no language {locale}. Nothing changed."
+        print(
+            "\n".join(
+                [
+                    f"Project {slug}, language {locale}: {plan.strings} strings "
+                    f"({plan.delivered} delivered, {plan.approved} approved, "
+                    f"{plan.imported} imported from the repository).",
+                    f"  {plan.assignments} reviewer assignments, {plan.deliveries} past deliveries.",
+                    "Remove: the language and all of the above. The keys stay, since every language shares "
+                    f"them; the repository is not touched (restore its {locale} files there with git if needed).",
+                ]
+            )
+        )
+        if dry_run:
+            return "Dry run: nothing changed."
+        if confirm(f"Type {locale} to remove: ").strip() != locale:
+            return "Nothing changed."
+        remove_language_service(db, project, locale, apply=True)
+    return f"Done: {locale} is removed from {slug}."
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -130,12 +169,22 @@ def main(argv: list[str] | None = None) -> None:
     language.add_argument("--locale", required=True, help="The language code, e.g. fr")
     language.add_argument("--dry-run", action="store_true", help="Show what would change, change nothing")
 
+    removal = commands.add_parser(
+        "remove-language", help="Remove a language from a project, with its translations and history"
+    )
+    removal.add_argument("--project", required=True, help="The project id (tms.project_id)")
+    removal.add_argument("--locale", required=True, help="The language code, e.g. nl")
+    removal.add_argument("--dry-run", action="store_true", help="Show what would be removed, change nothing")
+
     args = parser.parse_args(argv)
     if args.command == "seed-demo":
         print(seed_demo())
         return
     if args.command == "reset-language":
         print(reset_language(args.project, args.locale, dry_run=args.dry_run))
+        return
+    if args.command == "remove-language":
+        print(remove_language(args.project, args.locale, dry_run=args.dry_run))
         return
     password = _read_password()
     if args.command == "create-admin":

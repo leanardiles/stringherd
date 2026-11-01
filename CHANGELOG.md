@@ -4,6 +4,16 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 
 ## [Unreleased]
 
+### Added
+- Importing a language's existing translations, server side: an admin adds a language with an answer (translate again, keep for review, keep as reviewed); during an import, pushes are stored as the repository's text and delivered at once, so a `deepl sync` cannot overwrite the files; Finish import closes it. Each translation records its origin, DeepL or the repository.
+- `remove-language`, an operator command that removes a language with its translations, assignments and delivery history.
+
+### Changed
+- `reset-language` puts imported strings back to the repository's text, the text they arrived with.
+
+### Fixed
+- The web tests failed under pytest 9.
+
 ## [1.0.0] - 2026-10-17
 
 The first release: a complete review server for DeepL Sync that someone else can run locally. In use on [FitJournal](https://fit-journal.com), whose French went through Stringherd and is live.

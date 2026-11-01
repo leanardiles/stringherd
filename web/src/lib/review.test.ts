@@ -3,7 +3,7 @@ import type { ReviewString } from '../api/client'
 import { countByFilter, displayStatus, findString, isSelectable, keyRange, matchesFilter, neighbourKey, summarizeSelection } from './review'
 
 const base: ReviewString = {
-  key: 'home.title', source_text: 'Home', source_file: null, value: 'Accueil', machine_translation: 'Accueil',
+  key: 'home.title', source_text: 'Home', source_file: null, value: 'Accueil', machine_translation: 'Accueil', origin: 'deepl', imported_at: null,
   status: 'machine_translated', updated_at: null, approved_at: null, approved_by: null,
   delivered_value: null, delivered_at: null, delivered_by: null,
 }

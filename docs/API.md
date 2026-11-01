@@ -29,13 +29,13 @@ People sign in with email and password and get a session cookie (`HttpOnly`, `Sa
 | `GET` | `/api/auth/me` | The signed-in user, with their assignments |
 | `POST` | `/api/auth/password` | Change your password (required after a temporary one) |
 | `GET` | `/api/review/projects` | Projects and languages the user may review, with progress |
-| `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, DeepL's original, status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
+| `GET` | `/api/review/projects/{projectId}/locales/{locale}/strings` | Strings to review: source, current translation, the text that arrived through the push and its `origin` (`deepl`, or `repository` for imported strings), status, who approved. Filters: `status`, `q`; paging: `limit`, `offset` |
 | `PATCH` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}` | Edit and/or approve one string. Body: `{"value": "...", "approved": true}`. Approving a string with a QA error answers `422` with the reason |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/approve` | Approve several strings. Body: `{"keys": ["home.title", "..."]}`. Strings with a QA error are skipped and listed with their issues |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/withdraw` | Withdraw several approvals. Body: `{"keys": [...]}`. Only approved strings change; delivered ones are locked |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/deliver` | Deliver the language: its approved strings become what `deepl sync pull` exports, and are locked |
 | `POST` | `/api/review/projects/{projectId}/locales/{locale}/strings/{keyPath}/reopen` | Unlock a delivered string so it can be corrected (admins). The code keeps the delivered text until the next Deliver |
 
-Admins manage people under `/api/admin/users` (create with a temporary password, update, deactivate, reset password, assign project and language) and projects under `/api/admin/projects` (languages, API keys, setup snippet; see [docs/ADMIN-PLAN.md](ADMIN-PLAN.md)). Reviewers only see and change the languages they are assigned to; admins can review any language.
+Admins manage people under `/api/admin/users` (create with a temporary password, update, deactivate, reset password, assign project and language) and projects under `/api/admin/projects` (languages, API keys, setup snippet; see [docs/ADMIN-PLAN.md](ADMIN-PLAN.md)). A language can be added with an answer for its existing translations (`import_mode`: `retranslate`, `review` or `reviewed`), changed with `PATCH /api/admin/projects/{projectId}/locales/{locale}` while it has no strings, and an import closed with `POST /api/admin/projects/{projectId}/locales/{locale}/import/finish` ([docs/IMPORT-PLAN.md](IMPORT-PLAN.md)). Reviewers only see and change the languages they are assigned to; admins can review any language.
 
 And `GET /health` (server and database status), with interactive docs at `/docs`.

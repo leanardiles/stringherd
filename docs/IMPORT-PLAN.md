@@ -76,9 +76,9 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 | | Chunk | What | Status |
 |---|---|---|---|
 | A | Data | Import state per language, origin and import date per string; one migration; tests | Done |
-| B | Server | Pushes during an import stored as imports; Finish import; counts per file; `remove-language` command | To do |
+| B | Server | Pushes during an import stored as imports; Finish import; counts per file; `remove-language` command | Done |
 | C | Admin UI | The question in Add language, the language row's states, commands and Finish | To do |
-| D | Reviewer UI | The table above; bulk approve and `reset-language` handle imported strings | To do |
+| D | Reviewer UI | The table above, from the `origin` and `imported_at` the review API now returns | To do |
 | E | Docs and test | LOCALES-PLAN, roadmap, API notes; the FitJournal run | To do |
 
 ---
@@ -94,6 +94,10 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 | 5 | Stringherd work stays on `main`; FitJournal works on branch `stringherd-nl-import` | Agreed |
 | 6 | `pushed_value` keeps the text that arrived through the push, whatever its origin; `origin` says whose it is | Agreed |
 | 7 | The language stores every answer, `retranslate` too, so its row can keep showing the next command | Agreed |
+| 8 | `reset-language` puts imported strings back to the repository's text, to review: the text they arrived with | Agreed |
+| 9 | Finish import refuses while no string has arrived: the push has not run | Agreed |
+| 10 | An import adds no entry to the delivery history; the language row shows the import's own dates | Agreed |
+| 11 | When DeepL later sends new text for an imported string (its English changed), the string's origin becomes DeepL | Agreed |
 
 ---
 

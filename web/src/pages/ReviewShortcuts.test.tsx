@@ -27,7 +27,7 @@ afterEach(() => {
 
 const NONE = { approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null }
 const s = (key: string, source: string, value: string, status = 'machine_translated'): ReviewString => ({
-  key, source_text: source, source_file: null, value, machine_translation: value, status, updated_at: null, ...NONE,
+  key, source_text: source, source_file: null, value, machine_translation: value, status, origin: 'deepl', imported_at: null, updated_at: null, ...NONE,
 })
 
 const ITEMS = [

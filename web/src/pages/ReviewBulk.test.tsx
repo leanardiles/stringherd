@@ -9,7 +9,7 @@ afterEach(() => vi.unstubAllGlobals())
 const NONE = { approved_at: null, approved_by: null, delivered_value: null, delivered_at: null, delivered_by: null }
 
 function string(key: string, source: string, value: string, status = 'machine_translated'): ReviewString {
-  return { key, source_text: source, source_file: null, value, machine_translation: value, status, updated_at: null, ...NONE }
+  return { key, source_text: source, source_file: null, value, machine_translation: value, status, origin: 'deepl', imported_at: null, updated_at: null, ...NONE }
 }
 
 function setup(path = '/review/fitjournal/fr?view=list') {

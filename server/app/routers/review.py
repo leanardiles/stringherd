@@ -12,7 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Project, Translation, TranslationKey, TranslationStatus, User
+from app.models import Project, TextOrigin, Translation, TranslationKey, TranslationStatus, User
 from app.permissions import can_deliver, can_reopen, can_review, projects_visible_to, reviewable_locales
 from app.schemas import (
     LOCALE_PATTERN,
@@ -62,6 +62,8 @@ def _to_review_string(key: TranslationKey, translation: Translation) -> ReviewSt
         value=translation.value,
         machine_translation=translation.pushed_value,
         status=TranslationStatus(translation.status).value,
+        origin=TextOrigin(translation.origin).value,
+        imported_at=translation.imported_at,
         updated_at=translation.updated_at,
         approved_at=translation.approved_at,
         approved_by=translation.approved_by.name if translation.approved_by else None,

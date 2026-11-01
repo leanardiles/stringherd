@@ -200,7 +200,7 @@ Delivered strings leave the reviewer's working list and are locked. They stay se
 
 Strings approved before Deliver existed were marked as delivered by the migration, so the first pull after upgrading returns the same as before.
 
-To start a language's review over, `reset-language` puts it back to DeepL's machine translation: edits are undone, approvals removed, delivered text cleared, and every string is to review again. It first shows what will change and asks you to type the language code; `--dry-run` only shows it.
+To start a language's review over, `reset-language` puts it back to the text it arrived with (DeepL's machine translation, or the repository's text for imported strings): edits are undone, approvals removed, delivered text cleared, and every string is to review again. It first shows what will change and asks you to type the language code; `--dry-run` only shows it.
 
 ```bash
 op run --env-file=../.env.op -- python -m app.cli reset-language --project fitjournal --locale fr --dry-run
@@ -208,6 +208,17 @@ op run --env-file=../.env.op -- python -m app.cli reset-language --project fitjo
 ```
 
 Nothing is pullable afterwards until the next Deliver, so the repository keeps what it has. Past deliveries stay recorded, and other languages are not touched. Strings with no DeepL text on record (pushed before Stringherd kept it) are listed and left as they are.
+
+### Importing existing translations
+
+When a language already has translations in the repository, the admin answers, when adding it, what to do with them: translate again with DeepL, keep them for review, or keep them as reviewed (`import_mode` on the Add language endpoint). For the two keep answers an import opens at once: every `deepl sync push` for that language is stored as the repository's text, delivered from the start, until the admin calls **Finish import**. Then `deepl sync pull` writes the same text back and records every key in the lockfile, so the next `deepl sync` only translates what is missing. Do not run `deepl sync` itself before that: it would overwrite the files with DeepL's text, and the push would import that. Design and plan: [IMPORT-PLAN.md](IMPORT-PLAN.md).
+
+To start a language over, for example between import tests, `remove-language` removes it from the project with its translations, reviewer assignments and delivery history. The keys stay, and the repository is not touched: restore its files there with git. It shows what will go and asks you to type the language code; `--dry-run` only shows it.
+
+```bash
+op run --env-file=../.env.op -- python -m app.cli remove-language --project fitjournal --locale nl --dry-run
+op run --env-file=../.env.op -- python -m app.cli remove-language --project fitjournal --locale nl
+```
 
 ### Uploading source strings
 

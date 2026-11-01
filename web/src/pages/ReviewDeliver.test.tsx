@@ -21,7 +21,7 @@ const NONE = { approved_at: null, approved_by: null, delivered_value: null, deli
 
 function string(key: string, value: string, status: string, extra: Partial<ReviewString> = {}): ReviewString {
   return {
-    key, source_text: key, source_file: null, value, machine_translation: value, status, updated_at: null, ...NONE, ...extra,
+    key, source_text: key, source_file: null, value, machine_translation: value, status, origin: 'deepl', imported_at: null, updated_at: null, ...NONE, ...extra,
   }
 }
 
