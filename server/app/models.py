@@ -15,6 +15,35 @@ class TranslationStatus(StrEnum):
     DELIVERED = "delivered"
 
 
+class TextOrigin(StrEnum):
+    """Where a translation's text came from, apart from its review status."""
+
+    # DeepL's machine translation, sent by `deepl sync push` after `deepl sync`.
+    DEEPL = "deepl"
+    # A translation that was already in the repository, sent by the push of an import.
+    REPOSITORY = "repository"
+
+
+class ImportMode(StrEnum):
+    """The admin's answer when a language that already has translations in the repository
+    joins a project. No answer (None) means the language had none: DeepL translates it."""
+
+    # DeepL translates everything again, overwriting the files; nothing is imported.
+    RETRANSLATE = "retranslate"
+    # Keep them: imported, delivered at once so the files stay protected, and to review.
+    REVIEW = "review"
+    # Keep them: imported and delivered, with nothing to review.
+    REVIEWED = "reviewed"
+
+
+def _string_enum(enum: type[StrEnum], length: int) -> Enum:
+    """A StrEnum stored as its values in a plain string column (with a CHECK constraint
+    declared on the table, so the allowed values are visible in the database)."""
+    return Enum(
+        enum, native_enum=False, create_constraint=False, length=length, values_callable=lambda e: [m.value for m in e]
+    )
+
+
 class Project(Base):
     """One localized codebase. `slug` is the project_id used by DeepL Sync.
 
@@ -49,14 +78,36 @@ class ProjectLocale(Base):
     pushes a language the project does not list yet."""
 
     __tablename__ = "project_locales"
-    __table_args__ = (UniqueConstraint("project_id", "locale"),)
+    __table_args__ = (
+        UniqueConstraint("project_id", "locale"),
+        CheckConstraint(
+            "import_mode IS NULL OR import_mode IN ('retranslate', 'review', 'reviewed')",
+            name="ck_project_locales_import_mode",
+        ),
+        CheckConstraint(
+            "import_finished_at IS NULL OR import_started_at IS NOT NULL",
+            name="ck_project_locales_import_order",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
     locale: Mapped[str] = mapped_column(String(35))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # What to do with translations the repository already has (see ImportMode). Set when the
+    # admin adds the language; None for a language added without existing translations.
+    import_mode: Mapped[ImportMode | None] = mapped_column(_string_enum(ImportMode, 16))
+    # For the two keep answers: while an import is open (started, not finished), every push for
+    # this language is stored as an import from the repository; Finish import closes it.
+    import_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    import_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     project: Mapped[Project] = relationship(back_populates="locales")
+
+    @property
+    def importing(self) -> bool:
+        """True while pushes for this language are stored as imports."""
+        return self.import_started_at is not None and self.import_finished_at is None
 
 
 class ProjectApiKey(Base):
@@ -114,17 +165,26 @@ class Translation(Base):
     __table_args__ = (
         UniqueConstraint("key_id", "locale"),
         CheckConstraint("status IN ('machine_translated', 'approved', 'delivered')", name="ck_translations_status"),
+        CheckConstraint("origin IN ('deepl', 'repository')", name="ck_translations_origin"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     key_id: Mapped[int] = mapped_column(ForeignKey("translation_keys.id", ondelete="CASCADE"))
     locale: Mapped[str] = mapped_column(String(35))
-    # Current text: DeepL's machine translation, or a reviewer's edit of it.
+    # Current text: what arrived through the push, or a reviewer's edit of it.
     value: Mapped[str] = mapped_column(Text)
-    # The last value DeepL Sync delivered (push). A push only reopens a translation when it
-    # differs from this, i.e. when DeepL produced something new because the source changed,
-    # so a reviewer's edit is never overwritten by a re-push of the old machine translation.
+    # The last text that arrived through a push: DeepL's translation, or the repository's text
+    # during an import (`origin` says which). A push only reopens a translation when it differs
+    # from this, i.e. when DeepL produced something new because the source changed, so a
+    # reviewer's edit is never overwritten by a re-push of the same text.
     pushed_value: Mapped[str | None] = mapped_column(Text)
+    # Where `pushed_value` came from. Kept apart from `status`: an imported string can be to
+    # review, approved or delivered like any other.
+    origin: Mapped[TextOrigin] = mapped_column(
+        _string_enum(TextOrigin, 16), default=TextOrigin.DEEPL, server_default=TextOrigin.DEEPL.value
+    )
+    # When the text was imported from the repository; None for DeepL's text.
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[TranslationStatus] = mapped_column(
         Enum(
             TranslationStatus,

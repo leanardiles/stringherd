@@ -46,8 +46,8 @@ Keys the files lack (FitJournal's Dutch has 239 of 240) go through DeepL afterwa
 
 ## Data
 
-- **Per language** (`project_locales`): the import answer, when the import started, when it was finished.
-- **Per string** (`translations`): its **origin**, DeepL or the repository, and when it was imported. Origin is its own field, not a status.
+- **Per language** (`project_locales`): `import_mode` (`retranslate`, `review`, `reviewed`, or empty for a language without existing translations), `import_started_at`, `import_finished_at`. An import is open between the two dates.
+- **Per string** (`translations`): `origin` (`deepl` or `repository`; existing rows are `deepl`) and `imported_at`. Origin is its own field, not a status.
 - **Status stays as it is**: to review, approved, delivered. "Edited" is still worked out on screen, comparing the text with the origin's text.
 - An import is only allowed for a language with no strings in Stringherd yet.
 - The DeepL Sync contract does not change.
@@ -75,7 +75,7 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 
 | | Chunk | What | Status |
 |---|---|---|---|
-| A | Data | Import state per language, origin and import date per string; one migration; tests | To do |
+| A | Data | Import state per language, origin and import date per string; one migration; tests | Done |
 | B | Server | Pushes during an import stored as imports; Finish import; counts per file; `remove-language` command | To do |
 | C | Admin UI | The question in Add language, the language row's states, commands and Finish | To do |
 | D | Reviewer UI | The table above; bulk approve and `reset-language` handle imported strings | To do |
@@ -87,11 +87,13 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 
 | # | Decision | Status |
 |---|---|---|
-| 1 | The choice is made in the Add language dialog, before any push | Proposed |
+| 1 | The choice is made in the Add language dialog, before any push | Agreed |
 | 2 | Origin is a field of its own; status keeps its three values | Agreed |
-| 3 | An operator command, `remove-language`, removes a language with its strings (with confirmation), to reset between tests | Proposed |
-| 4 | A push for a language never set up behaves as today: created, strings arrive as DeepL's | Proposed |
+| 3 | An operator command, `remove-language`, removes a language with its strings (with confirmation), to reset between tests | Agreed |
+| 4 | A push for a language never set up behaves as today: created, strings arrive as DeepL's | Agreed |
 | 5 | Stringherd work stays on `main`; FitJournal works on branch `stringherd-nl-import` | Agreed |
+| 6 | `pushed_value` keeps the text that arrived through the push, whatever its origin; `origin` says whose it is | Agreed |
+| 7 | The language stores every answer, `retranslate` too, so its row can keep showing the next command | Agreed |
 
 ---
 
