@@ -49,6 +49,14 @@ export function ContextPanel({ item }: { item: ReviewString | null }) {
                 <dd className={`mono ${styles.wrap}`}>{breakAfterSlashes(item.source_file)}</dd>
               </>
             )}
+            <dt>{t('review.context.origin')}</dt>
+            <dd>
+              {item.origin === 'repository'
+                ? item.imported_at
+                  ? t('review.context.repositoryOn', { date: formatDate(item.imported_at) })
+                  : t('review.context.repository')
+                : t('review.context.deepl')}
+            </dd>
             {item.updated_at && (
               <>
                 <dt>{t('review.context.updated')}</dt>
@@ -61,7 +69,8 @@ export function ContextPanel({ item }: { item: ReviewString | null }) {
                 <dd>{t('review.context.approvedByOn', { name: item.approved_by, date: formatDate(item.approved_at) ?? '' })}</dd>
               </>
             )}
-            {item.delivered_at && (
+            {/* An import is not a Deliver: its date is already on the Origin line. */}
+            {item.delivered_at && !(item.origin === 'repository' && !item.delivered_by) && (
               <>
                 <dt>{t('review.context.delivered')}</dt>
                 <dd>
@@ -71,7 +80,7 @@ export function ContextPanel({ item }: { item: ReviewString | null }) {
                 </dd>
               </>
             )}
-            {item.status !== 'delivered' && item.delivered_value !== null && (
+            {item.status !== 'delivered' && item.delivered_value !== null && item.delivered_value !== item.value && (
               <>
                 <dt>{t('review.context.inCode')}</dt>
                 <dd>

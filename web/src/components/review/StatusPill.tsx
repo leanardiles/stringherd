@@ -9,10 +9,11 @@ const CLASS: Record<DisplayStatus, string> = {
   mt: ui.pillNeutral,
 }
 
-export function StatusPill({ status }: { status: DisplayStatus }) {
+export function StatusPill({ status, origin }: { status: DisplayStatus; origin?: string }) {
   const { t } = useTranslation()
+  const hint = status === 'mt' && origin === 'repository' ? 'mtRepository' : status
   return (
-    <span className={CLASS[status]} title={t(`review.statusHint.${status}`)}>
+    <span className={CLASS[status]} title={t(`review.statusHint.${hint}`)}>
       {t(`review.status.${status}`)}
     </span>
   )

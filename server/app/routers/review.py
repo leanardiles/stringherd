@@ -89,6 +89,7 @@ def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
         for locale, row_status, count in rows:
             counts.setdefault(locale, {})[TranslationStatus(row_status).value] = count
 
+        import_modes = {language.locale: language.import_mode for language in project.locales}
         allowed = reviewable_locales(db, user, project)
         # Target languages count even before their first push, so assigned reviewers see them.
         locales = sorted(set(project.target_locales) | set(counts)) if allowed is None else sorted(allowed)
@@ -107,6 +108,7 @@ def list_projects(user: CurrentUser, db: DbSession) -> list[ReviewProject]:
                         approved=counts.get(locale, {}).get("approved", 0),
                         delivered=counts.get(locale, {}).get("delivered", 0),
                         last_delivered_at=delivered_at.get(locale),
+                        import_mode=import_modes.get(locale),
                     )
                     for locale in locales
                 ],

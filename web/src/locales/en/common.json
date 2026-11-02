@@ -36,6 +36,7 @@
     "title": "Your projects",
     "source": "Source: {{language}}",
     "approved": "{{delivered, number}} of {{total, number}} delivered",
+    "reviewed": "{{delivered, number}} of {{total, number}} reviewed",
     "toReview_one": "{{count, number}} string to review",
     "toReview_other": "{{count, number}} strings to review",
     "allApproved": "All delivered",
@@ -69,22 +70,25 @@
     "status": {
       "approved": "Approved",
       "edited": "Edited",
-      "mt": "MT",
+      "mt": "To review",
       "delivered": "Delivered"
     },
     "statusHint": {
       "approved": "Approved, waiting for Deliver",
       "edited": "Edited, not approved yet",
-      "mt": "Machine translation, not reviewed yet",
-      "delivered": "Delivered: pulled into the code, and locked"
+      "mt": "From DeepL, not reviewed yet",
+      "delivered": "Delivered: pulled into the code, and locked",
+      "mtRepository": "From the repository, not reviewed yet"
     },
     "chars_one": "{{count, number}} character",
     "chars_other": "{{count, number}} characters",
     "approvedBy": "Approved by {{name}}",
     "suggestions": "Suggestions",
     "deepl": "DeepL",
+    "repository": "Repository",
     "insertSuggestion": "Insert suggestion {{number}} (Ctrl+{{number}})",
     "changesFromDeepl": "Changes from DeepL",
+    "changesFromRepository": "Changes from the repository",
     "approveNext": "Approve and next",
     "withdraw": "Withdraw approval",
     "discard": "Discard changes",
@@ -96,6 +100,7 @@
     "saveFailed": "Couldn't save {{key}}. The change was undone; try again.",
     "notAssigned": "You aren't assigned to review this language.",
     "summary": "{{total, number}} strings · {{toReview, number}} to review · {{approved, number}} approved · {{delivered, number}} delivered",
+    "summaryOrigins": "{{repository, number}} from the repository · {{deepl, number}} from DeepL",
     "hints": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ to review · Esc discard or close",
     "backToProjects": "Back to your projects",
     "view": {
@@ -108,8 +113,9 @@
     "statusIcon": {
       "approved": "Approved, waiting for Deliver",
       "edited": "Edited, not approved yet",
-      "mt": "Machine translation, not reviewed yet",
-      "delivered": "Delivered"
+      "mt": "From DeepL, not reviewed yet",
+      "delivered": "Delivered",
+      "mtRepository": "From the repository, not reviewed yet"
     },
     "qaIcon": {
       "error": "QA error: fix before approving",
@@ -136,12 +142,16 @@
       "details": "Details",
       "key": "Key",
       "file": "File",
+      "origin": "Origin",
+      "deepl": "DeepL",
+      "repository": "Repository",
+      "repositoryOn": "Repository, imported {{date}}",
       "updated": "Last change",
       "approved": "Approved",
       "approvedByOn": "{{name}}, {{date}}",
       "delivered": "Delivered",
       "inCode": "In the code",
-      "inCodeHint": "Reopened: the code keeps this text until the next Deliver."
+      "inCodeHint": "The code has this text until the next Deliver."
     },
     "selectString": "Choose a string from the list.",
     "hintsSingle": "Ctrl+Enter approve and next · Alt+↑ Alt+↓ to review · Esc discard",
@@ -167,6 +177,7 @@
       "title": "Delivered and locked",
       "body": "Delivered on {{date}} by {{name}}. Delivered strings can't be edited.",
       "bodyNoName": "Delivered on {{date}}. Delivered strings can't be edited.",
+      "bodyImported": "Imported from the repository on {{date}}. Delivered strings can't be edited.",
       "askAdmin": "If it needs a fix, ask an admin to reopen it.",
       "reopen": "Reopen",
       "reopenHint": "Reopening lets reviewers correct it. The code keeps the delivered text until the next Deliver."
@@ -207,6 +218,12 @@
       "placeholder": "For example 42 or settings.title",
       "submit": "Go",
       "notFound": "No string with number or key {{query}}."
+    },
+    "origin": {
+      "label": "Origin",
+      "any": "All origins",
+      "deepl": "DeepL ({{count, number}})",
+      "repository": "Repository ({{count, number}})"
     }
   },
   "errors": {

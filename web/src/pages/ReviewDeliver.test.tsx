@@ -104,6 +104,7 @@ describe('deliver', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Reopen' }))
     expect(calls).toEqual(['reopen home.title'])
     expect(await screen.findByLabelText('Translation in French (fr)')).toBeInTheDocument()
-    expect(screen.getByRole('complementary')).toHaveTextContent('In the code')
+    // The code has the same text as the editor, so "In the code" would only repeat it.
+    expect(screen.getByRole('complementary')).not.toHaveTextContent('In the code')
   })
 })

@@ -3,6 +3,9 @@ import type { ReviewString } from '../api/client'
 export type DisplayStatus = 'delivered' | 'approved' | 'edited' | 'mt'
 /** "all" is the reviewer's open work: everything not delivered yet. */
 export type StatusFilter = 'all' | 'review' | 'approved' | 'delivered'
+/** Where the text came from: DeepL, or the repository for imported strings. "any" shows both. */
+export type OriginFilter = 'any' | 'deepl' | 'repository'
+export const ORIGIN_FILTERS: OriginFilter[] = ['any', 'deepl', 'repository']
 
 /**
  * What the reviewer sees: delivered (locked, pullable); approved in this session, waiting for
@@ -33,8 +36,18 @@ export function matchesQuery(s: ReviewString, query: string): boolean {
   return [s.key, s.source_text ?? '', s.value].some((field) => field.toLocaleLowerCase().includes(q))
 }
 
-export function matchesFilter(s: ReviewString, filter: StatusFilter, query: string): boolean {
-  return matchesStatus(s, filter) && matchesQuery(s, query)
+export function matchesOrigin(s: Pick<ReviewString, 'origin'>, origin: OriginFilter): boolean {
+  return origin === 'any' || s.origin === origin
+}
+
+export function matchesFilter(s: ReviewString, filter: StatusFilter, query: string, origin: OriginFilter = 'any'): boolean {
+  return matchesStatus(s, filter) && matchesQuery(s, query) && matchesOrigin(s, origin)
+}
+
+export function countByOrigin(items: Pick<ReviewString, 'origin'>[]): Record<Exclude<OriginFilter, 'any'>, number> {
+  const counts = { deepl: 0, repository: 0 }
+  for (const item of items) counts[item.origin === 'repository' ? 'repository' : 'deepl'] += 1
+  return counts
 }
 
 export function countByFilter(items: Pick<ReviewString, 'status'>[]): Record<StatusFilter, number> {

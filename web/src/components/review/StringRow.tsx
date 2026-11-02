@@ -50,7 +50,7 @@ export function StringRow({ number, item, sourceLang, targetLang, onOpen, select
         <span className={`${styles.chars} tabular`}>{countCharacters(item.value)}</span>
         <span className={styles.status}>
           <QaIcon level={qaLevel(checkTranslation(item.source_text, item.value))} />
-          <StatusPill status={displayStatus(item)} />
+          <StatusPill status={displayStatus(item)} origin={item.origin} />
         </span>
       </button>
     </div>

@@ -63,7 +63,7 @@ One symbol per row, for the status only; the origin appears where the reviewer a
 | Row icon | Nothing. Imported strings to review use the open circle; the tooltip says "From the repository, not reviewed yet" |
 | List view status column | "MT" becomes **To review**, whatever the origin |
 | Language summary line | Only when the language has imports: "239 from the repository · 1 from DeepL" |
-| Filters | An origin filter (DeepL, Repository), only when the language has both |
+| Filters | An origin filter (All origins, DeepL, Repository), shown for every language |
 | Editor | The suggestion is labeled "Repository, imported 17 Oct" instead of "DeepL"; the diff reads "Changes from the repository" |
 | Delivered imported string | History: "Imported from the repository, 17 Oct" instead of "Approved by…" |
 
@@ -78,7 +78,7 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 | A | Data | Import state per language, origin and import date per string; one migration; tests | Done |
 | B | Server | Pushes during an import stored as imports; Finish import; counts per file; `remove-language` command | Done |
 | C | Admin UI | The question in Add language, the language row's states, commands and Finish | Done |
-| D | Reviewer UI | The table above, from the `origin` and `imported_at` the review API now returns | To do |
+| D | Reviewer UI | The table above, from the `origin` and `imported_at` the review API now returns | Done |
 | E | Docs and test | LOCALES-PLAN, roadmap, API notes; the FitJournal run | To do |
 
 ---
@@ -100,6 +100,8 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 | 11 | When DeepL later sends new text for an imported string (its English changed), the string's origin becomes DeepL | Agreed |
 | 12 | Add language offers DeepL's target languages (from DeepL's documentation), searchable by name or code, plus another valid code with a warning | Agreed |
 | 13 | Add language is a dialog; a language's next steps show under its row, and the count of arrived strings refreshes by itself while an import is open | Agreed |
+| 14 | Every unreviewed string is labeled To review, not MT, whatever its origin; the origin shows in tooltips, the editor and the details | Agreed |
+| 15 | The origin filter shows for every language, even with one origin, to see how it works in use | Agreed |
 
 ---
 

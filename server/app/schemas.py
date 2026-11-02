@@ -170,6 +170,9 @@ class ReviewLocale(BaseModel):
     approved: int  # approved in the current session, waiting for Deliver
     delivered: int
     last_delivered_at: datetime | None
+    # The admin's answer for existing translations (retranslate, review, reviewed), if any: with
+    # "review", the code already has the imported text, so progress means reviewed, not delivered.
+    import_mode: str | None = None
 
 
 class ReviewProject(BaseModel):

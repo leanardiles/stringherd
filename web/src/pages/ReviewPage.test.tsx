@@ -58,8 +58,8 @@ describe('review screen, list view', () => {
     setup()
     const row = await screen.findByRole('button', { name: /définit/ })
     expect(within(row).getAllByText('{{count}}')).toHaveLength(2)
-    expect(within(row).getByText('MT')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /To review/ })).toHaveTextContent('2')
+    expect(within(row).getByText('To review')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: /To review/ })).toHaveTextContent('2')
     expect(screen.getByText('3 strings · 2 to review · 1 approved · 0 delivered')).toBeInTheDocument()
   })
 
@@ -138,7 +138,7 @@ describe('review screen, single key view', () => {
     expect(within(list).getByRole('button', { name: /home\.title/ })).toHaveAttribute('aria-current', 'true')
     expect(within(list).getByText('{{count}} sets')).toBeInTheDocument()
     expect(within(list).getByRole('img', { name: 'Approved, waiting for Deliver' })).toBeInTheDocument()
-    expect(within(list).getAllByRole('img', { name: 'Machine translation, not reviewed yet' })).toHaveLength(2)
+    expect(within(list).getAllByRole('img', { name: 'From DeepL, not reviewed yet' })).toHaveLength(2)
   })
 
   it('ticks the string and opens the next one on Ctrl+Enter', async () => {

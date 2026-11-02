@@ -39,6 +39,7 @@ def test_admin_sees_all_languages(setup):
         "approved": 0,
         "delivered": 0,
         "last_delivered_at": None,
+        "import_mode": None,
     }
 
 

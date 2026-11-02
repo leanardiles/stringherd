@@ -34,12 +34,15 @@ import { formatPercent, languageLabel } from '../lib/languages'
 import { checkTranslation, qaLevel } from '../lib/qa'
 import {
   countByFilter,
+  countByOrigin,
   isSelectable,
   keyRange,
   matchesFilter,
   matchesQuery,
   neighbourKey,
+  ORIGIN_FILTERS,
   summarizeSelection,
+  type OriginFilter,
   type StatusFilter,
 } from '../lib/review'
 import styles from './ReviewPage.module.css'
@@ -78,6 +81,9 @@ export function ReviewPage() {
     ? (params.get('status') as StatusFilter)
     : 'all'
   const query = params.get('q') ?? ''
+  const origin: OriginFilter = ORIGIN_FILTERS.includes(params.get('origin') as OriginFilter)
+    ? (params.get('origin') as OriginFilter)
+    : 'any'
   const activeKey = params.get('key')
   const viewParam = params.get('view')
   const view: View = viewParam === 'list' || viewParam === 'single' ? viewParam : rememberedView()
@@ -113,8 +119,8 @@ export function ReviewPage() {
   const items = useMemo(() => strings.data ?? [], [strings.data])
   const numbers = useMemo(() => new Map(items.map((item, i) => [item.key, i + 1])), [items])
   const visible = useMemo(
-    () => items.filter((item) => matchesFilter(item, filter, query) || sticky.has(item.key)),
-    [items, filter, query, sticky],
+    () => items.filter((item) => matchesFilter(item, filter, query, origin) || sticky.has(item.key)),
+    [items, filter, query, origin, sticky],
   )
   const visibleKeys = useMemo(() => visible.map((item) => item.key), [visible])
   // Only what is on screen and not locked counts, so a bulk action never reaches a hidden string.
@@ -133,6 +139,7 @@ export function ReviewPage() {
   const issues = useMemo(() => (active ? checkTranslation(active.source_text, value) : []), [active, value])
 
   const counts = countByFilter(items)
+  const origins = countByOrigin(items)
   const { approved, delivered } = counts
   // Delivered strings stay findable: say so when a search matches some that the filter hides.
   const hiddenDelivered =
@@ -406,6 +413,12 @@ export function ReviewPage() {
     setParam('status', next === 'all' ? null : next)
   }
 
+  function setOrigin(next: OriginFilter) {
+    clearSelection()
+    setSticky(new Set())
+    setParam('origin', next === 'any' ? null : next)
+  }
+
   async function confirmDeliver() {
     // An unsaved edit is kept as an edit, never delivered: save it first, then deliver.
     if (active && dirty) {
@@ -591,6 +604,17 @@ export function ReviewPage() {
               </button>
             ))}
           </div>
+          <select
+            className={styles.select}
+            aria-label={t('review.origin.label')}
+            title={t('review.origin.label')}
+            value={origin}
+            onChange={(event) => setOrigin(event.target.value as OriginFilter)}
+          >
+            <option value="any">{t('review.origin.any')}</option>
+            <option value="deepl">{t('review.origin.deepl', { count: origins.deepl })}</option>
+            <option value="repository">{t('review.origin.repository', { count: origins.repository })}</option>
+          </select>
           <div className={styles.progress}>
             <ProgressBar value={reviewed} max={items.length} label={t('review.progress', { percent })} />
             <span className={`${ui.muted} tabular`}>{percent}</span>
@@ -718,6 +742,8 @@ export function ReviewPage() {
         <footer className={styles.footer}>
           <span className="tabular">
             {t('review.summary', { total: items.length, toReview: counts.review, approved, delivered })}
+            {origins.repository > 0 &&
+              ` · ${t('review.summaryOrigins', { repository: origins.repository, deepl: origins.deepl })}`}
           </span>
           <span className={styles.hints}>
             {view === 'single' ? t('review.hintsSingle') : t('review.hints')} ·{' '}

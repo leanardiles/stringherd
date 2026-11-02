@@ -46,7 +46,7 @@ export function KeyList({ items, activeKey, activeValue, onOpen, footer }: Props
                   <span className={styles.source}>{item.source_text ?? ''}</span>
                 </span>
                 <QaIcon level={qaLevel(checkTranslation(item.source_text, item.value))} />
-                <StatusIcon status={displayStatus(item)} />
+                <StatusIcon status={displayStatus(item)} origin={item.origin} />
               </button>
             </li>
           )

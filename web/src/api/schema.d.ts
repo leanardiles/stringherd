@@ -1043,6 +1043,8 @@ export interface components {
             delivered: number;
             /** Last Delivered At */
             last_delivered_at: string | null;
+            /** Import Mode */
+            import_mode?: string | null;
         };
         /** ReviewProject */
         ReviewProject: {

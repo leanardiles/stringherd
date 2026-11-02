@@ -24,7 +24,11 @@ function LocaleRow({ projectId, locale }: { projectId: string; locale: ReviewLoc
       <div className={styles.progress}>
         <ProgressBar value={locale.delivered} max={locale.total} label={t('projects.progress', { percent })} />
         <span className={`${ui.muted} tabular`}>
-          {t('projects.approved', { delivered: locale.delivered, total: locale.total })}
+          {t(
+            // Imported for review: the code already has the text, so progress is what has been reviewed.
+            locale.import_mode === 'review' ? 'projects.reviewed' : 'projects.approved',
+            { delivered: locale.delivered, total: locale.total },
+          )}
           {locale.last_delivered_at && ` · ${t('projects.lastDelivered', { date: formatDate(locale.last_delivered_at) })}`}
         </span>
       </div>

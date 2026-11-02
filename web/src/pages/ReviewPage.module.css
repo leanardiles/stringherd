@@ -51,6 +51,16 @@
   height: 32px;
 }
 
+.select {
+  block-size: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius);
+  background: var(--color-field);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
 .labelled {
   display: inline-flex;
   align-items: center;

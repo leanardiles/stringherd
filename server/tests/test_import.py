@@ -256,3 +256,12 @@ def test_the_admin_sees_when_a_file_is_missing_strings(project, admin):
     add_dutch(admin, "review")
     push_dutch(project, {"nav.home": "Startpagina", "nav.saved": "Opgeslagen"})  # the file lacks auth.signIn
     assert dutch_state(admin)["files"] == [{"file": FILE, "strings": 2, "keys": 3}]
+
+
+def test_reviewers_see_the_answer_in_their_overview(project, admin):
+    add_dutch(admin, "review")
+    push_dutch(project)
+    languages = {
+        entry["locale"]: entry for entry in admin.get("/api/review/projects").json()[0]["locales"]
+    }
+    assert (languages["nl"]["import_mode"], languages["fr"]["import_mode"]) == ("review", None)

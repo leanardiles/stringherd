@@ -7,10 +7,10 @@ import styles from './StatusIcon.module.css'
 // Status symbols (UI plan, decision 17). Each has its own shape, so meaning never depends on colour alone.
 const ICONS = { delivered: PackageCheck, approved: CircleCheck, edited: Pencil, mt: Circle } as const
 
-export function StatusIcon({ status }: { status: DisplayStatus }) {
+export function StatusIcon({ status, origin }: { status: DisplayStatus; origin?: string }) {
   const { t } = useTranslation()
   const Icon = ICONS[status]
-  const label = t(`review.statusIcon.${status}`)
+  const label = t(`review.statusIcon.${status === 'mt' && origin === 'repository' ? 'mtRepository' : status}`)
   return (
     <span className={`${styles.icon} ${styles[status]}`} title={label} role="img" aria-label={label}>
       <Icon size={16} strokeWidth={2} aria-hidden="true" />

@@ -75,7 +75,7 @@ export function StringEditor(props: StringEditorProps) {
         )}
         <span className={styles.spacer} />
         <span className={`${ui.muted} tabular`}>{t('review.chars', { count: countCharacters(value) })}</span>
-        <StatusPill status={status} />
+        <StatusPill status={status} origin={item.origin} />
       </header>
 
       <div className={styles.block}>
@@ -130,7 +130,9 @@ function DeliveredTarget({ item, targetLang, error, canReopen, reopening, onReop
           <p>
             {item.delivered_by
               ? t('review.locked.body', { date, name: item.delivered_by })
-              : t('review.locked.bodyNoName', { date })}{' '}
+              : item.origin === 'repository'
+                ? t('review.locked.bodyImported', { date })
+                : t('review.locked.bodyNoName', { date })}{' '}
             {canReopen ? t('review.locked.reopenHint') : t('review.locked.askAdmin')}
           </p>
         </div>
@@ -196,12 +198,16 @@ function EditableTarget(props: StringEditorProps) {
             title={t('review.insertSuggestion', { number: 1 })}
           >
             <span className={`${styles.suggestionNumber} tabular`}>1</span>
-            <span className={styles.suggestionSource}>{t('review.deepl')}</span>
+            <span className={styles.suggestionSource}>
+              {item.origin === 'repository' ? t('review.repository') : t('review.deepl')}
+            </span>
             <PlaceholderText text={deepl} lang={targetLang} />
           </button>
           {value !== deepl && (
             <div className={styles.changes}>
-              <span className={styles.label}>{t('review.changesFromDeepl')}</span>
+              <span className={styles.label}>
+                {item.origin === 'repository' ? t('review.changesFromRepository') : t('review.changesFromDeepl')}
+              </span>
               <Diff before={deepl} after={value} lang={targetLang} />
             </div>
           )}
