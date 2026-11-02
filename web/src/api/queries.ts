@@ -8,6 +8,7 @@ import {
   type BulkApproveResult,
   type BulkWithdrawResult,
   type DeliveryResult,
+  type ImportMode,
   type PasswordChange,
   type ProjectAdmin,
   type ProjectAdminDetail,
@@ -264,8 +265,16 @@ export function useAdminProjects() {
   return useQuery({ queryKey: queryKeys.adminProjects, queryFn: () => api<ProjectAdmin[]>('/api/admin/projects') })
 }
 
+/** While a language's import is open, the page checks every few seconds how many strings have arrived. */
+export const IMPORT_REFRESH_MS = 3000
+
 export function useAdminProject(projectId: string) {
-  return useQuery({ queryKey: queryKeys.adminProject(projectId), queryFn: () => api<ProjectAdminDetail>(projectPath(projectId)) })
+  return useQuery({
+    queryKey: queryKeys.adminProject(projectId),
+    queryFn: () => api<ProjectAdminDetail>(projectPath(projectId)),
+    refetchInterval: (query) =>
+      query.state.data?.locales.some((locale) => locale.existing_translations?.importing) ? IMPORT_REFRESH_MS : false,
+  })
 }
 
 export function useProjectSetup(projectId: string) {
@@ -306,8 +315,35 @@ export function useUpdateProject(projectId: string) {
 export function useAddLocale(projectId: string) {
   const saved = useProjectSaved()
   return useMutation({
+    mutationFn: ({ locale, importMode = null }: { locale: string; importMode?: ImportMode | null }) =>
+      api<ProjectAdminDetail>(`${projectPath(projectId)}/locales`, {
+        method: 'POST',
+        json: { locale, import_mode: importMode },
+      }),
+    onSuccess: saved,
+  })
+}
+
+/** Change the answer for a language's existing translations; the server allows it until strings arrive. */
+export function useUpdateImportMode(projectId: string) {
+  const saved = useProjectSaved()
+  return useMutation({
+    mutationFn: ({ locale, importMode }: { locale: string; importMode: ImportMode | null }) =>
+      api<ProjectAdminDetail>(`${projectPath(projectId)}/locales/${encodeURIComponent(locale)}`, {
+        method: 'PATCH',
+        json: { import_mode: importMode },
+      }),
+    onSuccess: saved,
+  })
+}
+
+export function useFinishImport(projectId: string) {
+  const saved = useProjectSaved()
+  return useMutation({
     mutationFn: (locale: string) =>
-      api<ProjectAdminDetail>(`${projectPath(projectId)}/locales`, { method: 'POST', json: { locale } }),
+      api<ProjectAdminDetail>(`${projectPath(projectId)}/locales/${encodeURIComponent(locale)}/import/finish`, {
+        method: 'POST',
+      }),
     onSuccess: saved,
   })
 }

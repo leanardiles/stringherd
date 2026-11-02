@@ -6,9 +6,11 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 
 ### Added
 - Importing a language's existing translations, server side: an admin adds a language with an answer (translate again, keep for review, keep as reviewed); during an import, pushes are stored as the repository's text and delivered at once, so a `deepl sync` cannot overwrite the files; Finish import closes it. Each translation records its origin, DeepL or the repository.
+- Importing existing translations, admin screens: **Add language** opens a dialog with DeepL's languages, searchable by name or code, and asks what to do with the repository's translations; the language's row shows the commands to run, counts the strings that arrive per file and has **Finish import**.
 - `remove-language`, an operator command that removes a language with its translations, assignments and delivery history.
 
 ### Changed
+- The setup commands on a project's page run `deepl sync` without `--flag-for-review`, which only marks the local lockfile.
 - `reset-language` puts imported strings back to the repository's text, the text they arrived with.
 
 ### Fixed

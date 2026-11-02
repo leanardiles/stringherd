@@ -149,7 +149,7 @@ def test_the_admin_sees_how_many_strings_arrived_per_file(project, admin):
     push(project, "only.pushed", "nl", "Alleen gepusht")  # a key the source upload never sent
     state = dutch_state(admin)
     assert state["imported"] == 4
-    assert state["files"] == [{"file": None, "strings": 1}, {"file": FILE, "strings": 3}]
+    assert state["files"] == [{"file": None, "strings": 1, "keys": 1}, {"file": FILE, "strings": 3, "keys": 3}]
 
 
 # ---------- Finish import ----------
@@ -250,3 +250,9 @@ def test_remove_language_removes_everything_of_that_language_only(project, admin
 
 def test_remove_language_for_an_unknown_language(project, db_session_factory):
     assert remove(db_session_factory, locale="it") == "Project fitjournal has no language it. Nothing changed."
+
+
+def test_the_admin_sees_when_a_file_is_missing_strings(project, admin):
+    add_dutch(admin, "review")
+    push_dutch(project, {"nav.home": "Startpagina", "nav.saved": "Opgeslagen"})  # the file lacks auth.signIn
+    assert dutch_state(admin)["files"] == [{"file": FILE, "strings": 2, "keys": 3}]

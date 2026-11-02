@@ -295,7 +295,8 @@ class ImportModeUpdate(BaseModel):
 
 class ImportedFile(BaseModel):
     file: str | None  # the source file the keys came from; None for keys never uploaded
-    strings: int
+    strings: int  # imported strings whose keys come from this file
+    keys: int  # all keys of this file, so the admin sees whether every string arrived
 
 
 class LanguageImport(BaseModel):

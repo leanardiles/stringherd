@@ -128,6 +128,7 @@ class ImportCounts:
 
     strings: dict[str, int] = field(default_factory=dict)
     files: dict[str, dict[str | None, int]] = field(default_factory=dict)
+    keys: dict[str | None, int] = field(default_factory=dict)  # keys of each source file, all languages
 
 
 def import_counts(db: Session, project: Project) -> ImportCounts:
@@ -141,6 +142,14 @@ def import_counts(db: Session, project: Project) -> ImportCounts:
     for locale, source_file, count in rows:
         counts.strings[locale] = counts.strings.get(locale, 0) + count
         counts.files.setdefault(locale, {})[source_file] = count
+    if rows:
+        counts.keys = dict(
+            db.execute(
+                select(TranslationKey.source_file, func.count())
+                .where(TranslationKey.project_id == project.id)
+                .group_by(TranslationKey.source_file)
+            ).all()
+        )
     return counts
 
 

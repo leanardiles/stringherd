@@ -1,0 +1,101 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ---------- Language picker ---------- */
+
+.list {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+  max-block-size: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  background: var(--color-field);
+}
+
+.option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px var(--space-3);
+  cursor: pointer;
+}
+
+.option[aria-selected='true'] {
+  background: var(--color-neutral-bg);
+}
+
+.option[aria-disabled='true'] {
+  cursor: default;
+  color: var(--color-text-secondary);
+}
+
+.optionName {
+  min-inline-size: 0;
+}
+
+.optionRegion {
+  color: var(--color-text-secondary);
+}
+
+.optionNote {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.noMatch {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+}
+
+/* ---------- Existing translations ---------- */
+
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.answers legend {
+  margin-block-end: var(--space-2);
+  padding: 0;
+}
+
+.answer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.answer input {
+  margin-block-start: 3px;
+  accent-color: var(--color-primary);
+}
+
+.answerHint {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

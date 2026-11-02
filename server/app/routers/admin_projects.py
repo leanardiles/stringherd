@@ -157,7 +157,7 @@ def _imports(db: Session, project: Project) -> dict[str, LanguageImport]:
             importing=language.importing,
             imported=counts.strings.get(language.locale, 0),
             files=[
-                ImportedFile(file=file, strings=strings)
+                ImportedFile(file=file, strings=strings, keys=counts.keys.get(file, strings))
                 for file, strings in sorted(counts.files.get(language.locale, {}).items(), key=lambda f: f[0] or "")
             ],
             estimated_characters=characters if language.import_mode == "retranslate" else None,
@@ -392,7 +392,7 @@ def setup(project_slug: ProjectSlug, request: Request, admin: AdminUser, db: DbS
         "export TMS_API_KEY=shp_...\n"
         "\n"
         "# Machine-translate, then send the translations for review\n"
-        "deepl sync --flag-for-review\n"
+        "deepl sync\n"
         "deepl sync push\n"
         "\n"
         "# Send the source strings, so reviewers see what is being translated\n"

@@ -11,7 +11,7 @@ An admin adds a language that already has translations in the repository and cho
 | Answer | In Stringherd | In the repository |
 |---|---|---|
 | No existing translations | As today: DeepL translates, strings arrive to review | DeepL writes the file |
-| Translate again with DeepL | Nothing imported. Stringherd shows `deepl sync --locale <code>` with a character estimate, then the push | DeepL overwrites the file; strings arrive to review as machine translations |
+| Translate again with DeepL | Nothing imported. Stringherd shows `deepl sync --force --locale <code>` (without `--force`, DeepL keeps text already in the files) with a character estimate, then the push | DeepL overwrites the file; strings arrive to review as machine translations |
 | Keep them for review | Imported. Strings go to the reviewer's list, marked as coming from the repository | Unchanged until a reviewer edits and delivers |
 | Keep them as reviewed | Imported and delivered at once | Unchanged |
 
@@ -77,7 +77,7 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 |---|---|---|---|
 | A | Data | Import state per language, origin and import date per string; one migration; tests | Done |
 | B | Server | Pushes during an import stored as imports; Finish import; counts per file; `remove-language` command | Done |
-| C | Admin UI | The question in Add language, the language row's states, commands and Finish | To do |
+| C | Admin UI | The question in Add language, the language row's states, commands and Finish | Done |
 | D | Reviewer UI | The table above, from the `origin` and `imported_at` the review API now returns | To do |
 | E | Docs and test | LOCALES-PLAN, roadmap, API notes; the FitJournal run | To do |
 
@@ -98,6 +98,8 @@ Alternative, if the proposal falls short: a fifth row shape for imported strings
 | 9 | Finish import refuses while no string has arrived: the push has not run | Agreed |
 | 10 | An import adds no entry to the delivery history; the language row shows the import's own dates | Agreed |
 | 11 | When DeepL later sends new text for an imported string (its English changed), the string's origin becomes DeepL | Agreed |
+| 12 | Add language offers DeepL's target languages (from DeepL's documentation), searchable by name or code, plus another valid code with a warning | Agreed |
+| 13 | Add language is a dialog; a language's next steps show under its row, and the count of arrived strings refreshes by itself while an import is open | Agreed |
 
 ---
 
@@ -116,6 +118,8 @@ Done when all four answers work as the table says and Dutch is merged into FitJo
 ---
 
 ## Open questions
+
+- Follow-up: the source upload script could report which language folders the repository has, so Add language can pre-answer the question and warn about a language the app doesn't have.
 
 - Converting a language that arrived without setup (answer 4) into an import afterwards.
 - Running an import again later, for example after merging a branch with new translations.

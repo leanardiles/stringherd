@@ -1,10 +1,9 @@
-import { ArrowLeft, KeyRound, Pencil } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, KeyRound, Pencil, Plus } from 'lucide-react'
+import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { ApiError, type ApiKey, type ApiKeyIssued, type ProjectAdminDetail, type ProjectLocaleAdmin } from '../../api/client'
 import {
-  useAddLocale,
   useAdminProject,
   useCreateKey,
   useProjectSetup,
@@ -12,7 +11,9 @@ import {
   useRevokeKey,
   useUpdateProject,
 } from '../../api/queries'
+import { AddLanguageDialog } from '../../components/admin/AddLanguageDialog'
 import { CodeBlock, CopyField } from '../../components/admin/CopyBlock'
+import { LanguageImportPanel, PullStepDialog } from '../../components/admin/LanguageImportPanel'
 import { ConfirmDialog, Dialog } from '../../components/Dialog'
 import { ProgressBar } from '../../components/ProgressBar'
 import { LanguageName } from '../../components/LanguageName'
@@ -20,6 +21,7 @@ import { LoadError, Loading, NotFound } from '../../components/StatusMessage'
 import ui from '../../components/ui.module.css'
 import { errorMessage } from '../../lib/errors'
 import { formatDate, formatDateTime } from '../../lib/format'
+import { needsSteps } from '../../lib/imports'
 import { formatPercent, languageLabel } from '../../lib/languages'
 import { isLocaleCode } from '../../lib/locales'
 import styles from './Admin.module.css'
@@ -75,20 +77,9 @@ export function AdminProjectPage() {
 
 function LanguagesSection({ project }: { project: ProjectAdminDetail }) {
   const { t } = useTranslation()
-  const add = useAddLocale(project.project_id)
-  const [code, setCode] = useState('')
-  const [problem, setProblem] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
-
-  function handleAdd(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const locale = code.trim()
-    if (!isLocaleCode(locale)) return setProblem(t('admin.projects.create.invalidLocale', { code: locale }))
-    setProblem(null)
-    add.mutate(locale, { onSuccess: () => setCode('') })
-  }
-
-  const error = problem ?? (add.error ? errorMessage(add.error, t) : null)
+  const [pulling, setPulling] = useState<string | null>(null)
 
   return (
     <section className={styles.section} aria-labelledby="languages-title">
@@ -105,44 +96,34 @@ function LanguagesSection({ project }: { project: ProjectAdminDetail }) {
           <table className={styles.table}>
             <tbody>
               {project.locales.map((locale) => (
-                <LanguageRow key={locale.locale} locale={locale} onRemove={() => setRemoving(locale.locale)} />
+                <Fragment key={locale.locale}>
+                  <LanguageRow locale={locale} onRemove={() => setRemoving(locale.locale)} />
+                  {needsSteps(locale) && (
+                    <tr className={styles.stepsRow}>
+                      <td colSpan={4}>
+                        <LanguageImportPanel projectId={project.project_id} locale={locale} onFinished={setPulling} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
         </div>
       )}
       <div className={styles.sectionBody}>
-        <form className={styles.inlineForm} onSubmit={handleAdd}>
-          <div className={`${ui.field} ${styles.grow}`}>
-            <label className={ui.label} htmlFor="add-locale">
-              {t('admin.project.languages.addLabel')}
-            </label>
-            <input
-              className={`${ui.input} mono`}
-              id="add-locale"
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              placeholder={t('admin.project.languages.addPlaceholder')}
-              maxLength={35}
-              spellCheck={false}
-              autoCapitalize="off"
-              required
-            />
-          </div>
-          <button type="submit" className={ui.secondary} disabled={add.isPending}>
+        <div>
+          <button type="button" className={ui.secondary} onClick={() => setAdding(true)}>
+            <Plus size={14} aria-hidden="true" />
             {t('admin.project.languages.add')}
           </button>
-        </form>
-        {isLocaleCode(code.trim()) && !error && <span className={ui.hint}>{languageLabel(code.trim())}</span>}
-        {error && (
-          <div className={ui.alert} role="alert">
-            {error}
-          </div>
-        )}
+        </div>
       </div>
+      <AddLanguageDialog project={project} open={adding} onOpenChange={setAdding} />
       {removing && (
         <RemoveLanguageDialog projectId={project.project_id} locale={removing} onClose={() => setRemoving(null)} />
       )}
+      {pulling && <PullStepDialog locale={pulling} onClose={() => setPulling(null)} />}
     </section>
   )
 }
@@ -151,26 +132,48 @@ function LanguageRow({ locale, onRemove }: { locale: ProjectLocaleAdmin; onRemov
   const { t } = useTranslation()
   const language = languageLabel(locale.locale)
   const percent = formatPercent(locale.total > 0 ? locale.delivered / locale.total : 0)
+  const state = locale.existing_translations
   return (
     <tr>
       <th scope="row" className={styles.rowHeader}>
         <LanguageName code={locale.locale} />
       </th>
       <td>
-        {locale.total > 0 ? (
+        {state?.importing ? (
+          <div className={`${styles.progressCell} ${styles.startAligned}`}>
+            <span className={ui.pillWarning}>{t('admin.project.languages.waitingImport')}</span>
+            <span className={ui.muted}>{t('admin.project.import.arrived', { count: state.imported })}</span>
+          </div>
+        ) : state?.mode === 'retranslate' && locale.total === 0 ? (
+          <span className={ui.pillWarning}>{t('admin.project.languages.waitingDeepl')}</span>
+        ) : locale.total > 0 ? (
           <div className={styles.progressCell}>
             <ProgressBar value={locale.delivered} max={locale.total} label={t('projects.progress', { percent })} />
             <span className={ui.muted}>
-              {t('admin.project.languages.approved', { delivered: locale.delivered, total: locale.total })}
+              {t(
+                // Imported for review: the code already has the text, so progress is what has been reviewed.
+                state?.mode === 'review' ? 'admin.project.languages.reviewed' : 'admin.project.languages.approved',
+                { delivered: locale.delivered, total: locale.total },
+              )}
             </span>
             {locale.approved > 0 && (
               <span className={ui.muted}>{t('admin.project.languages.toDeliver', { count: locale.approved })}</span>
             )}
-            <span className={ui.muted}>
-              {locale.last_delivered_at
-                ? t('admin.project.languages.lastDelivered', { date: formatDate(locale.last_delivered_at) })
-                : t('admin.project.languages.neverDelivered')}
-            </span>
+            {(locale.last_delivered_at || !state?.finished_at) && (
+              <span className={ui.muted}>
+                {locale.last_delivered_at
+                  ? t('admin.project.languages.lastDelivered', { date: formatDate(locale.last_delivered_at) })
+                  : t('admin.project.languages.neverDelivered')}
+              </span>
+            )}
+            {state?.finished_at && state.imported > 0 && (
+              <span className={ui.muted}>
+                {t(state.mode === 'review' ? 'admin.project.languages.importedToReview' : 'admin.project.languages.imported', {
+                  count: state.imported,
+                  date: formatDate(state.finished_at),
+                })}
+              </span>
+            )}
           </div>
         ) : (
           <span className={ui.muted}>{t('admin.project.languages.noStrings')}</span>

@@ -262,3 +262,13 @@
   gap: var(--space-1);
   min-inline-size: 160px;
 }
+
+/* A language's next steps, under its row while an import or a first translation is pending. */
+.table tbody tr.stepsRow td {
+  padding-block-start: 0;
+  border-block-start: 0;
+}
+
+.startAligned {
+  align-items: flex-start;
+}

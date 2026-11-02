@@ -288,14 +288,13 @@
       "noSource": "not set",
       "languages": {
         "title": "Languages",
-        "intro": "The repository decides which languages get translated: target_locales in its .deepl-sync.yaml. Adding a language here only lets you assign reviewers before the first push; a push in a new language adds it here automatically.",
+        "intro": "The languages DeepL Sync translates into. Add a language here before its first push: to assign reviewers, and to say what happens to translations the repository already has. The repository lists it too, in target_locales of its .deepl-sync.yaml.",
         "empty": "No target languages yet. Add the languages DeepL Sync translates into.",
         "approved": "{{delivered, number}} of {{total, number}} delivered",
+        "reviewed": "{{delivered, number}} of {{total, number}} reviewed",
         "noStrings": "No translations yet",
         "noReviewers": "No reviewer assigned",
-        "add": "Add",
-        "addLabel": "Add a language",
-        "addPlaceholder": "Code, such as it",
+        "add": "Add language",
         "remove": "Remove {{language}}",
         "removeShort": "Remove",
         "removeTitle": "Remove {{language}}?",
@@ -304,7 +303,13 @@
         "locked": "Can't be removed: it has translations",
         "toDeliver": "{{count, number}} approved, waiting for Deliver",
         "lastDelivered": "Last delivered {{date}}",
-        "neverDelivered": "Not delivered yet"
+        "neverDelivered": "Not delivered yet",
+        "waitingImport": "Waiting for import",
+        "waitingDeepl": "Waiting for DeepL",
+        "imported_one": "Imported {{count, number}} string from the repository, {{date}}",
+        "imported_other": "Imported {{count, number}} strings from the repository, {{date}}",
+        "importedToReview_one": "Imported {{count, number}} string from the repository, {{date}}: the code keeps it as it is while it's reviewed",
+        "importedToReview_other": "Imported {{count, number}} strings from the repository, {{date}}: the code keeps them as they are while they're reviewed"
       },
       "keys": {
         "title": "API keys",
@@ -344,6 +349,73 @@
         "keyNote": "Replace shp_... with one of this project's keys. Never commit the key.",
         "yamlThing": "the .deepl-sync.yaml block",
         "commandsThing": "the commands"
+      },
+      "addLanguage": {
+        "title": "Add a language",
+        "language": "Language",
+        "searchPlaceholder": "Search by name or code, such as Dutch or nl",
+        "listLabel": "Languages DeepL translates into",
+        "noMatch": "No DeepL language matches. Type a full code, such as nl or pt-BR, to use another one.",
+        "otherCode": "Use the code {{code}}",
+        "otherCodeHint": "Not one of DeepL's languages: DeepL Sync can only translate into those. Use it only for a language DeepL added recently.",
+        "alreadyAdded": "Already added",
+        "isSource": "Source language",
+        "change": "Change",
+        "question": "Does the repository already have {{language}} translations?",
+        "answers": {
+          "none": {
+            "label": "No",
+            "hint": "DeepL translates it, and the strings arrive for review."
+          },
+          "retranslate": {
+            "label": "Yes, translate them again with DeepL",
+            "hint": "DeepL overwrites the existing files and bills the whole language."
+          },
+          "review": {
+            "label": "Yes, keep them for review",
+            "hint": "Imported as they are, and a reviewer checks them. The files don't change."
+          },
+          "reviewed": {
+            "label": "Yes, keep them as reviewed",
+            "hint": "Imported as they are, with nothing to review. The files don't change."
+          }
+        },
+        "submit": "Add language",
+        "submitting": "Adding…",
+        "changeTitle": "Existing {{language}} translations"
+      },
+      "import": {
+        "title": "Import the existing {{language}} translations",
+        "retranslateTitle": "Translate {{language}} again with DeepL",
+        "where": "Run the commands in the repository, the way you run DeepL Sync: with the project's key in TMS_API_KEY.",
+        "whereRetranslate": "Run the commands in the repository, the way you run DeepL Sync: with your DeepL key in DEEPL_API_KEY and the project's key in TMS_API_KEY.",
+        "stepYaml": "In the repository, add {{code}} to target_locales in .deepl-sync.yaml.",
+        "stepPush": "Send the existing translations to Stringherd:",
+        "warning": "Don't run deepl sync until the import is finished: it would replace the files with DeepL's translations, and the push would import those.",
+        "arrivedNone": "No strings yet. This updates by itself after the push.",
+        "arrived_one": "{{count, number}} string arrived",
+        "arrived_other": "{{count, number}} strings arrived",
+        "fileCount_one": "{{strings, number}} of {{count, number}} key",
+        "fileCount_other": "{{strings, number}} of {{count, number}} keys",
+        "noFile": "keys the source upload hasn't sent",
+        "stepFinish": "When every file has arrived, finish the import. From then on, pushes for this language are DeepL's translations again.",
+        "finish": "Finish import",
+        "finishWaiting": "Available once strings have arrived.",
+        "finishTitle": "Finish the {{language}} import?",
+        "finishBody_one": "{{count, number}} string has arrived. After this, pushes for {{language}} count as DeepL's translations again.",
+        "finishBody_other": "{{count, number}} strings have arrived. After this, pushes for {{language}} count as DeepL's translations again.",
+        "doneTitle": "{{language}} is imported",
+        "doneBody": "Last step, in the repository: the pull writes the same text back and records every key in the lockfile, so the next deepl sync only translates what's missing.",
+        "doneHint": "Then git diff should show the {{language}} file unchanged, and new entries in .deepl-sync.lock. Commit both.",
+        "stepTranslate_one": "Translate every string again with DeepL. --force is needed: without it, DeepL keeps the translations already in the files. It replaces them and costs about {{count, number}} character:",
+        "stepTranslate_other": "Translate every string again with DeepL. --force is needed: without it, DeepL keeps the translations already in the files. It replaces them and costs about {{count, number}} characters:",
+        "stepTranslateUnknown": "Translate every string again with DeepL. --force is needed: without it, DeepL keeps the translations already in the files. It replaces them and costs about as many characters as the source text:",
+        "stepPushReview": "Send the translations to Stringherd for review:",
+        "retranslateWaiting": "The strings appear here after the push, to review like any language.",
+        "changeAnswer": "Change the answer",
+        "pushCommand": "Push command for {{language}}",
+        "translateCommand": "Translate command for {{language}}",
+        "pullCommand": "Pull command for {{language}}"
       }
     },
     "people": {

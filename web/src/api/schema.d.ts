@@ -802,6 +802,8 @@ export interface components {
             file: string | null;
             /** Strings */
             strings: number;
+            /** Keys */
+            keys: number;
         };
         /**
          * LanguageImport
