@@ -211,7 +211,7 @@ Nothing is pullable afterwards until the next Deliver, so the repository keeps w
 
 ### Importing existing translations
 
-When a language already has translations in the repository, the admin answers, when adding it on the project page (**Add language**), what to do with them: translate again with DeepL, keep them for review, or keep them as reviewed. The language's row then shows the commands to run. For the two keep answers an import opens at once: every `deepl sync push` for that language is stored as the repository's text, delivered from the start, until the admin calls **Finish import**. Then `deepl sync pull` writes the same text back and records every key in the lockfile, so the next `deepl sync` only translates what is missing. Do not run `deepl sync` itself before that: it would overwrite the files with DeepL's text, and the push would import that. Design and plan: [IMPORT-PLAN.md](IMPORT-PLAN.md).
+When a language already has translations in the repository, the admin answers, when adding it on the project page (**Add language**), what to do with them: translate again with DeepL, keep them for review, or keep them as reviewed. The language's row then shows the commands to run. For the two keep answers an import opens at once: every `deepl sync push` for that language is stored as the repository's text, delivered from the start, until the admin calls **Finish import**. Then `deepl sync pull` writes the same text back and records every key in the lockfile, so the next `deepl sync` only translates what is missing. Push before running `deepl sync` for that language: a sync fills the keys the files lack with DeepL's text, and the push would then import that text as the repository's. Design: [LOCALES-PLAN.md](LOCALES-PLAN.md#existing-translations).
 
 To start a language over, for example between import tests, `remove-language` removes it from the project with its translations, reviewer assignments and delivery history. The keys stay, and the repository is not touched: restore its files there with git. It shows what will go and asks you to type the language code; `--dry-run` only shows it.
 
@@ -516,7 +516,7 @@ The clone next to `stringherd/` is not needed to run the project. Keep it for:
 The free Developer plan gives **1 million characters in total, one time** (not monthly). Protect it:
 
 - Set `sync.max_characters` in `.deepl-sync.yaml` to cap each run.
-- Use `deepl sync --dry-run` to see the character count before a real run.
+- Use `deepl sync --dry-run` to see the character count before a real run. Before a language's first pull it is a worst case: it prices every key, though the sync keeps translations already in the files (9,650 estimated, 32 billed for FitJournal's Dutch).
 - Never call the DeepL API from Stringherd's tests. The server only implements the TMS contract; test it with fake pushes.
 - Limit the GitHub Action to source-language file changes on `main`.
 - Start with 2-3 target locales.

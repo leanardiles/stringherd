@@ -1,6 +1,6 @@
 # Languages plan
 
-How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document, updated as decisions are made. Existing translations are being built for **v1.1** (working plan: [IMPORT-PLAN.md](IMPORT-PLAN.md)); the rest is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case.
+How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document, updated as decisions are made. Existing translations are built (**v1.1**; FitJournal's Dutch went through them in November 2026, Spanish is next); the rest is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case.
 
 ---
 
@@ -11,9 +11,11 @@ These facts, checked against the DeepL CLI 2.0.0, shape every decision below.
 | Fact | Consequence |
 |---|---|
 | The lockfile (`.deepl-sync.lock`) records a hash of each **source** string per language, not the translated text | `deepl sync` does not notice a translation edited by hand in a target file |
-| A key with no lockfile entry for a language counts as missing | The first `deepl sync` on a language with existing files machine-translates every key and overwrites them |
+| A key with no lockfile entry for a language counts as new, but a translation already in the target file is carried forward instead of translated, unless it is empty or equal to the source. Only `--force` translates every key again | A bare `deepl sync` on a language with existing files keeps them. It translates only the keys the files lack, those whose text equals the source, and, when the lockfile has the key, those whose source changed. This holds with no lockfile at all |
+| `deepl sync --dry-run` prices every key of a language while any of them lacks a lockfile entry for it | Before a language's first pull the estimate is a worst case: for FitJournal's Dutch it showed 9,650 characters, and the sync billed 32 |
 | `deepl sync push` reads the existing target files and sends each translation | Existing translations can reach Stringherd without being retranslated |
-| `deepl sync pull` writes what the export returns, keeps keys the export leaves out as they are in the file, and records pulled keys in the lockfile | After push, export and pull, the lockfile protects existing translations from the next `deepl sync` |
+| The push says nothing about keys a target file lacks | Stringherd's import shows them, as the count of strings that arrived per file against its keys |
+| `deepl sync pull` writes what the export returns, keeps keys the export leaves out as they are in the file, and records pulled keys in the lockfile | After push, export and pull, every key has a lockfile entry for the language: the next `deepl sync` and its dry run treat it as up to date |
 | The push carries only `locale` and `value`, and the export only `key: value` | Stringherd cannot tell a human translation from DeepL's, or a hand edit from a new machine translation, from the request alone |
 | A target locale is also the DeepL language; there is no mapping | A language code in the repository must be one DeepL knows: Latin American Spanish is `es-419`, not `es` (DeepL's `es` is European Spanish) |
 | DeepL has no `es-AR` | A variant like `es-AR` cannot be a DeepL Sync target locale; Stringherd has to produce it |
@@ -32,12 +34,41 @@ Decision: each language in a repository uses the DeepL code for the variety it c
 
 ## Existing translations
 
-When a language already has translations in the repository, the admin chooses, before the first sync, between three answers: translate again with DeepL, keep them for review, or keep them as reviewed. The details (the admin's steps, the data, the reviewer screen, the test on FitJournal) are in [IMPORT-PLAN.md](IMPORT-PLAN.md) while v1.1 is built; what lasts moves back here when it is done.
+DeepL Sync keeps the translations a repository already has, but a push cannot say who wrote them, so Stringherd would take them for DeepL's. The admin therefore adds the language in Stringherd before its first push (**Add language**) and answers what the translations are:
 
-- **Imported text counts as delivered from the start**, also when it is still to be reviewed. The export returns it, so the first pull records it in the lockfile and a `deepl sync` cannot overwrite the files during a review. The repository changes only when a reviewer delivers an edit.
-- **Each string records where its text came from** (DeepL or the repository), apart from its review status, so the reviewer sees the right label and diff.
-- **Keys the existing files lack** go through DeepL as usual. FitJournal's Spanish and Dutch have 239 of 240 keys.
-- **FitJournal**: `nl` first, trying every answer on a branch; then `es-419`, kept for review.
+| Answer | In Stringherd | In the repository |
+|---|---|---|
+| No existing translations | DeepL translates, strings arrive to review | DeepL writes the file |
+| Translate again with DeepL | Nothing imported. The row shows `deepl sync --force --locale <code>` with a character estimate, then the push | DeepL overwrites the file; strings arrive to review |
+| Keep them for review | Imported, to review, marked as coming from the repository | Unchanged until a reviewer edits and delivers |
+| Keep them as reviewed | Imported and delivered at once | Unchanged |
+
+### The admin's steps
+
+For the two keep answers an import opens at once, and the language's row lists the steps, with the commands to copy:
+
+1. Add the code to `target_locales` in `.deepl-sync.yaml`.
+2. `deepl sync push --locale <code>`, before any `deepl sync`: a sync fills the keys the files lack with DeepL's text, and the push would then import that text as the repository's.
+3. Check what arrived: the row counts the strings per file against the file's keys, and refreshes by itself.
+4. **Finish import**. From then on, that language's pushes are DeepL's again.
+5. `deepl sync pull --locale <code>`: it writes the same text back and records every key in the lockfile.
+
+Keys the files lack then go through DeepL with the next `deepl sync`, as usual.
+
+### How it works
+
+- **Per language** (`project_locales`): `import_mode` (`retranslate`, `review`, `reviewed`, or empty), `import_started_at`, `import_finished_at`. An import is open between the two dates. The answer can change only while the language has no strings, and Finish import refuses until a string has arrived.
+- **Per string** (`translations`): `origin` (`deepl` or `repository`) and `imported_at`. Origin is a field of its own, apart from the review status; `pushed_value` keeps the pushed text whatever its origin.
+- **Imported text counts as delivered from the start**, also when it is still to review, so the export returns it and the first pull records every key in the lockfile. The repository changes only when a reviewer delivers an edit.
+- **When DeepL later sends new text** for an imported string (its source changed), the string's origin becomes DeepL.
+- An import adds no entry to the delivery history; the language's row shows the import's own dates. `reset-language` puts imported strings back to the repository's text, and `remove-language` removes a language with its strings, to start over.
+- A push for a language added without an answer works as before: its strings arrive as DeepL's.
+- **Review screen**: every unreviewed string is labeled **To review**, whatever its origin. The origin shows in the tooltips, the editor's suggestion ("Repository" instead of "DeepL") and the details panel, and an origin filter shows for every language.
+
+### On FitJournal
+
+- **Dutch** (`nl`), 1 November 2026, kept for review: 254 strings imported, and the pull only normalized the file's formatting. The dry run estimated 9,650 characters; the sync billed 32, for the two keys the Dutch file lacked.
+- **Latin American Spanish** (`es-419`), next, kept for review.
 
 ---
 
@@ -88,10 +119,12 @@ Both are admin only and record who triggered them.
 |---|---|
 | A translation is edited in a target file, then `deepl sync` runs | Not noticed (the lockfile tracks the source) |
 | Then `deepl sync pull` runs before any push | The export overwrites the edit; the only trace is the replaced count in the pull summary |
-| Then `deepl sync push` runs first | Stringherd takes the edit for a new machine translation: labels it MT, sends it back to review and drops the delivered text, so the edit stays in the code. If a reviewer was correcting that string after a reopen, their edit is overwritten (a bug) |
+| Then `deepl sync push` runs first | Stringherd takes the edit for a new machine translation: marks its origin DeepL, sends it back to review and drops the delivered text, so the edit stays in the code. If a reviewer was correcting that string after a reopen, their edit is overwritten (a bug) |
 | A translated key is deleted from a target file | DeepL Sync retranslates it (billed); the next pull restores the delivered text |
 | A key is added to a target file but not to the source | DeepL Sync removes it, with a warning |
 | The source file is edited | The normal way strings change: DeepL retranslates, the source upload sends reviewed translations back to review. Editing without running sync is caught by `deepl sync --frozen` in CI |
+
+The first real case came in November 2026: 10 French strings fixed by hand in FitJournal since the October delivery arrived with the next push as machine translations to review, mixed with strings that were really new. Nothing in Stringherd told them apart; the git history did.
 
 ### Planned
 
@@ -107,4 +140,5 @@ Rules: never revert silently, never mislabel, never lose a reviewer's work. A ha
 
 - Whether variants stay a Stringherd script or become a request to DeepL for variant support in the DeepL Sync contract.
 - Whether a variant review needs the base to be delivered, or approved is enough, when both are reviewed by the same person.
-- Where the import choices live after onboarding: a one-time step, or a language setting that can be run again (for example after merging a branch with translations).
+- Running an import again later, for example after merging a branch with new translations, and turning a language that arrived without an answer into an import.
+- The source upload script could report which language folders the repository has, so Add language can pre-answer the question and warn about a language the app doesn't have.

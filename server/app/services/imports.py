@@ -6,11 +6,12 @@ finishes it, every `deepl sync push` for that language sends the repository's ow
 Stringherd stores it as imported instead of as DeepL's.
 
 Imported text counts as delivered from the start, also when it is still to review: the export
-returns it, so the first `deepl sync pull` records every key in the lockfile and a later
-`deepl sync` cannot overwrite the files during the review.
+returns it, so the first `deepl sync pull` records every key in the lockfile, and the repository
+changes only when a reviewer delivers an edit.
 
-A push carries no hint of who wrote its text. Stringherd trusts that the files still hold the
-existing translations when the push runs; a bare `deepl sync` before it would overwrite them.
+A push carries no hint of who wrote its text. Stringherd trusts that the files hold only the
+existing translations when the push runs; a `deepl sync` before it would fill the keys they
+lack with DeepL's text, and the push would import that too.
 """
 
 from dataclasses import dataclass, field

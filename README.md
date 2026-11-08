@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: v1.0.0, released 17 October 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Next: keeping existing translations when a language joins (v1.1), then a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
+> **Status: v1.0.0, released 17 October 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. In progress: v1.1, keeping a language's existing translations when it joins, which brought FitJournal's Dutch in on 1 November 2026, with Spanish next. Then a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
 
 ![The review screen: a French string edited by a reviewer, with the word diff against DeepL's suggestion](docs/images/03-edited.png)
 
@@ -80,9 +80,10 @@ DeepL Sync defines a small REST contract for a translation management system (TM
 | ✅ Done | Quality checks: empty and placeholder errors block approval in the review screen and on the server; warnings for same as source, spacing, numbers, ending punctuation, double spaces, unbalanced brackets and quotes |
 | ✅ Done | Try it with one command: Docker Compose with its own database and a demo project |
 | ✅ Done | Review interface: sign-in, project overview, review screen with single key and list views, DeepL suggestion with diff, approve and next, status symbols, QA checks, bulk approve and withdraw, Deliver, Phrase-style keyboard shortcuts with an in-app reference ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)), non-printable characters |
+| ✅ Done | Existing translations: a language that already has translations joins with an answer (translate again, keep for review, keep as reviewed), and the review screen shows whether each text came from DeepL or the repository |
 | 📋 Planned | Screenshots showing where each string appears in the app, captured automatically |
 | 📋 Planned | Configurable workflows per locale (MT only, MT + review, MT + review + sign-off) |
-| 📋 Planned | Existing translations imported per language, and regional variants stored as overrides (e.g. `es-AR` holds only what differs from `es-419`); design in [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) |
+| 📋 Planned | Regional variants stored as overrides (e.g. `es-AR` holds only what differs from `es-419`); design in [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) |
 | 📋 Planned | Translation memory with visual context, glossary checks |
 | 📋 Planned | GitHub App: connect a repository from the UI; Stringherd opens the setup PR |
 
@@ -119,7 +120,7 @@ deepl config set tms.allowedServers localhost
 deepl sync
 ```
 
-DeepL translates the new and changed strings and writes them into the locale files; the lockfile (`.deepl-sync.lock`) records what was translated. A language that already has translations in the repository needs care: the first sync overwrites them (see [the notes below](#notes-on-the-deepl-sync-contract)).
+DeepL translates the new and changed strings and writes them into the locale files; the lockfile (`.deepl-sync.lock`) records what was translated. A language that already has translations in the repository is added in Stringherd first ([below](#adding-a-language-that-already-has-translations)). `deepl sync --dry-run` shows what a run would bill; before a language's first pull it prices the whole language, a worst case.
 
 ### 3. Send them for review
 
@@ -150,6 +151,14 @@ git diff
 
 The pull writes the delivered translations into the locale files and records them in the lockfile. From there it is an ordinary change: review the diff, commit, merge and deploy.
 
+### Adding a language that already has translations
+
+`deepl sync` keeps translations already in the files, but a push cannot say who wrote them, so Stringherd would take them for DeepL's. The admin adds the language on the project page first (**Add language**) and answers what to do with them: translate them again with DeepL, keep them for review, or keep them as reviewed.
+
+For the two keep answers, the language's row then lists the steps, with the commands to copy: add the code to `target_locales`, run `deepl sync push --locale <code>` before any `deepl sync`, check the count of strings that arrived per file, click **Finish import**, and run `deepl sync pull --locale <code>`, which writes the same text back and records every key in the lockfile. From then on the language works like any other: the next `deepl sync` translates only the keys the files lack, and reviewers see which strings came from the repository.
+
+FitJournal's Dutch joined this way on 1 November 2026: 254 strings imported for review, a pull that only normalized the file's formatting, and 32 characters billed, for the two keys the Dutch file lacked. Details in [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
+
 ### On Windows
 
 - **The `deepl` command:** `npm install` in Stringherd's repository installs the DeepL CLI it is tested with (vendored in `vendor/`). To use it from another project in Git Bash, add it to the PATH: `export PATH="/c/path/to/stringherd/node_modules/.bin:$PATH"`.
@@ -162,7 +171,8 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 
 - **Push does not send the source text**, only key, locale and translation. A review interface needs the source, so Stringherd needs another way to obtain it.
 - **Keys have no file dimension.** Two locale files that share key names cannot be told apart by the TMS.
-- **The first sync overwrites existing translations.** Without a lockfile, every key counts as missing. Existing translations can be adopted safely by pushing them, approving them and pulling them back, which records them in the lockfile.
+- **Existing translations are kept, but look like DeepL's.** `deepl sync` carries forward a translation already in a target file rather than translating it again (`--force` translates everything), but the push cannot say who wrote a text. Stringherd's import tells the two apart ([above](#adding-a-language-that-already-has-translations)).
+- **The dry run prices a whole language** while any of its keys lacks a lockfile entry, even though the sync keeps what the files hold. For FitJournal's Dutch it estimated 9,650 characters, and the sync billed 32.
 - **A pull records no review status in the lockfile.** The export carries only text, so DeepL Sync cannot tell a reviewed string from a machine translation, and writes the pulled strings without `review_status`.
 - **On Windows**, target path resolution needs a workaround ([above](#on-windows)).
 

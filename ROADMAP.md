@@ -74,11 +74,13 @@ Goal: a complete review tool someone else can run locally and use without openin
 
 ## 🚧 v1.1: Existing translations
 
-Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations); working plan: [docs/IMPORT-PLAN.md](docs/IMPORT-PLAN.md).
+Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
 
-- **FitJournal's Spanish renamed to `es-419`** first (a change in FitJournal, in progress), so the language code matches DeepL's Latin American Spanish
-- **Import, chosen per language** before the first sync: machine-translate from scratch, keep them marked as reviewed, or keep them for review (marked as coming from the repository). Imported text counts as delivered at once, so the lockfile protects the files during the review, and a `deepl sync` cannot overwrite them
-- **Proven on FitJournal**: `nl` first, trying every answer on a branch; then `es-419` kept for review (my native language, so a real review). `es-AR` stays a hand-kept override file until regional variants
+- ✅ **FitJournal's Spanish renamed to `es-419`** (October 2026), so the language code matches DeepL's Latin American Spanish
+- ✅ **Import, chosen per language** when an admin adds it: translate again with DeepL, keep for review, or keep as reviewed. During an import, pushes are stored as the repository's text and delivered at once, so the first pull records every key in the lockfile. The admin's row lists the commands and counts what arrives per file; the review screen labels every unreviewed string To review and shows each text's origin, with a filter
+- ✅ **Dutch on FitJournal** (1 November 2026), kept for review: 254 strings imported, a pull that only normalized formatting, 32 characters billed for the two keys the file lacked
+- **Next: `es-419` on FitJournal**, kept for review (my native language, so a real review). `es-AR` stays a hand-kept override file until regional variants
+- **Then the `1.1.0` release**
 
 ---
 
@@ -103,6 +105,7 @@ Goal: a source change in FitJournal flows through DeepL, review in Stringherd, D
 - **Deliver opens a pull request**: Deliver also starts the repository's workflow, which runs `deepl sync pull` and opens or updates a pull request with the delivered strings. Developers merge it; the merge is the release
 - **Send back to review**: an admin returns a language or a selection of delivered strings to the reviewer's list without new machine translation; the code keeps the delivered text until the next Deliver
 - **Hand edits in the repository**: a translation edited in a target file is detected (new text with an unchanged source), shown to the reviewer with a diff and kept, restored or edited; the workflow pushes before it pulls so nothing is reverted silently. Fixes today's behavior, where a push labels the edit as machine translation and can overwrite a reviewer's unfinished correction
+- **Keys deleted from the source**: confirm on a real FitJournal run what `deepl sync` does (by the CLI code, it drops the key from the lockfile and the target files and reports only a count) and that a pull ignores exported keys the source no longer has. Then handle them in Stringherd: the source upload reports removed keys but keeps their strings, so reviewers still see them and they count in progress. Mark them removed, hide them from the review list and the counts, keep their history, and restore them if the key comes back. Plus a feature request for the DeepL CLI: name the deleted keys, not only their count
 - **Regional variant `es-AR`** from the delivered `es-419`: the reviewer confirms or amends each string, and a Stringherd script writes only the overrides. Low priority; may move to Later
 
 ---
@@ -163,7 +166,9 @@ These come from the DeepL Sync contract or CLI as of version 2.0.0:
 - **Plurals in PO and Android files are not pulled.** The contract carries one string per key, which cannot fill multiple plural forms. Formats that store plurals as separate keys (e.g. i18next's `_one` / `_other`) are not affected.
 - **No file dimension.** Two catalog files that share key names cannot be told apart by a TMS; use one Stringherd project per group of files.
 - **Push does not include source text**, hence the separate source upload.
-- **The first sync overwrites existing translations** when there is no lockfile. Use the adoption flow (push, approve, pull) before the first sync on a project that already has translations; the planned import makes this a choice per language.
+- **Existing translations look like DeepL's.** `deepl sync` keeps a translation already in a target file, but the push cannot say who wrote it. Add the language in Stringherd with an answer before its first push, so the import tells them apart.
+- **The dry run prices a whole language** while any of its keys lacks a lockfile entry for it, even though the sync keeps what the files hold: a worst case before a language's first pull.
+- **The push says nothing about keys a target file lacks**; Stringherd's import shows them per file.
 - **A target locale is also the DeepL language**, with no mapping between them: a repository's language codes must be DeepL's (`es-419` for Latin American Spanish). Varieties DeepL lacks, such as `es-AR`, are planned as Stringherd variants.
 - **A pull records no review status in the lockfile.** The export carries only text, so the CLI writes the pulled strings without `review_status` rather than guess; the lockfile cannot say a string was reviewed in Stringherd.
 - **On Windows**, target path resolution needs `target_path_pattern` on the bucket, and the CLI warns about file permissions on every run (Unix permission checks that Windows does not use). The warnings are harmless: Windows protects the files with its own permissions.
