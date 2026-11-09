@@ -57,10 +57,10 @@ Vercel runs Python as functions: FastAPI is detected from the dependencies, and 
 - **Limits that matter here**: request and response bodies up to 4.5 MB (a catalog of thousands of strings is far below), 300 seconds per request, 2 GB of memory, one region. The function's region is set to the database's region.
 - **Cold starts**: the first request after a quiet period starts Python. To check: a `deepl sync push` from a laptop or CI against a cold server.
 
-**Serving the UI** is the one open technical choice, settled with a first deploy in chunk 1:
+**Serving the UI**: two ways were considered; A is used, B stays the fallback if Services (in beta) fails us:
 
-- **A: Vercel Services** (one project, two services: the Vite build and the FastAPI function, routed by path). Vercel's documented way to run a frontend and a Python backend on one domain. In beta.
-- **B: the function and the CDN together**: the built UI goes in `public/`, which Vercel's CDN serves, and every other path reaches FastAPI, which already answers unknown paths with `index.html` (`app/web.py`). Closer to how Stringherd runs today, and not in beta.
+- **A: Vercel Services** (one project, two services: the Vite build and the FastAPI function, routed by path). Vercel's documented way to run a frontend and a Python backend on one domain, and what its Python docs point to. In beta. `vercel.json` at the repository root; `vercel build` builds both services as Vercel would.
+- **B: the function and the CDN together**: the built UI goes in `public/`, which Vercel's CDN serves, and every other path reaches FastAPI, which already answers unknown paths with `index.html` (`app/web.py`). Closer to how Stringherd runs today and not in beta, but it needs the UI build copied into the server's folder and a second copy of `index.html` for the function.
 
 Either way the browser, the API and DeepL Sync use one address, as locally.
 
@@ -101,7 +101,7 @@ Password reset by email and invitations wait for production, where real reviewer
 | | Chunk | What | Status |
 |---|---|---|---|
 | 0 | Preparation (mine) | Back up `stringherd-db`; `stringherd-db` on Pro in its own organization; the demo's database, migrated and seeded; the Vercel project, created at the start of chunk 1 | Done |
-| 1 | Serverless fit | Pooler settings and `NullPool`; the entrypoint; the UI served by A or B, decided by a first deploy to a `.vercel.app` address; the region; a cold-start push | To do |
+| 1 | Serverless fit | Pooler settings and `NullPool`; `vercel.json` with two services; Montreal; first deploys as previews from the `hosted-demo` branch; checks: sign-in, review, `/health`, region, a cold-start push | In progress |
 | 2 | Demo mode | `DEMO_MODE`, one-click sign-in, the banner, guardrails, the reset endpoint and its cron job | To do |
 | 3 | Hardening | Sign-in rate limiting, security headers, health monitoring | To do |
 | 4 | Launch | demo.stringherd.dev and the stringherd.dev redirect; a "Try it" section in the README; docs; release `1.2.0` | To do |
@@ -120,9 +120,12 @@ Production (later, in FitJournal in production): app.stringherd.dev as a second 
 | 4 | Development moves to local Postgres when production starts | Agreed |
 | 5 | One-click demo sign-in (Try as reviewer, Try as admin), only with `DEMO_MODE` | Proposed |
 | 6 | One shared demo, reset daily by a cron job | Proposed |
-| 7 | How the UI is served (Vercel Services or `public/` with the function), settled by the first deploy | Open |
+| 7 | The UI is served by Vercel Services: `web` (the Vite build) and `api` (FastAPI) on one address | Agreed |
 | 8 | Migrations from my machine at first, from a GitHub Action later | Proposed |
 | 9 | `TMS_API_KEY` unset on both deployments | Proposed |
+| 10 | Functions run in Montreal (`yul1`), next to the databases in `ca-central-1` | Agreed |
+| 11 | Deploys are tried as previews from a `hosted-demo` branch, visible only when signed in to Vercel, and merged to `main` once they work | Agreed |
+| 12 | Until demo mode exists (chunk 2), the Trailhead accounts have private passwords, kept in 1Password | Agreed |
 
 ---
 

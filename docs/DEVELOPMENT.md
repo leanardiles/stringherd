@@ -237,6 +237,7 @@ It sends **every** source string each time; the server compares with what it has
 ### Supabase notes
 
 - Use the **Session pooler** connection string (port 5432, IPv4). The direct connection is IPv6-only on the free plan.
+- On Vercel, use the **Transaction pooler** instead (port 6543), as serverless functions should; see [Hosting on Vercel](#hosting-on-vercel). Database passwords use letters and digits only, since they sit inside these addresses.
 - Free projects **pause after 7 days of inactivity**. If `/health` reports the database as unreachable, open the Supabase dashboard and click **Resume project**.
 
 ---
@@ -376,6 +377,27 @@ npm run screenshots                  # writes docs/images/01-projects.png ... 08
 ```
 
 Run it again after a UI change and commit the images that changed. Options: `--url` (default `http://localhost:8200`), `--out` (default `docs/images`), `--chromium` (a browser already installed, instead of Playwright's own).
+
+---
+
+## Hosting on Vercel
+
+The public demo runs on Vercel, configured by `vercel.json` at the repository root. Plan and decisions: [HOSTED-PLAN.md](HOSTED-PLAN.md).
+
+- **Two services in one project** (Vercel Services, in beta): `web` is the Vite build from `web/`, served by Vercel's CDN, with every page address falling back to `index.html`; `api` is the FastAPI app from `server/` (`app.main:app`), running as a Python function. Requests for `/api/…`, `/health`, `/docs`, `/redoc` and `/openapi.json` go to `api`, everything else to `web`, all on one address, so the session cookie works as it does locally.
+- **Region**: Montreal (`yul1`), next to the database in Supabase's `ca-central-1`. The free plan allows one region.
+- **Python 3.13**, from `server/.python-version`; dependencies from `server/pyproject.toml`.
+- **The database through Supabase's transaction pooler** (port 6543). Stringherd recognizes the port and then keeps no connection pool and no prepared statements (`app/db.py`), as serverless functions need; everywhere else it keeps its pool.
+- **Settings** (the project's Environment Variables): `DATABASE_URL`, the transaction pooler address, and `COOKIE_SECURE=true`. No `TMS_API_KEY`: projects use their own keys. The function's bundle has no UI build in it, so the server runs as the API only.
+- **Migrations are not part of a deploy.** Run them from this machine, through the session pooler, before deploying code that needs them:
+
+```bash
+cd server
+op run --env-file=../.env.demo.op -- alembic upgrade head
+```
+
+- **Previews**: every push to a branch gets its own deployment, visible only when signed in to Vercel; a push to `main` updates the demo.
+- **To check a build before pushing**, `vercel build` (the Vercel CLI) builds both services as Vercel would, without deploying.
 
 ---
 
@@ -533,7 +555,7 @@ stringherd/
 │   ├── SHORTCUTS.md      keyboard shortcuts (kept in step with web/src/lib/shortcuts.ts by a test)
 │   ├── UI-PLAN.md        review UI design decisions
 │   ├── images/           README screenshots (npm run screenshots)
-│   └── *-PLAN.md         design plans: admin screens, languages, screenshots, and the import being built
+│   └── *-PLAN.md         design plans: admin screens, languages, screenshots, and the hosting being built
 ├── server/               Python + FastAPI backend (own pyproject.toml)
 │   ├── app/              endpoints (routers/), storage logic (services/), sign-in (security.py), permissions, built UI serving (web.py), demo data (demo.py), CLI, models, settings
 │   ├── migrations/       Alembic database migrations
@@ -553,6 +575,7 @@ stringherd/
 │   └── README.md         provenance of the vendored CLI
 ├── .dockerignore         what Docker may copy into a build (an allow-list)
 ├── .env.op               1Password secret references (committed)
+├── .env.demo.op          1Password reference to the hosted demo's database (committed)
 ├── .gitattributes        LF line endings for all text files
 ├── .gitignore
 ├── CHANGELOG.md          what changed in each release
@@ -563,7 +586,8 @@ stringherd/
 ├── package.json          JS tooling root (DeepL CLI, npm run build:web)
 ├── package-lock.json
 ├── README.md
-└── ROADMAP.md            milestones, what comes next, known limitations
+├── ROADMAP.md            milestones, what comes next, known limitations
+└── vercel.json           the hosted demo on Vercel: the UI and the server as two services
 ```
 
 The demo project, Trailhead, is created by `server/app/demo.py`. The first real project is a separate repository, FitJournal, localized through DeepL Sync.

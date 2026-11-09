@@ -4,6 +4,9 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 
 ## [Unreleased]
 
+### Added
+- Hosting on Vercel: `vercel.json` runs the UI and the server as two services on one address, in Montreal next to the database. Through Supabase's transaction pooler (port 6543), the server keeps no connection pool and no prepared statements, as serverless functions need.
+
 ## [1.1.0] - 2026-11-09
 
 Languages that already have translations join Stringherd without being retranslated. FitJournal's Dutch and Latin American Spanish came in this way, in November 2026.
