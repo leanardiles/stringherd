@@ -4,7 +4,7 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: v1.0.0, released 17 October 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. In progress: v1.1, keeping a language's existing translations when it joins, which brought FitJournal's Dutch in on 1 November 2026, with Spanish next. Then a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
+> **Status: v1.1.0, released 9 November 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Since 1.1.0, a language that already has translations joins without being retranslated: FitJournal's Dutch and Latin American Spanish came in this way in November 2026. Next: a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
 
 ![The review screen: a French string edited by a reviewer, with the word diff against DeepL's suggestion](docs/images/03-edited.png)
 

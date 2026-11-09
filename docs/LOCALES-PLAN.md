@@ -1,6 +1,6 @@
 # Languages plan
 
-How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document, updated as decisions are made. Existing translations are built (**v1.1**; FitJournal's Dutch went through them in November 2026, Spanish is next); the rest is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case.
+How Stringherd handles languages that already have translations, regional variants, sending reviewed strings back for another pass, and translation files edited by hand. This is a design document, updated as decisions are made. Existing translations are built (**v1.1**; FitJournal's Dutch and Latin American Spanish went through them in November 2026); the rest is planned for the **FitJournal in production** milestone in the [roadmap](../ROADMAP.md), with FitJournal as the first real case.
 
 ---
 
@@ -68,7 +68,8 @@ Keys the files lack then go through DeepL with the next `deepl sync`, as usual.
 ### On FitJournal
 
 - **Dutch** (`nl`), 1 November 2026, kept for review: 254 strings imported, and the pull only normalized the file's formatting. The dry run estimated 9,650 characters; the sync billed 32, for the two keys the Dutch file lacked.
-- **Latin American Spanish** (`es-419`), next, kept for review.
+- **Latin American Spanish** (`es-419`), 8 November 2026, kept for review: 251 strings imported, and the pull only normalized the file's formatting. The dry run of the next sync estimated 5,855 characters, pricing the whole of Spanish again because the file lacked two keys the lockfile knew; the sync billed 1,135, for those two keys and 19 new English keys in French, Dutch and Spanish.
+- **The first plural keys** (`_one`/`_other`) came with that sync. DeepL, translating each form alone and without context, read `{{count}}` as an exercise number ("Enregistrement de l'exercice {{count}}") in all three languages; the review fixed them.
 
 ---
 

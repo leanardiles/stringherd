@@ -4,6 +4,10 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-09
+
+Languages that already have translations join Stringherd without being retranslated. FitJournal's Dutch and Latin American Spanish came in this way, in November 2026.
+
 ### Added
 - Importing a language's existing translations, server side: an admin adds a language with an answer (translate again, keep for review, keep as reviewed); during an import, pushes are stored as the repository's text and delivered at once, so the first pull records every key in the lockfile; Finish import closes it. Each translation records its origin, DeepL or the repository.
 - Importing existing translations, admin screens: **Add language** opens a dialog with DeepL's languages, searchable by name or code, and asks what to do with the repository's translations; the language's row shows the commands to run, counts the strings that arrive per file and has **Finish import**.
@@ -63,5 +67,6 @@ The first release: a complete review server for DeepL Sync that someone else can
 - Documentation: the API reference ([docs/API.md](docs/API.md)), development and Docker setup ([docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)), and a walkthrough of the DeepL Sync loop in the README.
 - MIT license.
 
-[Unreleased]: https://github.com/leanardiles/stringherd/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/leanardiles/stringherd/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/leanardiles/stringherd/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/leanardiles/stringherd/releases/tag/v1.0.0

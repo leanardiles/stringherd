@@ -13,7 +13,7 @@ from app.web import serve_ui
 
 app = FastAPI(
     title="Stringherd",
-    version="1.0.0",
+    version="1.1.0",
     description="Open-source review server for DeepL Sync.",
 )
 

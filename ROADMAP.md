@@ -8,7 +8,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 |---|---|
 | ✅ Foundation | DeepL Sync contract, reviewer accounts, review screen; full loop verified on a real app |
 | ✅ v1 (local) | A complete review tool someone else can run and use without the API docs. Released as 1.0.0 |
-| 🚧 v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated |
+| ✅ v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated. Released as 1.1.0 |
 | 📋 Hosted demo | A public instance anyone can try in the browser |
 | 📋 FitJournal in production | My own app localized end to end through Stringherd, including existing translations and a regional variant |
 | 📋 Pilot | Stringherd on a live repository that is not mine, reviewing English to Spanish |
@@ -72,15 +72,15 @@ Goal: a complete review tool someone else can run locally and use without openin
 
 ---
 
-## 🚧 v1.1: Existing translations
+## ✅ v1.1: Existing translations
 
-Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
+Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kept, not retranslated, so every new English string is reviewed in French, Spanish and Dutch from then on. Runs against the local server, like v1. Released as **1.1.0** on 9 November 2026; what is in it: [CHANGELOG.md](CHANGELOG.md). Design: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md#existing-translations).
 
 - ✅ **FitJournal's Spanish renamed to `es-419`** (October 2026), so the language code matches DeepL's Latin American Spanish
 - ✅ **Import, chosen per language** when an admin adds it: translate again with DeepL, keep for review, or keep as reviewed. During an import, pushes are stored as the repository's text and delivered at once, so the first pull records every key in the lockfile. The admin's row lists the commands and counts what arrives per file; the review screen labels every unreviewed string To review and shows each text's origin, with a filter
 - ✅ **Dutch on FitJournal** (1 November 2026), kept for review: 254 strings imported, a pull that only normalized formatting, 32 characters billed for the two keys the file lacked
-- **Next: `es-419` on FitJournal**, kept for review (my native language, so a real review). `es-AR` stays a hand-kept override file until regional variants
-- **Then the `1.1.0` release**
+- ✅ **Latin American Spanish (`es-419`) on FitJournal** (8 November 2026), kept for review (my native language, so a real review): 251 strings imported, a pull that only normalized formatting. The sync that followed billed 1,135 characters against a dry-run estimate of 5,855, for 19 new English keys in three languages and the two keys the Spanish file lacked. `es-AR` stays a hand-kept override file until regional variants
+- ✅ **`v1.1.0` tag and changelog**
 
 ---
 
