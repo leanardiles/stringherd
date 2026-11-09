@@ -86,20 +86,21 @@ Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kep
 
 ## 📋 Hosted demo
 
-Goal: anyone can open Stringherd in the browser and try it, with nothing to install, at the lowest possible cost: Vercel's free Hobby plan and Supabase's free plan.
+Goal: anyone can open Stringherd in the browser and try it, with nothing to install, at no cost: Vercel's free Hobby plan and Supabase's free plan. Working plan: [docs/HOSTED-PLAN.md](docs/HOSTED-PLAN.md).
 
-- **Vercel** (stringherd.dev): the built UI on Vercel's CDN and the server as a Python function, in one project on one domain (Vercel Services), so the session cookie works as it does locally. The function runs with `WEB_DIST=` because the CDN serves the UI. HTTPS, `COOKIE_SECURE=true` and `PUBLIC_URL`
-- **Serverless fit**: Supabase through its connection pooler, the function region set to the database's region, nothing kept in memory between requests. Check that a DeepL Sync push from CI survives a cold start. Request and response bodies are limited to 4.5 MB, far above a typical catalog
-- **Deploys**: migrations run before each deploy (`alembic upgrade head` with `op run`, later from a GitHub Action); secrets live in Vercel's environment variables, copied from 1Password
-- A seeded demo project and a demo account that resets regularly
-- Account hardening: sign-in rate limiting (counted in the database, since functions keep no memory); password reset and invitations as needed
-- Monitoring basics: health check, error logging
+- **demo.stringherd.dev**, a Vercel project of its own: production later runs as a second project from the same repository, with its own database, so the demo's resets and public admin access never reach real data. stringherd.dev redirects to the demo for now
+- **Serverless fit**: the server as a Python function on the same domain as the UI, so the session cookie works as it does locally; Supabase through its connection pooler, the function in the database's region, nothing kept in memory between requests. Check that a DeepL Sync push survives a cold start
+- **Demo mode**: the Trailhead demo project, one-click sign-in as a reviewer or an admin, a banner, guardrails on the demo accounts, and a reset on a schedule
+- **Deploys**: migrations before each deploy (`alembic upgrade head` with `op run`, later from a GitHub Action); secrets in Vercel's environment variables, copied from 1Password
+- **Hardening**: sign-in rate limiting (counted in the database, since functions keep no memory), security headers, no server-wide development key
+- **Monitoring basics**: health check, error logging
+- **Before anything moves**: a backup of the current database, which holds FitJournal's real review history and becomes production's
 
 ---
 
 ## 📋 FitJournal in production
 
-Goal: a source change in FitJournal flows through DeepL, review in Stringherd, Deliver and a pull request to a merge, with me only reviewing and merging. French (v1) and Spanish and Dutch (v1.1) are in Stringherd by then; this milestone automates the loop. Every feature a pilot needs is built and proven here first, on my own repository, where a mistake costs only me. Runs on the hosted demo server. Design for languages: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md).
+Goal: a source change in FitJournal flows through DeepL, review in Stringherd, Deliver and a pull request to a merge, with me only reviewing and merging. French (v1) and Spanish and Dutch (v1.1) are in Stringherd by then; this milestone automates the loop. Every feature a pilot needs is built and proven here first, on my own repository, where a mistake costs only me. Runs on its own production deployment (app.stringherd.dev), separate from the demo, with its database on Supabase Pro for daily backups. Design for languages: [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md).
 
 - **GitHub workflow** that runs `deepl sync` and the source upload on every push to the source files, shown on the setup page next to the `.deepl-sync.yaml` block, with the two repository secrets to add
 - **Deliver opens a pull request**: Deliver also starts the repository's workflow, which runs `deepl sync pull` and opens or updates a pull request with the delivered strings. Developers merge it; the merge is the release
