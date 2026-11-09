@@ -163,6 +163,7 @@ Errors block approval, in the browser and on the server; warnings only inform. O
 | Numbers differ from source (compared by digits, so `1,000` and `1 000` match) | Warning | No |
 | Ending punctuation differs (`.` `?` `!` `:` `…`, with full-width and Arabic equivalents) | Warning | No |
 | Double spaces in the translation, not in the source | Warning | No |
+| A placeholder touches a letter or digit where the source has a space (`{{count}}exercices`); not for scripts written without spaces | Warning | No |
 | Unbalanced brackets or quotes (when the source is balanced) | Warning | No |
 
 Planned: over the character limit (error, locked, with character limits). Later, with the other checks in the roadmap: French spacing before `! ? : ;` (warning, French only). Admins will also set each unlocked check to error, warning or off per project and language (QA profiles, see the roadmap); locked checks stay errors because they break the app.

@@ -9,15 +9,19 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 - Importing existing translations, admin screens: **Add language** opens a dialog with DeepL's languages, searchable by name or code, and asks what to do with the repository's translations; the language's row shows the commands to run, counts the strings that arrive per file and has **Finish import**.
 - Importing existing translations, review screen: an origin filter (DeepL or the repository), the origin in tooltips, the editor's suggestion and the details panel, and imported strings shown as imported rather than delivered by someone.
 - `remove-language`, an operator command that removes a language with its translations, assignments and delivery history.
+- A quality warning when a placeholder touches a word where the source has a space, such as `{{count}}exercices`, which shows as "5exercices".
 
 ### Changed
 - Strings not reviewed yet are labeled **To review** instead of MT, since imported strings are not machine translations.
 - Languages imported for review show their progress as reviewed rather than delivered, on the admin page and in Your projects, since the code already has their text.
 - The setup commands on a project's page run `deepl sync` without `--flag-for-review`, which only marks the local lockfile.
 - `reset-language` puts imported strings back to the repository's text, the text they arrived with.
+- The mark for a space is bold and darker when non-printable characters are shown, so a missing space stands out.
 
 ### Fixed
 - The web tests failed under pytest 9.
+- Approving an edit with Ctrl+Enter on a string the screen stays on (the last one, or the only one a search shows) saved the edit but showed the old text, which leaving the string then saved as an unapproved edit.
+- The Deliver dialog no longer offers to deliver 0 strings; it explains that nothing is approved, counting an approved string with an unsaved edit as not approved.
 - The docs said a language's first `deepl sync` overwrites the translations its files already have. It keeps them; only `--force` translates them again. The dry run's estimate before a language's first pull is a worst case, now documented.
 
 ## [1.0.0] - 2026-10-17

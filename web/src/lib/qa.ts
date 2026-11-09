@@ -15,6 +15,7 @@ export type QaIssue =
   | { code: 'numbers'; severity: 'warning'; items: string[] }
   | { code: 'endPunctuation'; severity: 'warning' }
   | { code: 'doubleSpaces'; severity: 'warning' }
+  | { code: 'placeholderSpacing'; severity: 'warning'; items: string[] }
   | { code: 'unbalanced'; severity: 'warning' }
 
 export type QaLevel = 'error' | 'warning' | null
@@ -87,6 +88,43 @@ function balanced(text: string): boolean {
   return EVEN_QUOTES.every((quotes) => [...plain].filter((c) => quotes.includes(c)).length % 2 === 0)
 }
 
+// A letter or digit, the kind of character that should not touch a placeholder the source
+// spaces off. Scripts written without spaces (Chinese, Japanese, Thai, Lao, Khmer, Myanmar)
+// are left out: there a placeholder next to a character is normal.
+const WORD = /[\p{L}\p{N}]/u
+const NO_SPACE_SCRIPT = /[฀-໿က-႟ក-៿぀-ヿ㐀-䶿一-鿿豈-﫿ｦ-ﾟ]/u
+
+/** For each occurrence of a placeholder: the characters right before and after it. */
+function neighbours(text: string): { placeholder: string; before: string; after: string }[] {
+  return [...text.matchAll(placeholderPattern())].map((m) => ({
+    placeholder: m[0],
+    before: text.slice(0, m.index).slice(-1),
+    after: text.slice(m.index + m[0].length).slice(0, 1),
+  }))
+}
+
+const glued = (char: string) => WORD.test(char) && !NO_SPACE_SCRIPT.test(char)
+
+/**
+ * Placeholders that touch a letter or digit on a side where the source always has a space,
+ * like "{{count}}exercices" for "{{count}} exercises": "5exercices" on screen.
+ */
+function gluedPlaceholders(source: string, target: string): string[] {
+  const inSource = neighbours(source)
+  const spacedOn = (placeholder: string, side: 'before' | 'after') => {
+    const found = inSource.filter((n) => n.placeholder === placeholder)
+    return found.length > 0 && found.every((n) => /\s/.test(n[side]))
+  }
+  const items: string[] = []
+  for (const n of neighbours(target)) {
+    if (items.includes(n.placeholder)) continue
+    if ((glued(n.before) && spacedOn(n.placeholder, 'before')) || (glued(n.after) && spacedOn(n.placeholder, 'after'))) {
+      items.push(n.placeholder)
+    }
+  }
+  return items
+}
+
 export function checkTranslation(source: string | null, target: string): QaIssue[] {
   if (target.trim() === '') return [{ code: 'empty', severity: 'error' }]
   if (source === null) return []
@@ -106,6 +144,8 @@ export function checkTranslation(source: string | null, target: string): QaIssue
   if (numbers.length) issues.push({ code: 'numbers', severity: 'warning', items: numbers })
   if (ending(source) !== ending(target)) issues.push({ code: 'endPunctuation', severity: 'warning' })
   if (target.includes('  ') && !source.includes('  ')) issues.push({ code: 'doubleSpaces', severity: 'warning' })
+  const gluedItems = gluedPlaceholders(source, target)
+  if (gluedItems.length) issues.push({ code: 'placeholderSpacing', severity: 'warning', items: gluedItems })
   if (balanced(source) && !balanced(target)) issues.push({ code: 'unbalanced', severity: 'warning' })
   return issues
 }

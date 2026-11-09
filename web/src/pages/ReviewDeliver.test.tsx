@@ -27,8 +27,8 @@ function string(key: string, value: string, status: string, extra: Partial<Revie
 
 const DELIVERED = { delivered_value: 'Accueil', delivered_at: '2026-10-14T10:00:00Z', delivered_by: 'René Reviewer' }
 
-function setup(path: string, user = REVIEWER) {
-  let items: ReviewString[] = [
+function setup(path: string, user = REVIEWER, initial?: ReviewString[]) {
+  let items: ReviewString[] = initial ?? [
     string('home.title', 'Accueil', 'delivered', { approved_by: 'René Reviewer', ...DELIVERED }),
     string('login.button', 'Connexion', 'approved', { approved_by: 'René Reviewer' }),
     string('profile.save', 'Enregistrer', 'approved', { approved_by: 'René Reviewer' }),
@@ -52,6 +52,18 @@ function setup(path: string, user = REVIEWER) {
       calls.push(`reopen ${decodeURIComponent(reopen[1])}`)
       items = items.map((i) => (i.key === decodeURIComponent(reopen[1]) ? { ...i, status: 'approved' } : i))
       return { status: 200, body: items.find((i) => i.key === decodeURIComponent(reopen[1])) }
+    }
+    const edit = url.match(/\/strings\/([^/]+)$/)
+    if (edit && init?.method === 'PATCH') {
+      const key = decodeURIComponent(edit[1])
+      const body = JSON.parse(String(init.body)) as { value?: string; approved?: boolean }
+      calls.push(`edit ${key} ${JSON.stringify(body)}`)
+      items = items.map((i) =>
+        i.key === key
+          ? { ...i, value: body.value ?? i.value, status: body.approved ? 'approved' : body.value !== undefined ? 'machine_translated' : i.status }
+          : i,
+      )
+      return { status: 200, body: items.find((i) => i.key === key) }
     }
     return { status: 404 }
   })
@@ -106,5 +118,35 @@ describe('deliver', () => {
     expect(await screen.findByLabelText('Translation in French (fr)')).toBeInTheDocument()
     // The code has the same text as the editor, so "In the code" would only repeat it.
     expect(screen.getByRole('complementary')).not.toHaveTextContent('In the code')
+  })
+
+  it('keeps an edit approved with Ctrl+Enter on a reopened string it stays on', async () => {
+    const { calls } = setup('/review/fitjournal/fr?status=delivered&key=home.title', ADMIN)
+    await userEvent.click(await screen.findByRole('button', { name: 'Reopen' }))
+    const editor = await screen.findByLabelText('Translation in French (fr)')
+    await userEvent.clear(editor)
+    await userEvent.type(editor, "Page d'accueil")
+    await userEvent.keyboard('{Control>}{Enter}{/Control}')
+
+    expect(calls).toContain(`edit home.title ${JSON.stringify({ value: "Page d'accueil", approved: true })}`)
+    // The search shows only this string, so the editor stays on it, with the saved text.
+    expect(await screen.findByLabelText('Translation in French (fr)')).toHaveValue("Page d'accueil")
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument()
+  })
+
+  it('cannot deliver when the only approved string has an unsaved edit', async () => {
+    const { calls } = setup('/review/fitjournal/fr?key=login.button', REVIEWER, [
+      string('login.button', 'Connexion', 'approved', { approved_by: 'René Reviewer' }),
+      string('profile.title', 'Profil', 'machine_translated'),
+    ])
+    await userEvent.type(await screen.findByLabelText('Translation in French (fr)'), ' rapide')
+    await userEvent.click(screen.getByRole('button', { name: 'Deliver 1 string' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Deliver French (fr)?' })
+    // Saving the edit first withdraws the approval, so nothing would be delivered.
+    expect(dialog).toHaveTextContent('Approve strings first')
+    expect(dialog).toHaveTextContent("2 strings aren't approved yet")
+    expect(within(dialog).getByRole('button', { name: 'Deliver 0 strings' })).toBeDisabled()
+    expect(calls).toEqual([])
   })
 })

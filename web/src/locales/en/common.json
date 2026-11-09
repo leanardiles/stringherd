@@ -132,6 +132,7 @@
       "numbers": "Numbers differ from the source: {{items}}",
       "endPunctuation": "Ending punctuation differs from the source.",
       "doubleSpaces": "Double spaces in the translation.",
+      "placeholderSpacing": "No space next to {{items}}, unlike the source.",
       "unbalanced": "Unbalanced brackets or quotes."
     },
     "sourceLabel": "{{code}} · source",

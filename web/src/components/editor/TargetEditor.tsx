@@ -1,7 +1,7 @@
 // The only file in the app that knows about CodeMirror (UI plan, editor boundary).
 // The rest of the app sees: value in, onChange out, and the commands in TargetEditorHandle.
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { Compartment, EditorState, Prec } from '@codemirror/state'
+import { Annotation, Compartment, EditorState, Prec } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
@@ -35,6 +35,9 @@ interface Props {
   /** ↑ on the first line or ↓ on the last: return true when the page moved to another string. */
   onEdge?: (direction: 'up' | 'down') => boolean
 }
+
+/** Marks a text replaced from outside (discard, a saved value), so it is not reported back as typing. */
+const fromOutside = Annotation.define<boolean>()
 
 /** Placeholders such as {{count}} render as one locked chip: the cursor skips it, Backspace removes it whole. */
 class ChipWidget extends WidgetType {
@@ -140,7 +143,9 @@ export const TargetEditor = forwardRef<TargetEditorHandle, Props>(function Targe
           chips,
           EditorView.contentAttributes.of({ 'aria-label': ariaLabel, lang: lang ?? '', spellcheck: 'true' }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) onChangeRef.current(update.state.doc.toString())
+            if (!update.docChanged) return
+            if (update.transactions.some((tr) => tr.annotation(fromOutside))) return
+            onChangeRef.current(update.state.doc.toString())
           }),
         ],
       }),
@@ -162,11 +167,16 @@ export const TargetEditor = forwardRef<TargetEditorHandle, Props>(function Targe
     view.current?.dispatch({ effects: invisiblesSlot.current.reconfigure(showInvisibles ? invisibles : []) })
   }, [showInvisibles])
 
-  // Outside changes (discard, server response) replace the text.
+  // Outside changes (discard, server response) replace the text. They are not the reviewer's
+  // typing, so they are not reported back through onChange: a passing value would otherwise
+  // stick as an unsaved edit.
   useEffect(() => {
     const editor = view.current
     if (editor && editor.state.doc.toString() !== value) {
-      editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } })
+      editor.dispatch({
+        changes: { from: 0, to: editor.state.doc.length, insert: value },
+        annotations: fromOutside.of(true),
+      })
     }
   }, [value])
 

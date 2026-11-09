@@ -141,6 +141,8 @@ export function ReviewPage() {
   const counts = countByFilter(items)
   const origins = countByOrigin(items)
   const { approved, delivered } = counts
+  // An unsaved edit is saved as an edit before delivering, which withdraws its approval.
+  const deliverable = approved - (active && dirty && active.status === 'approved' ? 1 : 0)
   // Delivered strings stay findable: say so when a search matches some that the filter hides.
   const hiddenDelivered =
     query.trim() && filter !== 'delivered'
@@ -159,11 +161,14 @@ export function ReviewPage() {
     )
   }
 
-  function save(key: string, change: ReviewEdit) {
+  function save(key: string, change: ReviewEdit, onSaved?: () => void) {
     setSticky((current) => new Set(current).add(key))
     edit.mutate(
       { key, edit: change },
-      { onError: (e) => setError(e instanceof ApiError && e.detail ? e.detail : t('review.saveFailed', { key })) },
+      {
+        onSuccess: onSaved,
+        onError: (e) => setError(e instanceof ApiError && e.detail ? e.detail : t('review.saveFailed', { key })),
+      },
     )
   }
 
@@ -183,11 +188,21 @@ export function ReviewPage() {
       setError(t('review.qa.blocked'))
       return
     }
-    save(active.key, dirty ? { value, approved: true } : { approved: true })
-    setDraft(null)
+    const key = active.key
+    const next = neighbourKey(visibleKeys, key, 1) ?? (view === 'single' ? key : null)
     setError(null)
-    const next = neighbourKey(visibleKeys, active.key, 1)
-    setParam('key', next ?? (view === 'single' ? active.key : null))
+    if (next === key) {
+      // Staying on this string (the last one, or the only one a search shows): keep the typed
+      // text until the save is confirmed, so the editor never shows the old text in between.
+      const saved = value
+      save(key, dirty ? { value, approved: true } : { approved: true }, () =>
+        setDraft((current) => (current?.key === key && current.value === saved ? null : current)),
+      )
+      return
+    }
+    save(key, dirty ? { value, approved: true } : { approved: true })
+    setDraft(null)
+    setParam('key', next)
   }
 
   function withdraw() {
@@ -651,8 +666,8 @@ export function ReviewPage() {
           open={delivering}
           onOpenChange={setDelivering}
           language={languageLabel(locale)}
-          approved={approved}
-          notApproved={counts.review}
+          approved={deliverable}
+          notApproved={counts.review + (approved - deliverable)}
           unsavedKey={active && dirty ? active.key : null}
           pending={deliver.isPending || edit.isPending}
           error={deliver.error ? errorMessage(deliver.error, t) : null}

@@ -6,9 +6,9 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   language: string
-  /** Approved strings that this Deliver sends. */
+  /** Approved strings that this Deliver sends. With none, the dialog explains and cannot deliver. */
   approved: number
-  /** Strings still in review, which keep their current text in the code. */
+  /** Strings still in review (or about to be, with an unsaved edit), which keep their current text in the code. */
   notApproved: number
   /** Key of an unsaved edit in the editor, if any; it is saved as an edit, not delivered. */
   unsavedKey: string | null
@@ -25,13 +25,20 @@ export function DeliverDialog(props: Props) {
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={t('review.deliver.title', { language: props.language })}
-      description={t('review.deliver.body', { count: props.approved })}
+      description={
+        props.approved > 0 ? t('review.deliver.body', { count: props.approved }) : t('review.deliver.nothing')
+      }
       footer={
         <>
           <button type="button" className={ui.secondary} onClick={() => props.onOpenChange(false)}>
             {t('common.cancel')}
           </button>
-          <button type="button" className={ui.primary} onClick={props.onConfirm} disabled={props.pending}>
+          <button
+            type="button"
+            className={ui.primary}
+            onClick={props.onConfirm}
+            disabled={props.pending || props.approved === 0}
+          >
             {props.pending ? t('review.deliver.delivering') : t('review.deliver.count', { count: props.approved })}
           </button>
         </>

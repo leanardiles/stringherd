@@ -39,6 +39,7 @@ CHECKS: dict[str, Check] = {
         Check("numbers", "warning", False, "numbers differ from the source"),
         Check("endPunctuation", "warning", False, "ending punctuation differs from the source"),
         Check("doubleSpaces", "warning", False, "double spaces"),
+        Check("placeholderSpacing", "warning", False, "no space next to placeholders the source spaces off"),
         Check("unbalanced", "warning", False, "unbalanced brackets or quotes"),
     ]
 }
@@ -74,6 +75,9 @@ NUMBER = re.compile(r"\d+(?:[.,'  ]\d+| \d{3}(?!\d))*")
 ENDINGS = {".": ".", "?": "?", "!": "!", ":": ":", "…": "…", "。": ".", "？": "?", "！": "!", "：": ":", "؟": "?"}
 PAIRS = [("(", ")"), ("[", "]"), ("{", "}"), ("«", "»")]
 EVEN_QUOTES = ['"', "“”„"]  # straight quotes, and curly double quotes in any style (“…” „…“ „…”)
+# Scripts written without spaces (Thai, Lao, Myanmar, Khmer, Japanese kana, Chinese): a
+# placeholder next to one of their characters is normal, not glued.
+NO_SPACE_SCRIPT = re.compile("[฀-໿က-႟ក-៿぀-ヿ㐀-䶿一-鿿豈-﫿ｦ-ﾟ]")
 
 
 def find_placeholders(text: str) -> list[str]:
@@ -130,6 +134,33 @@ def _balanced(text: str) -> bool:
     return all(sum(text.count(q) for q in quotes) % 2 == 0 for quotes in EVEN_QUOTES)
 
 
+def _neighbours(text: str) -> list[tuple[str, str, str]]:
+    """For each occurrence of a placeholder: it, the character before it and the one after."""
+    return [(m.group(0), text[m.start() - 1 : m.start()], text[m.end() : m.end() + 1]) for m in PLACEHOLDER.finditer(text)]
+
+
+def _glued(char: str) -> bool:
+    return char.isalnum() and not NO_SPACE_SCRIPT.match(char)
+
+
+def _glued_placeholders(source: str, target: str) -> list[str]:
+    """Placeholders that touch a letter or digit on a side where the source always has a space,
+    like "{{count}}exercices" for "{{count}} exercises": "5exercices" on screen."""
+    in_source = _neighbours(source)
+
+    def spaced_on(placeholder: str, side: int) -> bool:
+        found = [n for n in in_source if n[0] == placeholder]
+        return bool(found) and all(n[side].isspace() for n in found)
+
+    items: list[str] = []
+    for placeholder, before, after in _neighbours(target):
+        if placeholder in items:
+            continue
+        if (_glued(before) and spaced_on(placeholder, 1)) or (_glued(after) and spaced_on(placeholder, 2)):
+            items.append(placeholder)
+    return items
+
+
 # ---------- The checks ----------
 
 def check_translation(source: str | None, target: str, rules: dict[str, Level] | None = None) -> list[QaIssue]:
@@ -159,6 +190,9 @@ def check_translation(source: str | None, target: str, rules: dict[str, Level] |
             found.append(("endPunctuation", []))
         if "  " in target and "  " not in source:
             found.append(("doubleSpaces", []))
+        glued = _glued_placeholders(source, target)
+        if glued:
+            found.append(("placeholderSpacing", glued))
         if _balanced(source) and not _balanced(target):
             found.append(("unbalanced", []))
 

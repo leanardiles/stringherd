@@ -46,6 +46,15 @@
     { "name": "double space", "source": "Save changes", "target": "Enregistrer  les modifications", "issues": [{ "code": "doubleSpaces" }] },
     { "name": "double space also in source", "source": "A  B", "target": "C  D", "issues": [] },
 
+    { "name": "placeholder glued to the next word", "source": "Logged {{count}} exercises", "target": "{{count}}exercices enregistrés", "issues": [{ "code": "placeholderSpacing", "items": ["{{count}}"] }] },
+    { "name": "placeholder glued to the previous word", "source": "Nothing matches {{query}}.", "target": "Rien ne correspond à{{query}}.", "issues": [{ "code": "placeholderSpacing", "items": ["{{query}}"] }] },
+    { "name": "placeholder spaced as in the source", "source": "Logged {{count}} exercises for {{day}}", "target": "{{count}} exercices enregistrés pour le {{day}}", "issues": [] },
+    { "name": "punctuation next to a placeholder is fine", "source": "Search {{query}}", "target": "Rechercher « {{query}} »", "issues": [] },
+    { "name": "hyphen or apostrophe next to a placeholder is fine", "source": "No {{muscle}} exercises", "target": "Geen {{muscle}}-oefeningen", "issues": [] },
+    { "name": "glued in the source too", "source": "{{count}}x", "target": "{{count}}x", "issues": [] },
+    { "name": "no-break space counts as a space", "source": "{{count}} kg", "target": "{{count}}\u00a0kg", "issues": [] },
+    { "name": "scripts without spaces are not glued", "source": "Logged {{count}} exercises", "target": "{{count}}件のエクササイズを記録しました", "issues": [] },
+
     { "name": "unclosed bracket", "source": "Sets (optional)", "target": "Séries (facultatif", "issues": [{ "code": "unbalanced" }] },
     { "name": "German quotes balanced", "source": "Tap “Save”", "target": "Tippe auf „Speichern“", "issues": [] },
     { "name": "guillemets balanced", "source": "Tap “Save”", "target": "Touchez « Enregistrer »", "issues": [] },

@@ -58,6 +58,9 @@
 
 .space::after {
   content: '·';
+  /* Bold and darker than the other marks, so a missing space next to a placeholder stands out. */
+  color: var(--color-text-secondary);
+  font-weight: 700;
 }
 
 .nbsp::after {
