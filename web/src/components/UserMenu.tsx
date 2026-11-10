@@ -39,9 +39,15 @@ export function UserMenu({ user }: { user: User }) {
           <DropdownMenu.Item className={styles.item} onSelect={showShortcuts}>
             {t('user.shortcuts')}
           </DropdownMenu.Item>
-          <DropdownMenu.Item className={styles.item} onSelect={() => navigate('/password', { state: { from: location.pathname } })}>
-            {t('user.changePassword')}
-          </DropdownMenu.Item>
+          {/* The hosted demo's shared accounts keep their password, so the option is not offered. */}
+          {!user.demo_account && (
+            <DropdownMenu.Item
+              className={styles.item}
+              onSelect={() => navigate('/password', { state: { from: location.pathname } })}
+            >
+              {t('user.changePassword')}
+            </DropdownMenu.Item>
+          )}
           <DropdownMenu.Item
             className={styles.item}
             onSelect={() => logout.mutate(undefined, { onSettled: () => navigate('/login', { replace: true }) })}

@@ -75,10 +75,12 @@ The Vercel Hobby plan is free and limited to personal, non-commercial use: the d
 ## The demo
 
 - **Data**: the Trailhead demo project that `seed-demo` already creates for Docker (a fictional hiking app in French and Latin American Spanish), with an admin and a reviewer account.
-- **One-click sign-in**: on the sign-in page, **Try as reviewer** and **Try as admin** sign the visitor in to the demo accounts without a password. Only with `DEMO_MODE` on; on production the buttons and the endpoint behind them do not exist.
-- **A banner** on every page: this is a demo, shared with other visitors, and it resets at a stated time.
-- **Guardrails**: the demo accounts cannot be deactivated, demoted or given a new password, so one visitor cannot lock out the next. Everything else is allowed, since the reset undoes it.
-- **Reset**: a Vercel cron job calls a reset endpoint, protected by a secret, that empties the database and runs the seed again. Daily to start; Hobby allows down to every 15 minutes, if visitors often find the demo already reviewed.
+Everything here exists only with `DEMO_MODE=true`, set in the demo's Vercel project alone: elsewhere the endpoints answer 404 and the UI shows none of it.
+
+- **One-click sign-in**: the sign-in page shows only **Try as reviewer** and **Try as admin**, which sign the visitor in to the demo accounts without a password (`POST /api/demo/sign-in`).
+- **A banner** on every page, the sign-in page included: "Shared demo: other visitors see your changes. Everything resets at 07:00 and 19:00 UTC." The UI learns the times from `GET /api/demo`.
+- **Guardrails**: the two demo accounts cannot be renamed, demoted, deactivated, given a password or have their languages changed, so one visitor cannot lock out the next. Their page in the admin screens says so and disables its forms, and Change password is not offered to them. Everything else is allowed, since the reset undoes it.
+- **Reset**: at 07:00 and 19:00 UTC a Vercel schedule (Schedules, in beta: the legacy cron jobs run at most once a day on Hobby) calls `POST /api/demo/reset` with `CRON_SECRET`. It empties every Stringherd table, keeps the migration record, and loads Trailhead again, which also signs everyone out. It refuses a database without the demo's admin account, so even `DEMO_MODE` set by mistake cannot empty real data. The dashboard's **Run Schedule** button resets on demand, and `reset-demo` does the same from this machine.
 - **Shared, not per visitor**: everyone sees the same data between resets. A copy per visitor is possible later if it matters.
 
 ---
@@ -101,8 +103,8 @@ Password reset by email and invitations wait for production, where real reviewer
 | | Chunk | What | Status |
 |---|---|---|---|
 | 0 | Preparation (mine) | Back up `stringherd-db`; `stringherd-db` on Pro in its own organization; the demo's database, migrated and seeded; the Vercel project, created at the start of chunk 1 | Done |
-| 1 | Serverless fit | Pooler settings and `NullPool`; `vercel.json` with two services; Montreal; first deploys as previews from the `hosted-demo` branch; checks: sign-in, review, `/health`, region, a cold-start push | In progress |
-| 2 | Demo mode | `DEMO_MODE`, one-click sign-in, the banner, guardrails, the reset endpoint and its cron job | To do |
+| 1 | Serverless fit | Pooler settings and `NullPool`; `vercel.json` with two services; Montreal. Live at stringherd-demo.vercel.app (9 November 2026): `/health` ok, sign-in, review and reload work, the function runs in `yul1`, and a push through the TMS API answers in 2.4 s from cold and 0.3 s warm | Done |
+| 2 | Demo mode | `DEMO_MODE`, one-click sign-in, the banner, guardrails, the reset endpoint and its schedule, `reset-demo` | Built; to deploy |
 | 3 | Hardening | Sign-in rate limiting, security headers, health monitoring | To do |
 | 4 | Launch | demo.stringherd.dev and the stringherd.dev redirect; a "Try it" section in the README; docs; release `1.2.0` | To do |
 
@@ -118,14 +120,14 @@ Production (later, in FitJournal in production): app.stringherd.dev as a second 
 | 2 | Addresses: demo.stringherd.dev, app.stringherd.dev, and stringherd.dev redirecting to the demo for now | Proposed |
 | 3 | `stringherd-db` becomes production's database, on Pro in its own organization; the demo's database stays on the free plan | Done |
 | 4 | Development moves to local Postgres when production starts | Agreed |
-| 5 | One-click demo sign-in (Try as reviewer, Try as admin), only with `DEMO_MODE` | Proposed |
-| 6 | One shared demo, reset daily by a cron job | Proposed |
+| 5 | One-click demo sign-in (Try as reviewer, Try as admin), only with `DEMO_MODE`; the sign-in page shows only the two buttons | Agreed |
+| 6 | One shared demo, reset at 07:00 and 19:00 UTC by a Vercel schedule | Agreed |
 | 7 | The UI is served by Vercel Services: `web` (the Vite build) and `api` (FastAPI) on one address | Agreed |
 | 8 | Migrations from my machine at first, from a GitHub Action later | Proposed |
 | 9 | `TMS_API_KEY` unset on both deployments | Proposed |
 | 10 | Functions run in Montreal (`yul1`), next to the databases in `ca-central-1` | Agreed |
-| 11 | Deploys are tried as previews from a `hosted-demo` branch, visible only when signed in to Vercel, and merged to `main` once they work | Agreed |
-| 12 | Until demo mode exists (chunk 2), the Trailhead accounts have private passwords, kept in 1Password | Agreed |
+| 11 | Changes are tried as previews from a branch, visible only when signed in to Vercel, and merged to `main` once they work. The first deploy went straight to `main`: Vercel's import reads `vercel.json` from the default branch | Agreed |
+| 12 | Until demo mode exists (chunk 2), the address is not shared; the Trailhead accounts keep the seeded password | Agreed |
 
 ---
 

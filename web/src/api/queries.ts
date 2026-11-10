@@ -8,6 +8,7 @@ import {
   type BulkApproveResult,
   type BulkWithdrawResult,
   type DeliveryResult,
+  type DemoInfo,
   type ImportMode,
   type PasswordChange,
   type ProjectAdmin,
@@ -28,6 +29,7 @@ import {
 
 export const queryKeys = {
   me: ['me'] as const,
+  demo: ['demo'] as const,
   reviewProjects: ['review', 'projects'] as const,
   reviewStrings: (projectId: string, locale: string) => ['review', 'strings', projectId, locale] as const,
   adminProjects: ['admin', 'projects'] as const,
@@ -81,6 +83,31 @@ export function useMe() {
       }
     },
     staleTime: 5 * 60_000,
+  })
+}
+
+/** The hosted demo's details, or null on any other server (the endpoint answers 404 there). */
+export function useDemo() {
+  return useQuery({
+    queryKey: queryKeys.demo,
+    queryFn: async (): Promise<DemoInfo | null> => {
+      try {
+        return await api<DemoInfo>('/api/demo')
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null
+        throw error
+      }
+    },
+    staleTime: Infinity,
+  })
+}
+
+/** On the hosted demo: sign in as its shared reviewer or admin, without a password. */
+export function useDemoSignIn() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (role: 'reviewer' | 'admin') => api<User>('/api/demo/sign-in', { method: 'POST', json: { role } }),
+    onSuccess: (user) => queryClient.setQueryData(queryKeys.me, user),
   })
 }
 

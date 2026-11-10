@@ -54,11 +54,15 @@ export function AdminPersonPage() {
         <UserStatus user={user} />
       </header>
 
-      {/* Keyed by id so the forms start fresh when moving between people. */}
-      <DetailsSection key={`details-${user.id}`} user={user} isSelf={isSelf} />
-      <LanguagesSection user={user} />
-      <AccessSection user={user} isSelf={isSelf} />
-      <PasswordSection user={user} isSelf={isSelf} />
+      {user.demo_account && <p className={ui.notice}>{t('admin.person.demoAccount')}</p>}
+      {/* A shared demo account cannot be changed (the server refuses), so its forms are disabled. */}
+      <fieldset className={styles.locked} disabled={user.demo_account}>
+        {/* Keyed by id so the forms start fresh when moving between people. */}
+        <DetailsSection key={`details-${user.id}`} user={user} isSelf={isSelf} />
+        <LanguagesSection user={user} />
+        <AccessSection user={user} isSelf={isSelf} />
+        <PasswordSection user={user} isSelf={isSelf} />
+      </fieldset>
     </div>
   )
 }

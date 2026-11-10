@@ -38,4 +38,14 @@ People sign in with email and password and get a session cookie (`HttpOnly`, `Sa
 
 Admins manage people under `/api/admin/users` (create with a temporary password, update, deactivate, reset password, assign project and language) and projects under `/api/admin/projects` (languages, API keys, setup snippet; see [docs/ADMIN-PLAN.md](ADMIN-PLAN.md)). A language can be added with an answer for its existing translations (`import_mode`: `retranslate`, `review` or `reviewed`), changed with `PATCH /api/admin/projects/{projectId}/locales/{locale}` while it has no strings, and an import closed with `POST /api/admin/projects/{projectId}/locales/{locale}/import/finish` ([docs/LOCALES-PLAN.md](LOCALES-PLAN.md#existing-translations)). Reviewers only see and change the languages they are assigned to; admins can review any language.
 
+On the hosted demo (`DEMO_MODE=true`; elsewhere these answer `404`):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/demo` | Tells the UI it runs as the demo, and when it resets: `{"resets_utc": ["07:00", "19:00"]}` |
+| `POST` | `/api/demo/sign-in` | Sign in as the demo's reviewer or admin, without a password. Body: `{"role": "reviewer"}` or `{"role": "admin"}` |
+| `POST` | `/api/demo/reset` | Empty the demo and load Trailhead again. Needs `Authorization: Bearer <CRON_SECRET>`; Vercel's schedule calls it |
+
+Users carry `demo_account: true` for the demo's two shared accounts, which the account endpoints refuse to change (`403`).
+
 And `GET /health` (server and database status), with interactive docs at `/docs`.

@@ -1,8 +1,14 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100%;
+}
+
 .page {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  min-block-size: 100%;
   padding: var(--space-5) var(--space-4);
 }
 
@@ -42,4 +48,20 @@
 .submit {
   min-block-size: 36px;
   margin-block-start: var(--space-2);
+}
+
+/* The demo's two sign-in buttons, each with a line on what that role sees. */
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.choice .submit {
+  margin-block-start: 0;
+}
+
+.choice p {
+  margin: 0;
+  text-align: center;
 }

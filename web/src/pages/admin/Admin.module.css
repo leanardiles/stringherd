@@ -272,3 +272,11 @@
 .startAligned {
   align-items: flex-start;
 }
+
+/* Groups a person's sections without changing the layout, so they can be disabled together. */
+.locked {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

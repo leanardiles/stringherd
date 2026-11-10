@@ -16,11 +16,23 @@
     "password": "Password",
     "submit": "Sign in",
     "submitting": "Signing in…",
+    "demo": {
+      "title": "Try Stringherd",
+      "subtitle": "A demo project, Trailhead: a hiking app translated into French and Latin American Spanish.",
+      "reviewer": "Try as reviewer",
+      "reviewerHint": "Review and approve translations, then deliver them.",
+      "admin": "Try as admin",
+      "adminHint": "Also manage projects, languages, people and API keys.",
+      "notReady": "The demo is being set up. Try again in a minute."
+    },
     "errors": {
       "invalid": "Incorrect email or password.",
       "network": "Can't reach the Stringherd server. Check that it's running.",
       "unknown": "Something went wrong. Try again."
     }
+  },
+  "demo": {
+    "banner": "Shared demo: other visitors see your changes. Everything resets at {{times}} UTC."
   },
   "user": {
     "menu": "Account menu for {{name}}",
@@ -475,6 +487,7 @@
     },
     "person": {
       "back": "All people",
+      "demoAccount": "This is a shared demo account: visitors sign in with it, so it can't be changed. People you add yourself can.",
       "details": "Details",
       "name": "Name",
       "role": "Role",

@@ -179,6 +179,12 @@ python -m app.cli seed-demo     # against a local database; add op run for one f
 - **French** has a review session behind it: 4 strings delivered, 3 approved since (one edited by the reviewer, so the editor shows a word diff), the rest to review. One string misses its `{{name}}` placeholder, so it cannot be approved; two carry quality warnings.
 - **Spanish** has just arrived from DeepL: all 22 strings to review.
 - It refuses to run when any user or project exists, so it never mixes with real data; running it again changes nothing. The data lives in `server/app/demo.py` and goes through the same functions as real data (project creation, source upload, Deliver).
+- `reset-demo` empties a database that holds the demo and loads Trailhead again, as the hosted demo's scheduled reset does. It asks you to type `trailhead` first and refuses a database without `admin@trailhead.example`:
+
+```bash
+cd server
+op run --env-file=../.env.demo.op -- python -m app.cli reset-demo
+```
 
 ### Projects and API keys
 
@@ -388,7 +394,8 @@ The public demo runs on Vercel, configured by `vercel.json` at the repository ro
 - **Region**: Montreal (`yul1`), next to the database in Supabase's `ca-central-1`. The free plan allows one region.
 - **Python 3.13**, from `server/.python-version`; dependencies from `server/pyproject.toml`.
 - **The database through Supabase's transaction pooler** (port 6543). Stringherd recognizes the port and then keeps no connection pool and no prepared statements (`app/db.py`), as serverless functions need; everywhere else it keeps its pool.
-- **Settings** (the project's Environment Variables): `DATABASE_URL`, the transaction pooler address, and `COOKIE_SECURE=true`. No `TMS_API_KEY`: projects use their own keys. The function's bundle has no UI build in it, so the server runs as the API only.
+- **Settings** (the project's Environment Variables): `DATABASE_URL`, the transaction pooler address; `COOKIE_SECURE=true`; `DEMO_MODE=true`, which turns on the one-click sign-in, the banner, the guardrails on the demo accounts and the reset endpoint; and `CRON_SECRET`, a long random value kept in 1Password, which Vercel sends with each scheduled reset. No `TMS_API_KEY`: projects use their own keys. The function's bundle has no UI build in it, so the server runs as the API only.
+- **The reset**: a schedule in `vercel.json` (`demo-reset`) calls `POST /api/demo/reset` at 07:00 and 19:00 UTC. A test keeps those hours in step with the banner. To reset by hand, use **Run Schedule** on the project's Schedules page, or `reset-demo` from this machine.
 - **Migrations are not part of a deploy.** Run them from this machine, through the session pooler, before deploying code that needs them:
 
 ```bash

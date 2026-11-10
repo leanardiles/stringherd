@@ -3,6 +3,7 @@
     python -m app.cli create-admin --email you@example.com --name "Your Name"
     python -m app.cli set-password --email you@example.com
     python -m app.cli seed-demo
+    python -m app.cli reset-demo
     python -m app.cli reset-language --project fitjournal --locale fr [--dry-run]
     python -m app.cli remove-language --project fitjournal --locale nl [--dry-run]
 
@@ -12,7 +13,9 @@ database with the Trailhead demo project and prints the demo sign-ins. reset-lan
 language of a project back to DeepL's machine translation, every string to review; it shows what
 will change and asks to type the language code before changing anything. remove-language
 removes a language from a project with its translations, assignments and delivery history, after
-the same kind of confirmation.
+the same kind of confirmation. reset-demo empties the hosted demo's database and loads the
+Trailhead project again, as the scheduled reset does; it asks to type trailhead first, and
+refuses a database that does not hold the demo.
 """
 
 import argparse
@@ -77,6 +80,18 @@ def seed_demo() -> str:
         f"Demo project Trailhead created: {summary.strings} strings in {languages}.\n"
         f"Sign in as {demo.ADMIN_EMAIL} or {demo.REVIEWER_EMAIL}, password {demo.DEMO_PASSWORD}"
     )
+
+
+def reset_demo(*, confirm=input, session_factory=SessionLocal) -> str:
+    print("This empties every Stringherd table in this database and loads the Trailhead demo again.")
+    if confirm("Type trailhead to continue: ").strip() != demo.PROJECT_SLUG:
+        return "Nothing changed."
+    with session_factory() as db:
+        try:
+            summary = demo.reset_demo(db)
+        except demo.NotDemoDatabaseError:
+            return f"This database has no {demo.ADMIN_EMAIL}, so it does not hold the demo. Nothing changed."
+    return f"Demo reset: Trailhead with {summary.strings} strings in {', '.join(summary.languages)}."
 
 
 def reset_language(
@@ -161,6 +176,7 @@ def main(argv: list[str] | None = None) -> None:
     reset.add_argument("--email", required=True)
 
     commands.add_parser("seed-demo", help="Fill an empty database with the Trailhead demo project")
+    commands.add_parser("reset-demo", help="Empty the demo's database and load the Trailhead project again")
 
     language = commands.add_parser(
         "reset-language", help="Put a language back to DeepL's machine translation, every string to review"
@@ -179,6 +195,9 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if args.command == "seed-demo":
         print(seed_demo())
+        return
+    if args.command == "reset-demo":
+        print(reset_demo())
         return
     if args.command == "reset-language":
         print(reset_language(args.project, args.locale, dry_run=args.dry_run))

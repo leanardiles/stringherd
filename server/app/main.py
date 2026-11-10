@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.routers import admin, admin_projects, auth, review, source, tms
+from app.routers import admin, admin_projects, auth, demo, review, source, tms
 from app.web import serve_ui
 
 app = FastAPI(
@@ -23,6 +23,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(admin_projects.router)
 app.include_router(review.router)
+app.include_router(demo.router)
 
 
 @app.get("/health", tags=["meta"])

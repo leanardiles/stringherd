@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Project, ReviewerAssignment, User, UserRole
-from app.routers.auth import user_out
+from app.routers.auth import refuse_demo_account, user_out
 from app.schemas import AssignmentIn, TemporaryPassword, UserCreate, UserCreated, UserOut, UserUpdate
 from app.security import AdminUser, end_all_sessions, generate_temporary_password, hash_password
 
@@ -64,6 +64,7 @@ def update_user(user_id: Annotated[int, Path()], body: UserUpdate, admin: AdminU
     change or deactivation signs the user out everywhere.
     """
     user = _get_user(db, user_id)
+    refuse_demo_account(user)
     if user.id == admin.id and (body.role == "reviewer" or body.is_active is False):
         # Prevents locking yourself (and possibly everyone) out of administration.
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot demote or deactivate yourself.")
@@ -91,6 +92,7 @@ def reset_password(user_id: Annotated[int, Path()], admin: AdminUser, db: DbSess
     The user is signed out everywhere and must choose a new password at next sign-in.
     """
     user = _get_user(db, user_id)
+    refuse_demo_account(user)
     if user.id == admin.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Use Change password to set your own password."
@@ -107,6 +109,7 @@ def reset_password(user_id: Annotated[int, Path()], admin: AdminUser, db: DbSess
 def add_assignment(user_id: Annotated[int, Path()], body: AssignmentIn, admin: AdminUser, db: DbSession) -> UserOut:
     """Let a user review one language of one project."""
     user = _get_user(db, user_id)
+    refuse_demo_account(user)
     project = db.scalar(select(Project).where(Project.slug == body.project_id))
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{body.project_id}' not found.")
@@ -138,6 +141,7 @@ def remove_assignment(
     db: DbSession,
 ) -> UserOut:
     user = _get_user(db, user_id)
+    refuse_demo_account(user)
     for assignment in list(user.assignments):
         if assignment.project.slug == project_id and assignment.locale == locale:
             db.delete(assignment)

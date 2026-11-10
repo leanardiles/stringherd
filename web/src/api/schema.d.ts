@@ -633,6 +633,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo Info
+         * @description Tells the UI it runs as the demo: it then shows the sign-in buttons and the banner.
+         */
+        get: operations["demo_info_api_demo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Sign In
+         * @description Sign in as the demo's reviewer or admin, without a password.
+         */
+        post: operations["demo_sign_in_api_demo_sign_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demo Reset
+         * @description Empty the demo and load Trailhead again. Called by Vercel on a schedule, with the
+         *     CRON_SECRET in the Authorization header; closed when the secret is not set.
+         */
+        post: operations["demo_reset_api_demo_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -776,6 +837,26 @@ export interface components {
              * Format: date-time
              */
             delivered_at: string;
+        };
+        /** DemoInfo */
+        DemoInfo: {
+            /** Resets Utc */
+            resets_utc: string[];
+        };
+        /** DemoReset */
+        DemoReset: {
+            /** Strings */
+            strings: number;
+            /** Languages */
+            languages: string[];
+        };
+        /** DemoSignIn */
+        DemoSignIn: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "reviewer" | "admin";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1204,6 +1285,11 @@ export interface components {
             last_login_at: string | null;
             /** Assignments */
             assignments: components["schemas"]["AssignmentOut"][];
+            /**
+             * Demo Account
+             * @default false
+             */
+            demo_account: boolean;
             /** Temporary Password */
             temporary_password: string | null;
         };
@@ -1225,6 +1311,11 @@ export interface components {
             last_login_at: string | null;
             /** Assignments */
             assignments: components["schemas"]["AssignmentOut"][];
+            /**
+             * Demo Account
+             * @default false
+             */
+            demo_account: boolean;
         };
         /** UserUpdate */
         UserUpdate: {
@@ -2399,6 +2490,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewString"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_info_api_demo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoInfo"];
+                };
+            };
+        };
+    };
+    demo_sign_in_api_demo_sign_in_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoSignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_reset_api_demo_reset_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoReset"];
                 };
             };
             /** @description Validation Error */

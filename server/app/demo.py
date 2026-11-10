@@ -4,6 +4,9 @@ Spanish, with strings in every state the review screen shows.
 Used by `python -m app.cli seed-demo`, which the Docker setup runs on its first start. It only
 fills an empty database, so demo accounts can never end up next to real ones. It goes through
 the same functions as real data (projects, source upload, Deliver), so it follows the same rules.
+
+The hosted demo (DEMO_MODE) also resets to this data on a schedule (`reset_demo`), and keeps its
+two accounts out of reach of visitors (`is_demo_account`).
 """
 
 from dataclasses import dataclass
@@ -12,6 +15,8 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
+from app.db import Base
 from app.models import (
     Project,
     ReviewerAssignment,
@@ -32,8 +37,13 @@ SOURCE_FILE = "src/locales/en/common.json"
 # never reaches a real inbox once Stringherd sends email.
 ADMIN_EMAIL = "admin@trailhead.example"
 REVIEWER_EMAIL = "reviewer@trailhead.example"
-# Printed by seed-demo and documented. The Docker setup only listens on 127.0.0.1.
+# Printed by seed-demo and documented. The Docker setup only listens on 127.0.0.1. The hosted
+# demo signs visitors in with one click instead, so they never need it.
 DEMO_PASSWORD = "trailhead-demo"
+DEMO_ACCOUNTS = {"admin": ADMIN_EMAIL, "reviewer": REVIEWER_EMAIL}
+# When the hosted demo resets, in UTC. vercel.json schedules the reset at these hours (a test
+# keeps the two in step), and the banner tells visitors.
+RESET_HOURS_UTC = (7, 19)
 
 SOURCE = {
     "nav.home": "Home",
@@ -127,6 +137,10 @@ class DatabaseNotEmptyError(Exception):
     """seed-demo only fills an empty database."""
 
 
+class NotDemoDatabaseError(Exception):
+    """The reset only empties a database that holds the demo: its admin account must be there."""
+
+
 @dataclass
 class DemoSummary:
     strings: int
@@ -203,3 +217,23 @@ def seed_demo(db: Session) -> DemoSummary:
     db.commit()
 
     return DemoSummary(strings=len(SOURCE), languages=languages)
+
+
+def is_demo_account(user: User) -> bool:
+    """One of the two Trailhead accounts on the hosted demo, which visitors share and cannot change."""
+    return get_settings().demo_mode and user.email in DEMO_ACCOUNTS.values()
+
+
+def reset_demo(db: Session) -> DemoSummary:
+    """Empty every Stringherd table and seed the demo again.
+
+    Refuses unless the demo's admin account exists: a database with real data never has it, so
+    it cannot be emptied even if DEMO_MODE were set on it by mistake. The migration record
+    (alembic_version) is not a Stringherd table and stays.
+    """
+    if db.scalar(select(User.id).where(User.email == ADMIN_EMAIL)) is None:
+        raise NotDemoDatabaseError()
+    for table in reversed(Base.metadata.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
+    return seed_demo(db)

@@ -2,6 +2,7 @@ import type { components } from './schema'
 
 // Types generated from the server's OpenAPI schema (npm run api:types).
 export type User = components['schemas']['UserOut']
+export type DemoInfo = components['schemas']['DemoInfo']
 export type ReviewProject = components['schemas']['ReviewProject']
 export type ReviewLocale = components['schemas']['ReviewLocale']
 export type ReviewString = components['schemas']['ReviewString']

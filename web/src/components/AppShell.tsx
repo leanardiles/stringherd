@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router'
 import { useMe } from '../api/queries'
+import { DemoBanner } from './DemoBanner'
 import { ShortcutsProvider } from './shortcuts/ShortcutsProvider'
 import { TopBar } from './TopBar'
 import styles from './AppShell.module.css'
@@ -11,6 +12,7 @@ export function AppShell() {
   return (
     <ShortcutsProvider>
       <div className={styles.shell}>
+        <DemoBanner />
         <TopBar user={user} />
         <main className={styles.main}>
           <Outlet />

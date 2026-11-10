@@ -120,6 +120,8 @@ class UserOut(BaseModel):
     must_change_password: bool
     last_login_at: datetime | None
     assignments: list[AssignmentOut]
+    # One of the hosted demo's shared accounts, which cannot be changed (DEMO_MODE only).
+    demo_account: bool = False
 
 
 class UserCreate(BaseModel):

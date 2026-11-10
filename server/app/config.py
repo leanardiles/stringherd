@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # (e.g. https://stringherd.example.com). Defaults to the address the admin's browser used.
     public_url: str | None = None
 
+    # The public demo (DEMO_MODE=true): one-click sign-in to the Trailhead accounts, guardrails on
+    # them, a banner, and a reset on a schedule. Never set it on a server with real data.
+    demo_mode: bool = False
+    # The secret Vercel sends with each scheduled reset (Authorization: Bearer <secret>).
+    # Without it, the reset endpoint stays closed.
+    cron_secret: str | None = None
+
     # The built review UI (npm run build in web/), served by this server at the same address.
     # Defaults to web/dist in the repository. Without a build the server runs the API only, which
     # is also how a host that serves the UI itself (such as a CDN) runs it. WEB_DIST= turns it off.
