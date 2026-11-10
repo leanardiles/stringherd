@@ -165,7 +165,7 @@ Settings (environment variables, optional):
 | `PUBLIC_URL` | (none) | The address repositories use to reach Stringherd, shown on each project's setup page. Without it, the setup page uses the address of the admin's browser |
 | `TMS_API_KEY` | (none) | Development key that opens every project. Leave it unset on a shared server, so only project keys work |
 
-Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash.
+Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash. Failed sign-ins are limited: 5 within 15 minutes for one email, or 20 from one network address, and further attempts are refused (`429`) until the failures age out, at most 15 minutes later. They are recorded in the `sign_in_failures` table, since serverless functions keep nothing in memory; on Vercel the address comes from `X-Real-IP`, elsewhere from the connection (`app/services/sign_in_limits.py`).
 
 ### Demo data
 

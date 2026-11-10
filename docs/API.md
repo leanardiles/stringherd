@@ -24,7 +24,7 @@ People sign in with email and password and get a session cookie (`HttpOnly`, `Sa
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/api/auth/login` | Sign in. Body: `{"email": "...", "password": "..."}` |
+| `POST` | `/api/auth/login` | Sign in. Body: `{"email": "...", "password": "..."}`. After 5 failures for one email within 15 minutes, or 20 from one address, answers `429` with the minutes to wait (also in `Retry-After`, in seconds) |
 | `POST` | `/api/auth/logout` | Sign out (ends the session on the server) |
 | `GET` | `/api/auth/me` | The signed-in user, with their assignments |
 | `POST` | `/api/auth/password` | Change your password (required after a temporary one) |

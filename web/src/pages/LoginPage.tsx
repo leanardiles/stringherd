@@ -101,6 +101,8 @@ function PasswordSignIn({ from }: { from: string }) {
   let error: string | null = null
   if (login.error instanceof ApiError) {
     if (login.error.status === 401) error = t('login.errors.invalid')
+    // Too many failed attempts: the server says how many minutes to wait.
+    else if (login.error.status === 429) error = login.error.detail ?? t('login.errors.tooMany')
     else if (login.error.unreachable) error = t('login.errors.network')
     else error = t('login.errors.unknown')
   }

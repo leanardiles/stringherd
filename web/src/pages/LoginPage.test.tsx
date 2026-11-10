@@ -53,4 +53,16 @@ describe('sign-in', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByRole('alert')).toHaveTextContent("Can't reach the Stringherd server")
   })
+
+  it('says how long to wait after too many failed sign-ins', async () => {
+    renderApp('/login', (url) =>
+      url === '/api/auth/login'
+        ? { status: 429, body: { detail: 'Too many failed sign-ins. Try again in 12 minutes.' } }
+        : { status: 401 },
+    )
+    await userEvent.type(await screen.findByLabelText('Email'), 'ana@example.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many failed sign-ins. Try again in 12 minutes.')
+  })
 })

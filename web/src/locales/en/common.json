@@ -27,6 +27,7 @@
     },
     "errors": {
       "invalid": "Incorrect email or password.",
+      "tooMany": "Too many failed sign-ins. Try again in a few minutes.",
       "network": "Can't reach the Stringherd server. Check that it's running.",
       "unknown": "Something went wrong. Try again."
     }

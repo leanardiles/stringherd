@@ -1,9 +1,10 @@
 """Sign-in and sign-out for people, using a session cookie."""
 
+import os
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -21,6 +22,7 @@ from app.security import (
     hash_password,
     verify_password,
 )
+from app.services import sign_in_limits
 
 router = APIRouter(prefix="/api/auth", tags=["sign-in"])
 
@@ -64,13 +66,39 @@ def start_session(response: Response, db: Session, user: User) -> None:
     )
 
 
+def client_address(request: Request) -> str | None:
+    """The visitor's network address, for the sign-in limits.
+
+    On Vercel (which sets VERCEL=1) it comes from X-Real-IP, which Vercel writes itself and does
+    not take from the visitor, so it cannot be faked. Anywhere else such a header could be sent
+    by anyone, so the address of the connection is used instead.
+    """
+    if os.environ.get("VERCEL") == "1":
+        return request.headers.get("x-real-ip") or None
+    return request.client.host if request.client else None
+
+
 @router.post("/login", response_model=UserOut)
-def login(body: LoginRequest, response: Response, db: DbSession) -> UserOut:
-    """Check email and password; on success set an HttpOnly session cookie."""
+def login(body: LoginRequest, request: Request, response: Response, db: DbSession) -> UserOut:
+    """Check email and password; on success set an HttpOnly session cookie.
+
+    Too many failures for one email, or from one address, are refused for a while
+    (app/services/sign_in_limits.py), with 429 and the minutes to wait.
+    """
+    address = client_address(request)
+    minutes = sign_in_limits.locked_for(db, body.email, address)
+    if minutes is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many failed sign-ins. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
+            headers={"Retry-After": str(minutes * 60)},
+        )
     user = authenticate(db, body.email, body.password)
     if user is None:
+        sign_in_limits.record_failure(db, body.email, address)
         # Same message for unknown email, wrong password or deactivated account.
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password.")
+    sign_in_limits.clear(db, body.email)
     start_session(response, db, user)
     return user_out(user)
 

@@ -288,3 +288,18 @@ class UserSession(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     user: Mapped[User] = relationship()
+
+
+class SignInFailure(Base):
+    """One failed password sign-in, kept for a day to limit how often passwords can be tried
+    (app/services/sign_in_limits.py). Recorded in the database because serverless functions
+    keep nothing in memory between requests."""
+
+    __tablename__ = "sign_in_failures"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # As typed, lower-cased, whether or not an account has it: guessing is limited either way.
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    # The network address the attempt came from, when known.
+    address: Mapped[str | None] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
