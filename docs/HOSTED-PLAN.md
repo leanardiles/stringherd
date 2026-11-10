@@ -105,7 +105,7 @@ Password reset by email and invitations wait for production, where real reviewer
 | 0 | Preparation (mine) | Back up `stringherd-db`; `stringherd-db` on Pro in its own organization; the demo's database, migrated and seeded; the Vercel project, created at the start of chunk 1 | Done |
 | 1 | Serverless fit | Pooler settings and `NullPool`; `vercel.json` with two services; Montreal. Live at stringherd-demo.vercel.app (9 November 2026): `/health` ok, sign-in, review and reload work, the function runs in `yul1`, and a push through the TMS API answers in 2.4 s from cold and 0.3 s warm | Done |
 | 2 | Demo mode | `DEMO_MODE`, one-click sign-in, the banner, guardrails, the reset endpoint and its schedule, `reset-demo`. Live on stringherd-demo.vercel.app (10 November 2026): both buttons, the banner, the locked demo accounts, and a reset through Run Schedule all checked | Done |
-| 3 | Hardening | Three units: (1) limits on failed sign-ins, 5 per email and 20 per address within 15 minutes, built; (2) security headers from the server and, for the UI on Vercel, from `vercel.json`, built; (3) UptimeRobot on `/health` and Vercel's logs | In progress |
+| 3 | Hardening | Three units: (1) limits on failed sign-ins, 5 per email and 20 per address within 15 minutes, built; (2) security headers from the server and, for the UI on Vercel, from `vercel.json`, built; (3) `/health` answers `HEAD`, the method UptimeRobot's free plan checks with, built; the monitor and Vercel's logs, documented | In progress |
 | 4 | Launch | demo.stringherd.dev and the stringherd.dev redirect (live 10 November 2026: CNAME records in Cloudflare, DNS only; a 307 redirect in Vercel; `PUBLIC_URL` set); a "Try it" section in the README; docs; release `1.2.0` | In progress |
 
 Production (later, in FitJournal in production): app.stringherd.dev as a second Vercel project; `stringherd-db` on Pro; development on local Postgres; FitJournal's `.deepl-sync.yaml` pointing at app.stringherd.dev with a project key instead of the development key.
@@ -128,6 +128,8 @@ Production (later, in FitJournal in production): app.stringherd.dev as a second 
 | 10 | Functions run in Montreal (`yul1`), next to the databases in `ca-central-1` | Agreed |
 | 11 | Changes are tried as previews from a branch, visible only when signed in to Vercel, and merged to `main` once they work. The first deploy went straight to `main`: Vercel's import reads `vercel.json` from the default branch | Agreed |
 | 12 | Until demo mode exists (chunk 2), the address is not shared; the Trailhead accounts keep the seeded password | Agreed |
+| 13 | Limits on failed sign-ins: 5 per email and 20 per address within 15 minutes, then a 15-minute wait | Agreed |
+| 14 | Uptime monitoring with UptimeRobot's free plan: `/health` every 5 minutes, alerts by email | Agreed |
 
 ---
 
@@ -135,4 +137,3 @@ Production (later, in FitJournal in production): app.stringherd.dev as a second 
 
 - How often to reset the demo: daily, or more often if visitors keep finding it already reviewed.
 - Whether the demo should also show the DeepL Sync side, for example a page that sends a sample push, since visitors cannot run the CLI against it.
-- An uptime service for the health check (several have free plans).

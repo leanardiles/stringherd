@@ -9,6 +9,7 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 - Demo mode (`DEMO_MODE=true`), for the hosted demo: one-click sign-in as the Trailhead reviewer or admin, a banner saying the demo is shared and when it resets, guardrails that keep the two shared accounts as they are, and a reset at 07:00 and 19:00 UTC by a Vercel schedule protected by `CRON_SECRET`. `reset-demo` resets it from the command line.
 - Limits on failed sign-ins: 5 within 15 minutes for one email, or 20 from one network address, then `429` with the minutes to wait, which the sign-in page shows. Failures are kept in the database (a new table, `sign_in_failures`), since serverless functions keep nothing in memory.
 - Security headers on every response: a content policy limiting pages to Stringherd's own files and forbidding framing by other sites, plus `nosniff`, a referrer policy, a permissions policy and, over HTTPS, HSTS. On Vercel the UI gets the same headers from `vercel.json`.
+- `/health` answers `HEAD` as well as `GET`, since uptime services such as UptimeRobot check with `HEAD`.
 
 ## [1.1.0] - 2026-11-09
 

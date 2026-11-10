@@ -246,7 +246,7 @@ It sends **every** source string each time; the server compares with what it has
 
 - Use the **Session pooler** connection string (port 5432, IPv4). The direct connection is IPv6-only on the free plan.
 - On Vercel, use the **Transaction pooler** instead (port 6543), as serverless functions should; see [Hosting on Vercel](#hosting-on-vercel). Database passwords use letters and digits only, since they sit inside these addresses.
-- Free projects **pause after 7 days of inactivity**. If `/health` reports the database as unreachable, open the Supabase dashboard and click **Resume project**.
+- Free projects **pause after 7 days of inactivity**. If `/health` reports the database as unreachable, open the Supabase dashboard and click **Resume project**. The demo's database is checked every 5 minutes by the uptime monitor (see [Hosting on Vercel](#hosting-on-vercel)), which should keep it awake.
 
 ---
 
@@ -406,6 +406,8 @@ cd server
 op run --env-file=../.env.demo.op -- alembic upgrade head
 ```
 
+- **Monitoring**: UptimeRobot (free plan) checks `https://demo.stringherd.dev/health` every 5 minutes and sends an email when it stops answering. `/health` asks the database for `SELECT 1`, so it answers `503` when the database is unreachable, which UptimeRobot counts as down. The free plan checks with `HEAD`, which `/health` answers like `GET`, without the body. The checks also reach the demo's database every 5 minutes, which should keep its free Supabase project from pausing.
+- **Logs**: the project's **Logs** page in Vercel lists each request the `api` service handled, with its status and anything the server wrote, such as an error's traceback; 4xx rows are amber, 5xx red, and filters narrow them by status code or path. The free plan keeps one hour, so look soon after an alert. `vercel logs --environment production --since 1h` shows the same from the command line.
 - **Previews**: every push to a branch gets its own deployment, visible only when signed in to Vercel; a push to `main` updates the demo.
 - **To check a build before pushing**, `vercel build` (the Vercel CLI) builds both services as Vercel would, without deploying.
 

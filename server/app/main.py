@@ -31,7 +31,10 @@ app.include_router(review.router)
 app.include_router(demo.router)
 
 
+# Uptime services check with HEAD unless told otherwise (UptimeRobot's free plan can't be),
+# so HEAD gets the same answer without a body instead of 405.
 @app.get("/health", tags=["meta"])
+@app.head("/health", include_in_schema=False)
 def health(db: Annotated[Session, Depends(get_db)]):
     """Liveness check that also confirms the database is reachable."""
     try:

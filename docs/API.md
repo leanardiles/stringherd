@@ -48,4 +48,4 @@ On the hosted demo (`DEMO_MODE=true`; elsewhere these answer `404`):
 
 Users carry `demo_account: true` for the demo's two shared accounts, which the account endpoints refuse to change (`403`).
 
-And `GET /health` (server and database status), with interactive docs at `/docs`.
+And `GET /health` (server and database status; `200`, or `503` when the database is unreachable; `HEAD` gets the same status without the body, for uptime services), with interactive docs at `/docs`.
