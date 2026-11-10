@@ -14,7 +14,7 @@ from app.web import serve_ui
 
 app = FastAPI(
     title="Stringherd",
-    version="1.1.0",
+    version="1.2.0",
     description="Open-source review server for DeepL Sync.",
 )
 

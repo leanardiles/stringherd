@@ -95,6 +95,7 @@ Goal: anyone can open Stringherd in the browser and try it, with nothing to inst
 - ✅ **Deploys**: a push to `main` deploys; migrations run first from my machine with `op run` (from a GitHub Action later); secrets in Vercel's environment variables, copied from 1Password
 - ✅ **Hardening**: limits on failed sign-ins, counted in the database since functions keep no memory; security headers; no server-wide development key
 - ✅ **Monitoring**: UptimeRobot checks `/health`, the server and the database, every 5 minutes; errors in Vercel's logs
+- ✅ **`v1.2.0` tag and changelog**
 
 ---
 

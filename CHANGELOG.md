@@ -4,6 +4,10 @@ What changes in each release of Stringherd. The format follows [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
+Stringherd is online: a public demo at [demo.stringherd.dev](https://demo.stringherd.dev), where anyone can sign in with one click as a reviewer or an admin and try the review screen, with nothing to install. It runs on Vercel and Supabase at no cost.
+
 ### Added
 - The hosted demo, live at [demo.stringherd.dev](https://demo.stringherd.dev), now first in the README's Try it section with a picture of its sign-in page. `npm run screenshots -- --demo-url <address>` captures that picture.
 - Hosting on Vercel: `vercel.json` runs the UI and the server as two services on one address, in Montreal next to the database. Through Supabase's transaction pooler (port 6543), the server keeps no connection pool and no prepared statements, as serverless functions need.
@@ -75,6 +79,7 @@ The first release: a complete review server for DeepL Sync that someone else can
 - Documentation: the API reference ([docs/API.md](docs/API.md)), development and Docker setup ([docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)), and a walkthrough of the DeepL Sync loop in the README.
 - MIT license.
 
-[Unreleased]: https://github.com/leanardiles/stringherd/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/leanardiles/stringherd/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/leanardiles/stringherd/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/leanardiles/stringherd/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/leanardiles/stringherd/releases/tag/v1.0.0
