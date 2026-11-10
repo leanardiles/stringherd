@@ -392,6 +392,7 @@ The public demo runs on Vercel, configured by `vercel.json` at the repository ro
 
 - **Two services in one project** (Vercel Services, in beta): `web` is the Vite build from `web/`, served by Vercel's CDN, with every page address falling back to `index.html`; `api` is the FastAPI app from `server/` (`app.main:app`), running as a Python function. Requests for `/api/…`, `/health`, `/docs`, `/redoc` and `/openapi.json` go to `api`, everything else to `web`, all on one address, so the session cookie works as it does locally.
 - **Region**: Montreal (`yul1`), next to the database in Supabase's `ca-central-1`. The free plan allows one region.
+- **Addresses**: `demo.stringherd.dev`, and `stringherd.dev` redirecting to it with a temporary 307 (it becomes a landing page later). Both are CNAME records in Cloudflare, where the domain is registered, pointing to the project's `…vercel-dns-017.com` address with the proxy off (DNS only, grey cloud); Vercel issues the certificates. `PUBLIC_URL=https://demo.stringherd.dev`, so setup snippets show that address. The `stringherd-demo.vercel.app` address keeps working.
 - **Python 3.13**, from `server/.python-version`; dependencies from `server/pyproject.toml`.
 - **The database through Supabase's transaction pooler** (port 6543). Stringherd recognizes the port and then keeps no connection pool and no prepared statements (`app/db.py`), as serverless functions need; everywhere else it keeps its pool.
 - **Settings** (the project's Environment Variables): `DATABASE_URL`, the transaction pooler address; `COOKIE_SECURE=true`; `DEMO_MODE=true`, which turns on the one-click sign-in, the banner, the guardrails on the demo accounts and the reset endpoint; and `CRON_SECRET`, a long random value kept in 1Password, which Vercel sends with each scheduled reset. No `TMS_API_KEY`: projects use their own keys. The function's bundle has no UI build in it, so the server runs as the API only.
@@ -605,6 +606,7 @@ The demo project, Trailhead, is created by `server/app/demo.py`. The first real 
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `ERR_NAME_NOT_RESOLVED` for a domain whose DNS record was just added | Your computer, browser or VPN cached the earlier "not found" answer | `nslookup <domain> <name>.ns.cloudflare.com` asks Cloudflare directly. Then `ipconfig /flushdns` in an administrator Command Prompt and a private window; a VPN's DNS clears by itself within an hour |
 | `npm error 404 ... @deepl/cli` | Package not on npm | Install from `vendor/` (see above) |
 | `deepl requires Node.js >= 24.15.0` | Node too old | `nvm install 24` |
 | `op` cannot resolve a reference | Vault, item or field name mismatch, or 1Password locked | Compare `.env.op` with 1Password; run `op read "op://..."` |
