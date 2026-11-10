@@ -167,6 +167,8 @@ Settings (environment variables, optional):
 
 Passwords are stored as Argon2 hashes. The session cookie holds a random token; the database stores only its SHA-256 hash. Failed sign-ins are limited: 5 within 15 minutes for one email, or 20 from one network address, and further attempts are refused (`429`) until the failures age out, at most 15 minutes later. They are recorded in the `sign_in_failures` table, since serverless functions keep nothing in memory; on Vercel the address comes from `X-Real-IP`, elsewhere from the connection (`app/services/sign_in_limits.py`).
 
+Every response carries security headers (`app/security_headers.py`): a content policy that lets pages load only Stringherd's own scripts, styles, fonts and images and forbids framing by other sites, plus `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `Permissions-Policy`, and, over HTTPS (`COOKIE_SECURE=true`), `Strict-Transport-Security`. The API docs (`/docs`, `/redoc`) skip the content policy, since they load their scripts from a public CDN. On Vercel the CDN serves the UI, so `vercel.json` gives the `web` service the same headers; a test keeps the two lists in step.
+
 ### Demo data
 
 `seed-demo` fills an **empty** database with a demo project, Trailhead, a small fictional hiking app: 22 English strings translated into French and Latin American Spanish (`es-419`). It is what the Docker setup loads on its first start, and what the README walkthrough shows.

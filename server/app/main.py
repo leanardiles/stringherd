@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.routers import admin, admin_projects, auth, demo, review, source, tms
+from app.security_headers import SecurityHeaders
 from app.web import serve_ui
 
 app = FastAPI(
@@ -16,6 +17,10 @@ app = FastAPI(
     version="1.1.0",
     description="Open-source review server for DeepL Sync.",
 )
+
+# Security headers on every response. COOKIE_SECURE means the server is reached over HTTPS,
+# which is when browsers should be told to insist on it.
+app.add_middleware(SecurityHeaders, https=get_settings().cookie_secure)
 
 app.include_router(tms.router)
 app.include_router(source.router)
