@@ -9,7 +9,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 | ✅ Foundation | DeepL Sync contract, reviewer accounts, review screen; full loop verified on a real app |
 | ✅ v1 (local) | A complete review tool someone else can run and use without the API docs. Released as 1.0.0 |
 | ✅ v1.1: Existing translations | Languages that already have translations join Stringherd without being retranslated. Released as 1.1.0 |
-| 📋 Hosted demo | A public instance anyone can try in the browser |
+| ✅ Hosted demo | A public instance anyone can try in the browser, at [demo.stringherd.dev](https://demo.stringherd.dev). Released as 1.2.0 |
 | 📋 FitJournal in production | My own app localized end to end through Stringherd, including existing translations and a regional variant |
 | 📋 Pilot | Stringherd on a live repository that is not mine, reviewing English to Spanish |
 | 📋 v2: Screenshots | Reviewers see where each string appears in the app |
@@ -84,17 +84,17 @@ Goal: FitJournal's Spanish and Dutch join Stringherd with their translations kep
 
 ---
 
-## 📋 Hosted demo
+## ✅ Hosted demo
 
-Goal: anyone can open Stringherd in the browser and try it, with nothing to install, at no cost: Vercel's free Hobby plan and Supabase's free plan. Working plan: [docs/HOSTED-PLAN.md](docs/HOSTED-PLAN.md).
+Goal: anyone can open Stringherd in the browser and try it, with nothing to install, at no cost: Vercel's free Hobby plan and Supabase's free plan. Live at **[demo.stringherd.dev](https://demo.stringherd.dev)** since 10 November 2026, released as **1.2.0**; what is in it: [CHANGELOG.md](CHANGELOG.md). Working plan: [docs/HOSTED-PLAN.md](docs/HOSTED-PLAN.md).
 
-- **demo.stringherd.dev**, a Vercel project of its own: production later runs as a second project from the same repository, with its own database, so the demo's resets and public admin access never reach real data. stringherd.dev redirects to the demo for now
-- **Serverless fit**: the server as a Python function on the same domain as the UI, so the session cookie works as it does locally; Supabase through its connection pooler, the function in the database's region, nothing kept in memory between requests. Check that a DeepL Sync push survives a cold start
-- **Demo mode**: the Trailhead demo project, one-click sign-in as a reviewer or an admin, a banner, guardrails on the demo accounts, and a reset on a schedule
-- **Deploys**: migrations before each deploy (`alembic upgrade head` with `op run`, later from a GitHub Action); secrets in Vercel's environment variables, copied from 1Password
-- **Hardening**: sign-in rate limiting (counted in the database, since functions keep no memory), security headers, no server-wide development key
-- **Monitoring basics**: health check, error logging
-- **Before anything moves**: a backup of the current database, which holds FitJournal's real review history and becomes production's
+- ✅ **Before anything moved**: a backup of `stringherd-db`, which holds FitJournal's real review history. It moved to a Supabase organization of its own, on Pro, and becomes production's database; the demo has its own database on the free plan
+- ✅ **Serverless fit** (9 November 2026): the UI and the server as two Vercel services on one address, so the session cookie works as it does locally; the server as a Python function in Montreal, next to the database; Supabase through its transaction pooler, with nothing kept in memory between requests. A DeepL Sync push answers in 2.4 s from a cold start and 0.3 s warm
+- ✅ **Demo mode** (10 November 2026): the Trailhead demo project, one-click sign-in as a reviewer or an admin, a banner, guardrails on the two shared accounts, and a reset at 07:00 and 19:00 UTC by a Vercel schedule
+- ✅ **demo.stringherd.dev** (10 November 2026), a Vercel project of its own, with stringherd.dev redirecting to it for now. Production later runs as a second project from the same repository, with its own database, so the demo's resets and public admin access never reach real data
+- ✅ **Deploys**: a push to `main` deploys; migrations run first from my machine with `op run` (from a GitHub Action later); secrets in Vercel's environment variables, copied from 1Password
+- ✅ **Hardening**: limits on failed sign-ins, counted in the database since functions keep no memory; security headers; no server-wide development key
+- ✅ **Monitoring**: UptimeRobot checks `/health`, the server and the database, every 5 minutes; errors in Vercel's logs
 
 ---
 

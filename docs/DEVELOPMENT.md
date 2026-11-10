@@ -386,6 +386,12 @@ npm run screenshots                  # writes docs/images/01-projects.png ... 08
 
 Run it again after a UI change and commit the images that changed. Options: `--url` (default `http://localhost:8200`), `--out` (default `docs/images`), `--chromium` (a browser already installed, instead of Playwright's own).
 
+The hosted demo's sign-in page (`00-demo-sign-in.png`) needs a server in demo mode, which the Docker demo is not. `--demo-url` adds it, and `--demo-only` takes only that one:
+
+```bash
+npm run screenshots -- --demo-url https://demo.stringherd.dev --demo-only
+```
+
 ---
 
 ## Hosting on Vercel

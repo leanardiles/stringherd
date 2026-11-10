@@ -4,15 +4,27 @@
 
 DeepL's CLI machine-translates the locale files in your repository. Stringherd is where linguists review those translations, with the context they need, before the reviewed versions go back into your code.
 
-> **Status: v1.1.0, released 9 November 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Since 1.1.0, a language that already has translations joins without being retranslated: FitJournal's Dutch and Latin American Spanish came in this way in November 2026. Next: a hosted demo ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
+> **Status: v1.1.0, released 9 November 2026, in use.** The full loop works, from DeepL Sync through review in Stringherd back into the code, and it shipped French to a live app ([FitJournal](https://fit-journal.com)) in October 2026. Reviewer accounts, admin screens, quality checks, bulk actions, Deliver and Phrase-style keyboard shortcuts are in place, and `docker compose up` runs a demo locally. Since 1.1.0, a language that already has translations joins without being retranslated: FitJournal's Dutch and Latin American Spanish came in this way in November 2026. **Try it online at [demo.stringherd.dev](https://demo.stringherd.dev)**, with nothing to install. Next: FitJournal in production, with the loop automated ([roadmap](ROADMAP.md), [changelog](CHANGELOG.md)).
 
 ![The review screen: a French string edited by a reviewer, with the word diff against DeepL's suggestion](docs/images/03-edited.png)
 
 ---
 
-## Try it with Docker
+## Try it
 
-With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running, from the repository root:
+### Online
+
+Open **[demo.stringherd.dev](https://demo.stringherd.dev)** and click **Try as reviewer** or **Try as admin**. No account, nothing to install.
+
+<p align="center"><a href="https://demo.stringherd.dev"><img src="docs/images/00-demo-sign-in.png" width="420" alt="The demo's sign-in page, with Try as reviewer and Try as admin"></a></p>
+
+A demo project, Trailhead, is waiting: a small fictional hiking app with French partly reviewed and delivered, and Spanish just arrived from DeepL. The reviewer edits, approves and delivers translations; the admin also manages projects, languages, people and API keys. [What to look at](#what-to-look-at) suggests where to start.
+
+The demo is shared, so other visitors see what you change, and everything resets at 07:00 and 19:00 UTC. It shows the review side: DeepL Sync, which sends strings in and pulls the reviewed ones out, runs from a repository ([how it works](#how-it-works)).
+
+### With Docker
+
+To try it on your own computer, with data only you see. With [Docker Desktop](https://www.docker.com/products/docker-desktop/) running, from the repository root:
 
 ```bash
 docker compose up --build
@@ -185,6 +197,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 | [docs/SHORTCUTS.md](docs/SHORTCUTS.md) | Keyboard shortcuts of the review screen |
 | [docs/UI-PLAN.md](docs/UI-PLAN.md) | Design decisions for the review interface |
 | [docs/ADMIN-PLAN.md](docs/ADMIN-PLAN.md) | Design of the admin screens: projects, keys, people |
+| [docs/HOSTED-PLAN.md](docs/HOSTED-PLAN.md) | The hosted demo and, later, production on Vercel and Supabase: decisions and progress |
 | [docs/LOCALES-PLAN.md](docs/LOCALES-PLAN.md) | Plan for existing translations, regional variants and hand edits |
 | [docs/SCREENSHOTS-PLAN.md](docs/SCREENSHOTS-PLAN.md) | Plan for automatic screenshots as reviewer context (v2) |
 | [ROADMAP.md](ROADMAP.md) | Milestones, what is done and what comes next, known limitations |
@@ -196,6 +209,7 @@ Building against the contract surfaced a few behaviors worth knowing (the full l
 |---|---|
 | Backend | Python, FastAPI, SQLAlchemy, Alembic |
 | Database | PostgreSQL (Supabase) |
+| Hosting | Vercel (the UI on its CDN, the server as a Python function), Cloudflare DNS, UptimeRobot |
 | Review UI | React, Vite, TypeScript, TanStack Query, react-i18next, CodeMirror 6 |
 | Machine translation and sync | DeepL CLI (`deepl sync`) |
 | Secrets | 1Password CLI (`op run`) |

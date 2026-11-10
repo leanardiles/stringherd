@@ -11,6 +11,9 @@
  * so it can run any number of times. For the screens to match the README, run it on a fresh
  * demo (docker compose down -v, then up). Options: --url (default http://localhost:8200),
  * --out (default docs/images), --chromium (a Chromium to use instead of Playwright's own).
+ *
+ * The hosted demo's sign-in page needs a server in demo mode (DEMO_MODE=true), which Docker is
+ * not: --demo-url https://demo.stringherd.dev adds it, and --demo-only takes only that one.
  */
 
 import { mkdir } from 'node:fs/promises'
@@ -23,6 +26,8 @@ const { values: args } = parseArgs({
     url: { type: 'string', default: 'http://localhost:8200' },
     out: { type: 'string', default: 'docs/images' },
     chromium: { type: 'string' },
+    'demo-url': { type: 'string' },
+    'demo-only': { type: 'boolean', default: false },
   },
 })
 
@@ -33,6 +38,7 @@ const FRENCH = '/review/trailhead/fr'
 
 // 1440 by 900 at twice the pixels: sharp on high-resolution screens, readable when GitHub scales it down.
 const VIEWPORT = { width: 1440, height: 900 }
+const DEMO_VIEWPORT = { width: 840, height: 900 }
 
 async function signIn(browser, email) {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: 'light' })
@@ -45,8 +51,8 @@ async function signIn(browser, email) {
   return page
 }
 
-async function open(page, address) {
-  await page.goto(args.url + address)
+async function open(page, address, base = args.url) {
+  await page.goto(base + address)
   await settle(page)
 }
 
@@ -76,42 +82,60 @@ async function shot(page, name, caption, { fit = false, full = false } = {}) {
 await mkdir(args.out, { recursive: true })
 const browser = await chromium.launch(args.chromium ? { executablePath: args.chromium } : {})
 try {
-  const reviewer = await signIn(browser, REVIEWER)
+  if (args['demo-url']) {
+    // A small card in the middle of the page: a narrow window, as tall as the banner and the card
+    // with a margin, so the picture is the card rather than empty background.
+    const context = await browser.newContext({ viewport: DEMO_VIEWPORT, deviceScaleFactor: 2, colorScheme: 'light' })
+    const visitor = await context.newPage()
+    await open(visitor, '/login', args['demo-url'])
+    await visitor.getByRole('button', { name: /reviewer/i }).waitFor()
+    const height = await visitor.evaluate(
+      () => document.querySelector('[role=note]')?.getBoundingClientRect().height ?? 0,
+    )
+    const card = await visitor.locator('main').boundingBox()
+    await visitor.setViewportSize({ width: DEMO_VIEWPORT.width, height: Math.ceil(height + card.height + 2 * 40) })
+    await settle(visitor)
+    await shot(visitor, '00-demo-sign-in', 'The hosted demo: one click signs in')
+    await context.close()
+  }
+  if (!args['demo-only']) {
+    const reviewer = await signIn(browser, REVIEWER)
 
-  await open(reviewer, '/')
-  await shot(reviewer, '01-projects', 'Projects and languages, with review progress', { fit: true })
+    await open(reviewer, '/')
+    await shot(reviewer, '01-projects', 'Projects and languages, with review progress', { fit: true })
 
-  await open(reviewer, `${FRENCH}?view=list&status=all`)
-  await shot(reviewer, '02-list', 'French in the list view: status, quality warnings, character counts')
+    await open(reviewer, `${FRENCH}?view=list&status=all`)
+    await shot(reviewer, '02-list', 'French in the list view: status, quality warnings, character counts')
 
-  await open(reviewer, `${FRENCH}?view=single&key=nav.trails`)
-  await shot(reviewer, '03-edited', 'A reviewer edit, with the word diff against DeepL')
+    await open(reviewer, `${FRENCH}?view=single&key=nav.trails`)
+    await shot(reviewer, '03-edited', 'A reviewer edit, with the word diff against DeepL')
 
-  await open(reviewer, `${FRENCH}?view=single&key=auth.welcome`)
-  await shot(reviewer, '04-qa-error', 'A missing placeholder: the quality check blocks approval')
+    await open(reviewer, `${FRENCH}?view=single&key=auth.welcome`)
+    await shot(reviewer, '04-qa-error', 'A missing placeholder: the quality check blocks approval')
 
-  await open(reviewer, `${FRENCH}?view=list&status=review`)
-  await reviewer.getByRole('checkbox', { name: 'Select all shown strings' }).check()
-  await settle(reviewer)
-  await shot(reviewer, '05-bulk', 'Bulk approve: strings with errors are skipped')
-  await reviewer.keyboard.press('Escape')
+    await open(reviewer, `${FRENCH}?view=list&status=review`)
+    await reviewer.getByRole('checkbox', { name: 'Select all shown strings' }).check()
+    await settle(reviewer)
+    await shot(reviewer, '05-bulk', 'Bulk approve: strings with errors are skipped')
+    await reviewer.keyboard.press('Escape')
 
-  await open(reviewer, `${FRENCH}?view=list&status=all`)
-  await reviewer.getByRole('button', { name: /^Deliver \d/ }).click()
-  await reviewer.getByRole('dialog').waitFor()
-  await settle(reviewer)
-  await shot(reviewer, '06-deliver', 'Deliver: what the next deepl sync pull will bring')
-  await reviewer.keyboard.press('Escape')
+    await open(reviewer, `${FRENCH}?view=list&status=all`)
+    await reviewer.getByRole('button', { name: /^Deliver \d/ }).click()
+    await reviewer.getByRole('dialog').waitFor()
+    await settle(reviewer)
+    await shot(reviewer, '06-deliver', 'Deliver: what the next deepl sync pull will bring')
+    await reviewer.keyboard.press('Escape')
 
-  await open(reviewer, `${FRENCH}?view=single&key=trail.share`)
-  await reviewer.keyboard.press('Control+/')
-  await reviewer.getByRole('dialog', { name: 'Keyboard shortcuts' }).waitFor()
-  await settle(reviewer)
-  await shot(reviewer, '07-shortcuts', 'Phrase-style keyboard shortcuts, with their reference')
+    await open(reviewer, `${FRENCH}?view=single&key=trail.share`)
+    await reviewer.keyboard.press('Control+/')
+    await reviewer.getByRole('dialog', { name: 'Keyboard shortcuts' }).waitFor()
+    await settle(reviewer)
+    await shot(reviewer, '07-shortcuts', 'Phrase-style keyboard shortcuts, with their reference')
 
-  const admin = await signIn(browser, ADMIN)
-  await open(admin, '/admin/projects/trailhead')
-  await shot(admin, '08-setup', 'A project as the admin sees it: languages, API keys, setup steps', { full: true })
+    const admin = await signIn(browser, ADMIN)
+    await open(admin, '/admin/projects/trailhead')
+    await shot(admin, '08-setup', 'A project as the admin sees it: languages, API keys, setup steps', { full: true })
+  }
 } finally {
   await browser.close()
 }
